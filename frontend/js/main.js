@@ -22,6 +22,7 @@ import { positionsView } from './positionsView.js';
 import { journalView } from './journalView.js';
 import { compoundView } from './compoundView.js';
 import { scansView } from './scansView.js';
+import { authManager } from './auth.js';
 
 class App {
   constructor() {
@@ -31,87 +32,44 @@ class App {
   init() {
     console.log('Initializing TradeDeck...');
 
-    // Set up module references for dataManager to avoid circular dependencies
     dataManager.setModules(settings, calculator, journal, clearDataModal);
 
-    // Initialize settings FIRST (loads saved data before theme.init saves defaults)
     settings.init();
-
-    // Initialize theme after settings are loaded (so it doesn't overwrite saved settings)
     theme.init();
-
-    // Initialize calculator
     calculator.init();
-
-    // Initialize parser
     parser.init();
-
-    // Initialize journal
     journal.init();
-
-    // Initialize trim modal
     trimModal.init();
-
-    // Initialize wizard
     wizard.init();
-
-    // Initialize confetti
     confetti.init();
-
-    // Initialize achievements
     achievements.init();
-
-    // Initialize sound effects
     soundFx.init();
-
-    // Initialize clear data modal
     clearDataModal.init();
-
-    // Initialize view manager (4-view navigation)
     viewManager.init();
-
-    // Initialize stats and chart
     stats.init();
     equityChart.init();
-
-    // Initialize positions, journal, compound, and scans views
     positionsView.init();
     journalView.init();
     compoundView.init();
     scansView.init();
-
-    // Initialize keyboard shortcuts
     keyboard.init();
-
-    // Initialize settings card toggle
     settingsToggle.init();
-
-    // Initialize focus manager for visual attention flow
     focusManager.init();
-
-    // Initialize hint arrow click handler (mobile scroll to input)
     hintArrow.init();
-
-    // Initialize tooltip handler (prevent label clicks on mobile)
     tooltipHandler.init();
 
-    // Sync Quick Settings summary with loaded values
     settingsToggle.updateSummary(
       state.account.currentSize,
       state.account.maxPositionPercent
     );
 
-    // Set up global event listeners
     this.setupGlobalEvents();
-
-    // Expose global functions for HTML onclick handlers
     this.setupGlobalFunctions();
 
     console.log('TradeDeck initialized successfully');
   }
 
   setupGlobalEvents() {
-    // Listen for account changes to update calculator and summary
     state.on('accountSizeChanged', () => {
       calculator.calculate();
       settingsToggle.updateSummary(
@@ -120,11 +78,9 @@ class App {
       );
     });
 
-    // Listen for results to update header and activate results panel
     state.on('resultsRendered', (results) => {
       settings.updateAccountDisplay(state.account.currentSize);
 
-      // Activate results panel glow when we have real results
       if (results && results.shares > 0) {
         focusManager.activateResults();
       } else {
@@ -132,14 +88,12 @@ class App {
       }
     });
 
-    // Deactivate results when trade is cleared
     state.on('tradeChanged', (trade) => {
       if (!trade.entry && !trade.stop) {
         focusManager.deactivateResults();
       }
     });
 
-    // Update settings summary when settings change
     state.on('settingsChanged', () => {
       settingsToggle.updateSummary(
         state.account.currentSize,
@@ -147,7 +101,6 @@ class App {
       );
     });
 
-    // Debug logging in development
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       state.on('settingsChanged', (s) => console.log('Settings:', s));
       state.on('tradeChanged', (t) => console.log('Trade:', t));
@@ -155,7 +108,6 @@ class App {
   }
 
   setupGlobalFunctions() {
-    // Expose functions needed by HTML onclick handlers
     window.closeTrade = (tradeId) => trimModal.open(tradeId);
     window.deleteTrade = (tradeId) => journal.deleteTrade(tradeId);
     window.exportAllData = () => dataManager.exportAllData();
@@ -168,12 +120,108 @@ class App {
   }
 }
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new App());
-} else {
+function showAuthScreen() {
+  const authScreen = document.getElementById('auth-screen');
+  const appRoot = document.getElementById('app-root');
+
+  if (authScreen) authScreen.style.display = 'flex';
+  if (appRoot) appRoot.style.display = 'none';
+}
+
+function showApp() {
+  const authScreen = document.getElementById('auth-screen');
+  const appRoot = document.getElementById('app-root');
+
+  if (authScreen) authScreen.style.display = 'none';
+  if (appRoot) appRoot.style.display = 'block';
+}
+
+async function bootstrapApp() {
+  const user = await authManager.checkAuth();
+
+  if (!user) {
+    showAuthScreen();
+    return;
+  }
+
+  showApp();
   new App();
 }
 
-// Export for potential external use
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
+  const errorBox = document.getElementById('login-error');
+  const submitBtn = document.getElementById('login-submit');
+
+  const email = emailInput?.value.trim();
+  const password = passwordInput?.value;
+
+  if (errorBox) errorBox.textContent = '';
+  submitBtn?.classList.add('is-loading');
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const user = await authManager.login(email, password);
+
+    if (user.role === 'admin') {
+      window.location.href = './admin.html';
+      return;
+    }
+
+    showApp();
+    new App();
+  } catch (error) {
+    if (errorBox) {
+      errorBox.textContent = error.message || 'Unable to sign in. Please check your credentials.';
+    }
+  } finally {
+    submitBtn?.classList.remove('is-loading');
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+
+
+
+function setupAuthUI() {
+  const loginForm = document.getElementById('login-form');
+  const logoutBtn = document.getElementById('logout-btn');
+  const togglePasswordBtn = document.getElementById('toggle-password');
+  const passwordInput = document.getElementById('login-password');
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await authManager.logout();
+      window.location.reload();
+    });
+  }
+
+  if (togglePasswordBtn && passwordInput) {
+    togglePasswordBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      togglePasswordBtn.textContent = isPassword ? 'Hide' : 'Show';
+      togglePasswordBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    });
+  }
+}
+
+function start() {
+  setupAuthUI();
+  bootstrapApp();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', start);
+} else {
+  start();
+}
+
 export { App };

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GianKom Signup</title>
+  <link rel="stylesheet" href="./css/variables.css" />
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/signup.css" />
+</head>
+<body>
+  <div class="signup-screen">
+    <div class="signup-shell">
+      <div class="signup-card">
+        <div class="signup-brand">
+          <div class="signup-brand__mark" aria-hidden="true">G</div>
+
+          <div class="signup-brand__text">
+            <h1>Create Sccount</h1>
+            <p id="signup-subtitle">Checking your invitation...</p>
+          </div>
+        </div>
+
+        <form id="signup-form" class="signup-form" style="display: none;" novalidate>
+          <div class="form-group signup-form-group">
+            <label for="signup-email">Invited email</label>
+            <input type="email" id="signup-email" readonly />
+          </div>
+
+          <div class="form-group signup-form-group">
+            <label for="signup-password">Password</label>
+            <div class="password-field">
+              <input
+                type="password"
+                id="signup-password"
+                placeholder="Minimum 8 characters"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-toggle-target="signup-password"
+                aria-label="Show password"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group signup-form-group">
+            <label for="signup-confirm-password">Confirm password</label>
+            <div class="password-field">
+              <input
+                type="password"
+                id="signup-confirm-password"
+                placeholder="Re-enter your password"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-toggle-target="signup-confirm-password"
+                aria-label="Show password"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <button id="signup-submit" class="signup-btn" type="submit">
+            <span class="signup-btn__text">Complete signup</span>
+            <span class="signup-btn__spinner" aria-hidden="true"></span>
+          </button>
+
+          <p id="signup-message" class="signup-message" role="alert" aria-live="polite"></p>
+        </form>
+
+        <div class="signup-footer">
+          <span>Invite-only access</span>
+          <span class="signup-footer__dot"></span>
+          <span>Secure one-time account activation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/signup.js"></script>
+</body>
+</html>

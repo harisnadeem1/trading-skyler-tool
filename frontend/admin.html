@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GianKom Admin</title>
+  <link rel="stylesheet" href="./css/variables.css" />
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/admin.css" />
+</head>
+<body>
+  <div id="admin-guard" class="admin-guard">
+    <div class="admin-guard__card">
+      <div class="admin-brand admin-brand--centered">
+        <div class="admin-brand__mark" aria-hidden="true">G</div>
+        <div>
+          <h2>Admin access required</h2>
+          <p>You must be logged in as an admin to access this page.</p>
+        </div>
+      </div>
+
+      <button id="go-to-app-login" class="admin-btn admin-btn--primary" type="button">
+        Go to login
+      </button>
+    </div>
+  </div>
+
+  <main id="admin-app" class="admin-shell" style="display: none;">
+    <div class="admin-wrap">
+      <header class="admin-header">
+        <div class="admin-brand">
+          <div class="admin-brand__mark" aria-hidden="true">G</div>
+          <div class="admin-title">
+            <h1>GianKom Admin</h1>
+          </div>
+        </div>
+
+        <div class="admin-actions">
+          <a href="./index.html" class="admin-btn admin-btn--ghost">Open app</a>
+          <button id="admin-logout-btn" class="admin-btn" type="button">Logout</button>
+        </div>
+      </header>
+
+      <section class="admin-stats">
+        <article class="admin-stat-card">
+          <span class="admin-stat-card__label">Total invites</span>
+          <strong id="stat-total-invites">0</strong>
+        </article>
+
+        <article class="admin-stat-card">
+          <span class="admin-stat-card__label">Pending</span>
+          <strong id="stat-pending-invites">0</strong>
+        </article>
+
+        <article class="admin-stat-card">
+          <span class="admin-stat-card__label">Accepted</span>
+          <strong id="stat-accepted-invites">0</strong>
+        </article>
+
+        <article class="admin-stat-card">
+          <span class="admin-stat-card__label">Expired</span>
+          <strong id="stat-expired-invites">0</strong>
+        </article>
+      </section>
+
+      <section class="admin-grid">
+        <div class="admin-card">
+          <div class="admin-card__header">
+            <div>
+              <h2>Create invite</h2>
+              <p>Generate a one-time signup link for a new user.</p>
+            </div>
+          </div>
+
+          <form id="invite-form" class="admin-form">
+            <div class="form-group admin-form-group">
+              <label for="invite-email">User email</label>
+              <input type="email" id="invite-email" placeholder="user@example.com" required />
+            </div>
+
+            <button id="invite-submit" class="admin-btn admin-btn--primary" type="submit">
+              <span class="admin-btn__text">Generate invite</span>
+              <span class="admin-btn__spinner" aria-hidden="true"></span>
+            </button>
+
+            <p id="invite-message" class="invite-message" role="alert" aria-live="polite"></p>
+          </form>
+
+          <div id="invite-result" class="invite-result" style="display: none;"></div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card__header">
+            <div>
+              <h2>Invite flow</h2>
+              <p>Account creation is limited to invited users only.</p>
+            </div>
+          </div>
+
+          <div class="admin-info-list">
+            <div class="admin-info-item">
+              <span class="admin-info-item__step">01</span>
+              <p>Admin creates an invite for a specific email address.</p>
+            </div>
+
+            <div class="admin-info-item">
+              <span class="admin-info-item__step">02</span>
+              <p>Send one-time signup link with token validation to the user.</p>
+            </div>
+
+            <div class="admin-info-item">
+              <span class="admin-info-item__step">03</span>
+              <p>After signup, the invite becomes used and the user can log in normally.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card admin-card--table">
+  <div class="admin-card__header">
+    <div>
+      <h2>Invites</h2>
+      <p>Track pending, accepted, and expired invitations.</p>
+    </div>
+
+    <button id="refresh-invites-btn" class="admin-btn admin-btn--ghost" type="button">
+      Refresh
+    </button>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Accepted</th>
+          <th>Expires</th>
+          <th>Time left</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody id="invites-tbody">
+        <tr>
+          <td colspan="7" class="admin-table__empty">No invites found yet.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+    </div>
+  </main>
+
+  <script type="module" src="./js/admin.js"></script>
+</body>
+</html>
