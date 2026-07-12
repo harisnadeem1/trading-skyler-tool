@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nTrade Manager v1.1 - UI/UX Refinements\n\n- Quick Settings: rebranded from Account Settings, overlay dropdown (no layout shift)\n- Instant K/M notation auto-expand in both Quick Settings and Settings panel\n- Settings panel now syncs with Quick Settings and header in real-time\n- Added tooltips for Risk % and Account Size fields\n- Changed \"Total Risk\" to \"Open Risk\" for clarity\n- Added panel divider between Trade Setup and Quick Settings\n- Fixed Quick Settings collapse animation and dark mode flash\n- Consistent preset button styling across panels\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git restore:*)",
+      "Bash(git pull:*)",
+      "Bash(git show:*)",
+      "Bash(node --check:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /Users/skylerberry/skyler-tools-local/skyler-tools log --oneline -20)"
+    ]
+  }
+}

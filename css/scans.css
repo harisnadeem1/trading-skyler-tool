@@ -1,0 +1,234 @@
+/* ========================================
+   Scans View
+   ======================================== */
+
+/* === View Container === */
+
+.scans-view {
+  display: none;
+  flex-direction: column;
+  padding: var(--space-6);
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100vh - var(--header-height) - 60px);
+  overflow-y: auto;
+}
+
+.scans-view.view--active {
+  display: flex;
+}
+
+.scans-view.view--hidden {
+  display: none !important;
+}
+
+/* === Header === */
+
+.scans-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.scans-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.scans-header__icon {
+  font-size: var(--text-2xl);
+}
+
+.scans-header__title {
+  color: var(--text-primary);
+  font-weight: var(--font-bold);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  margin: 0;
+}
+
+.scans-header__subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.scans-header__nav {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.scans-header__nav .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* === Content Container === */
+
+.scans-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+}
+
+/* === Empty State === */
+
+.scans-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12);
+  text-align: center;
+}
+
+.scans-empty__icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.6;
+}
+
+.scans-empty__title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.scans-empty__text {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  margin: 0 0 var(--space-6);
+  max-width: 400px;
+}
+
+/* === Scan Table (injected) === */
+
+.scans-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.scans-content th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.scans-content th:hover {
+  background: var(--bg-hover);
+}
+
+.scans-content th.sorted-asc::after {
+  content: ' ↑';
+  color: var(--primary);
+}
+
+.scans-content th.sorted-desc::after {
+  content: ' ↓';
+  color: var(--primary);
+}
+
+.scans-content td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.scans-content tr:hover td {
+  background: var(--bg-hover);
+}
+
+.scans-content tr:last-child td {
+  border-bottom: none;
+}
+
+/* Ticker column styling */
+.scans-content td:first-child {
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.scans-content td:first-child:hover {
+  color: var(--primary);
+}
+
+/* Positive/negative value colors */
+.scans-content .positive {
+  color: var(--success);
+}
+
+.scans-content .negative {
+  color: var(--error);
+}
+
+/* === Entrance Animations === */
+
+.view--compound.view--active .scans-header {
+  animation: fadeInUp 0.4s ease-out backwards;
+  animation-delay: 0ms;
+}
+
+.scans-view.view--active .scans-content {
+  animation: fadeInUp 0.4s ease-out backwards;
+  animation-delay: 80ms;
+}
+
+/* === Responsive === */
+
+@media (max-width: 768px) {
+  .scans-view {
+    padding: var(--space-4);
+  }
+
+  .scans-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scans-header__nav {
+    width: 100%;
+  }
+
+  .scans-header__nav .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .scans-content th,
+  .scans-content td {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+
+  /* Simpler animations on mobile */
+  .scans-view.view--active .scans-header,
+  .scans-view.view--active .scans-content {
+    animation: fadeIn 0.3s ease-out;
+    animation-delay: 0ms;
+  }
+}
