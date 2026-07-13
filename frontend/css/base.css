@@ -32,6 +32,10 @@ body {
   flex-direction: column;
 }
 
+
+
+
+
 /* Smooth theme transitions - wildcard for buttery theme switching */
 *,
 *::before,
@@ -469,4 +473,247 @@ a:focus-visible {
   .auth-brand__text p {
     font-size: var(--text-sm);
   }
+}
+
+
+
+#app-root {
+  min-height: 100dvh;
+  display: flex !important;
+  flex-direction: column;
+}
+
+main {
+  flex: 1; /* This is the key — makes main grow to fill remaining space */
+}
+
+.journal-modal {
+  width: min(920px, calc(100vw - 32px));
+  max-height: 88vh;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: var(--color-surface, #16181d);
+  color: var(--color-text, #f5f7fa);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.journal-modal::backdrop {
+  background: rgba(7, 10, 18, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.journal-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface, #16181d);
+}
+
+.journal-modal__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--color-text, #f5f7fa);
+}
+
+.journal-modal__close {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.journal-modal__close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.journal-modal__body {
+  padding: 20px;
+  max-height: calc(88vh - 76px);
+  overflow-y: auto;
+}
+
+/* Content cards inside modal */
+.journal-row-details {
+  display: grid;
+  gap: 14px;
+}
+
+.journal-row-details__section {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.journal-row-details__label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+.journal-row-details__trade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.journal-row-details__trade-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.journal-row-details__trade-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+.journal-row-details__trade-value,
+.journal-row-details__value {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text, #f5f7fa);
+}
+
+.journal-row-details__trade-view,
+.journal-row-details__notes-view {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.journal-row-details__trade-edit,
+.journal-row-details__notes-edit {
+  display: grid;
+  gap: 12px;
+}
+
+.journal-row-details__trade-actions,
+.journal-row-details__notes-actions,
+.journal-row-details__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.journal-row-details__trade-input,
+.journal-row-details__notes-input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+}
+
+.journal-row-details__trade-input:focus,
+.journal-row-details__notes-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #14b8a6);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
+}
+
+.trade-log-entry {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .journal-modal {
+    width: min(100vw - 20px, 920px);
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+
+  .journal-modal__header,
+  .journal-modal__body {
+    padding: 16px;
+  }
+
+  .journal-row-details__trade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-row-details__trade-view,
+  .journal-row-details__notes-view {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .journal-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  .journal-modal__body {
+    max-height: calc(100dvh - 72px);
+    padding: 14px;
+  }
+
+  .journal-modal__header {
+    padding: 14px;
+  }
+
+  .journal-modal__title {
+    font-size: 18px;
+  }
+
+  .journal-row-details__section {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .journal-row-details__actions .btn,
+  .journal-row-details__trade-actions .btn,
+  .journal-row-details__notes-actions .btn {
+    width: 100%;
+  }
+}
+
+.journal-modal {
+  width: min(920px, calc(100vw - 32px));
+  max-height: 88vh;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: var(--color-surface, #16181d);
+  color: var(--color-text, #f5f7fa);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+
+  /* important for centering */
+  margin: auto;
+}
+
+.journal-modal::backdrop {
+  background: rgba(7, 10, 18, 0.6);
+  backdrop-filter: blur(4px);
 }

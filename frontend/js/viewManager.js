@@ -184,60 +184,64 @@ class ViewManager {
     }
   }
 
-  switchTo(view, options = { animate: true }) {
-    if (view === this.currentView) return;
-    if (!this.views[view]) return;
+ switchTo(view, options = { animate: true }) {
+  if (view === this.currentView) return;
+  if (!this.views[view]) return;
 
-    const previousView = this.currentView;
-    const fromView = this.views[previousView];
-    const toView = this.views[view];
+  const previousView = this.currentView;
+  const fromView = this.views[previousView];
+  const toView = this.views[view];
 
-    if (!fromView || !toView) return;
+  if (!fromView || !toView) return;
 
-    // Update button states
-    this.navButtons.forEach(btn => {
-      const isActive = btn.dataset.view === view;
-      btn.classList.toggle('view-nav__btn--active', isActive);
-    });
+  this.navButtons.forEach(btn => {
+    const isActive = btn.dataset.view === view;
+    btn.classList.toggle('view-nav__btn--active', isActive);
+  });
 
-    // Update mobile trigger icon
-    this.updateMobileTriggerIcon();
+  this.updateMobileTriggerIcon();
+  window.history.replaceState(null, '', `#${view}`);
 
-    // Update URL hash
-    window.history.replaceState(null, '', `#${view}`);
-
-    if (options.animate) {
-      // Animate out current view
-      fromView.classList.add('view--hiding');
-      fromView.classList.remove('view--active');
-
-      // Short delay for animation, then hide and show new view
-      setTimeout(() => {
-        fromView.classList.remove('view--hiding');
-        fromView.classList.add('view--hidden');
-
-        // Show and animate in new view
-        toView.classList.remove('view--hidden');
-        toView.classList.add('view--entering');
-        toView.classList.add('view--active');
-
-        setTimeout(() => {
-          toView.classList.remove('view--entering');
-        }, 300);
-      }, 200);
-    } else {
-      // Instant switch (no animation)
-      fromView.classList.remove('view--active');
-      fromView.classList.add('view--hidden');
-      toView.classList.remove('view--hidden');
-      toView.classList.add('view--active');
-    }
-
+  const finishSwitch = () => {
     this.currentView = view;
-
-    // Emit event for other modules to react
     state.emit('viewChanged', { from: previousView, to: view });
+  };
+
+  if (options.animate) {
+    fromView.classList.add('view--hiding');
+    fromView.classList.remove('view--active');
+
+    setTimeout(() => {
+      fromView.classList.remove('view--hiding');
+      fromView.classList.add('view--hidden');
+
+      toView.classList.remove('view--hidden');
+      toView.classList.add('view--entering');
+      toView.classList.add('view--active');
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          finishSwitch();
+        });
+      });
+
+      setTimeout(() => {
+        toView.classList.remove('view--entering');
+      }, 300);
+    }, 200);
+  } else {
+    fromView.classList.remove('view--active');
+    fromView.classList.add('view--hidden');
+    toView.classList.remove('view--hidden');
+    toView.classList.add('view--active');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        finishSwitch();
+      });
+    });
   }
+}
 
   toggle() {
     // Cycle through views: dashboard → positions → journal → stats → compound → scans

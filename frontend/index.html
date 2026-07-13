@@ -1724,7 +1724,7 @@
   </div>
 
   <!-- Clear Data Confirmation Modal -->
-  <div class="modal-overlay" id="clearDataModalOverlay"></div>
+  <!-- <div class="modal-overlay" id="clearDataModalOverlay"></div>
   <div class="modal modal--clear-data" id="clearDataModal">
     <div class="modal__header">
       <h2 class="modal__title">Clear All Data</h2>
@@ -1773,7 +1773,86 @@
       <button type="button" class="btn btn--secondary" id="cancelClearDataBtn">Cancel</button>
       <button type="button" class="btn btn--danger" id="confirmClearDataBtn">Delete Everything</button>
     </div>
+  </div> -->
+
+<dialog id="journalTradeModal" class="journal-modal">
+  <div class="journal-modal__header">
+    <h2 id="journalTradeModalTitle" class="journal-modal__title">Trade Details</h2>
+
+    <button
+      type="button"
+      class="journal-modal__close"
+      id="journalTradeModalClose"
+      aria-label="Close modal"
+    >
+      ✕
+    </button>
   </div>
+
+  <div class="journal-modal__body" id="journalTradeModalBody"></div>
+</dialog>
+
+
+
+
+<div class="modal-overlay" id="clearDataModalOverlay"></div>
+
+<div
+  class="modal modal--danger"
+  id="clearDataModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="clearDataModalTitle"
+  aria-describedby="clearDataModalDescription"
+>
+  <div class="modal__header">
+    <h3 class="modal__title" id="clearDataModalTitle">Clear all data</h3>
+    <button
+      class="icon-btn"
+      id="closeClearDataBtn"
+      aria-label="Close clear data dialog"
+      type="button"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <div class="modal__content">
+    <p id="clearDataModalDescription">
+      This action permanently removes your journal data and resets progress.
+    </p>
+
+    <p id="clearDataTradeCount">No trades logged</p>
+    <p id="clearDataAchievementCount">No achievements unlocked</p>
+
+    <div class="input-group" style="margin-top: var(--space-4);">
+      <label for="clearDataConfirmInput" class="input-label">
+        Type CLEAR to confirm
+      </label>
+      <input
+        id="clearDataConfirmInput"
+        class="input"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Type CLEAR"
+      />
+    </div>
+  </div>
+
+  <div class="modal__footer">
+    <button class="btn btn--secondary" id="cancelClearDataBtn" type="button">
+      Cancel
+    </button>
+    <button class="btn btn--danger" id="confirmClearDataBtn" type="button" disabled>
+      Clear All Data
+    </button>
+  </div>
+</div>
+
 
   <!-- Confetti Canvas -->
   <canvas id="confettiCanvas" class="confetti-canvas"></canvas>

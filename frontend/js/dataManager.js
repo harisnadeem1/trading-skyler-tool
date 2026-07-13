@@ -4,6 +4,7 @@
 
 import { state } from './state.js';
 import { showToast } from './ui.js';
+import { api } from './api.js';
 
 // These will be set after modules are initialized to avoid circular dependencies
 let settingsModule = null;
@@ -11,8 +12,84 @@ let calculatorModule = null;
 let journalModule = null;
 let clearDataModalModule = null;
 
+function safeNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function deriveAccountFromState() {
+  const starting = safeNumber(state.state.settings.startingAccountSize, 10000);
+
+  const journalEntries = Array.isArray(state.state.journal.entries)
+    ? state.state.journal.entries
+    : [];
+
+  const realizedPnL = journalEntries.reduce((sum, entry) => {
+    const realized =
+      entry?.total_realized_pnl ??
+      entry?.totalRealizedPnL ??
+      (entry?.status === 'closed' ? entry?.pnl : 0);
+
+    return sum + safeNumber(realized, 0);
+  }, 0);
+
+  const dynamicEnabled = !!state.state.settings.dynamicAccountEnabled;
+  const currentSize = dynamicEnabled ? starting + realizedPnL : starting;
+
+  state.state.account.realizedPnL = realizedPnL;
+  state.state.account.currentSize = currentSize;
+  state.state.account.riskPercent = safeNumber(
+    state.state.settings.defaultRiskPercent,
+    1
+  );
+  state.state.account.maxPositionPercent = safeNumber(
+    state.state.settings.defaultMaxPositionPercent,
+    100
+  );
+}
+
+async function hydrateFromBackend() {
+  const [settingsRes, journalRes, metaRes] = await Promise.all([
+    api.get('/user/settings'),
+    api.get('/user/journal'),
+    api.get('/user/journal-meta'),
+  ]);
+
+  if (settingsRes?.settings) {
+    state.state.settings = {
+      ...state.state.settings,
+      startingAccountSize: safeNumber(
+        settingsRes.settings.starting_account_size,
+        10000
+      ),
+      defaultRiskPercent: safeNumber(
+        settingsRes.settings.default_risk_percent,
+        1
+      ),
+      defaultMaxPositionPercent: safeNumber(
+        settingsRes.settings.default_max_position_percent,
+        100
+      ),
+      dynamicAccountEnabled: !!settingsRes.settings.dynamic_account_enabled,
+      theme: settingsRes.settings.theme ?? 'dark',
+      sarMember: !!settingsRes.settings.sar_member,
+      wizardEnabled: !!settingsRes.settings.wizard_enabled,
+      celebrationsEnabled: settingsRes.settings.celebrations_enabled !== false,
+      soundEnabled: !!settingsRes.settings.sound_enabled,
+      compoundSettings: settingsRes.settings.compound_settings ?? {},
+    };
+  }
+
+  state.state.journal.entries = Array.isArray(journalRes?.entries)
+    ? journalRes.entries
+    : [];
+
+  state.state.journalMeta = metaRes?.meta || state.state.journalMeta;
+
+  deriveAccountFromState();
+}
+
 export const dataManager = {
-  // Set module references after initialization
   setModules(settings, calculator, journal, clearDataModal) {
     settingsModule = settings;
     calculatorModule = calculator;
@@ -20,151 +97,93 @@ export const dataManager = {
     clearDataModalModule = clearDataModal;
   },
 
-  exportAllData() {
-    const data = {
-      version: 1,
-      exportDate: new Date().toISOString(),
-      settings: state.settings,
-      journal: state.journal.entries,
-      account: {
-        realizedPnL: state.account.realizedPnL
-      }
-    };
+  async refreshUIFromBackend() {
+    await hydrateFromBackend();
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `trade-manager-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (typeof state.emit === 'function') {
+      state.emit('settingsChanged', state.state.settings);
+      state.emit('journalHydrated', state.state.journal.entries);
+      state.emit('accountChanged', state.state.account);
+    }
 
-    showToast('📥 Data exported successfully', 'success');
-    console.log(`Data exported: ${data.journal.length} trades`);
+    if (settingsModule?.loadAndApply) settingsModule.loadAndApply();
+    if (calculatorModule?.calculate) calculatorModule.calculate();
+    if (journalModule?.render) journalModule.render();
+  },
+
+  async exportAllData() {
+    try {
+      const data = await api.get('/user/export');
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `trade-manager-backup-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('📥 Data exported successfully', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showToast(error?.message || '❌ Failed to export data', 'error');
+    }
   },
 
   importData() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.json,application/json';
 
-    input.addEventListener('change', (e) => {
-      const file = e.target.files[0];
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target.result);
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
 
-          if (!data.settings || !data.journal) {
-            showToast('❌ Invalid backup file format', 'error');
-            return;
-          }
+        await api.post('/user/import', payload);
+        await this.refreshUIFromBackend();
 
-          // Restore settings
-          Object.assign(state.state.settings, data.settings);
-          state.saveSettings();
-
-          // Restore journal
-          state.state.journal.entries = data.journal || [];
-          state.saveJournal();
-
-          // Restore account P&L
-          if (data.account) {
-            state.state.account.realizedPnL = data.account.realizedPnL || 0;
-          }
-
-          // Recalculate current account size
-          if (state.settings.dynamicAccountEnabled) {
-            state.state.account.currentSize =
-              state.settings.startingAccountSize + state.account.realizedPnL;
-          } else {
-            state.state.account.currentSize = state.settings.startingAccountSize;
-          }
-
-          // Refresh UI
-          if (settingsModule) settingsModule.loadAndApply();
-          if (calculatorModule) calculatorModule.calculate();
-          if (journalModule) journalModule.render();
-
-          showToast(`📤 Imported ${data.journal.length} trades`, 'success');
-          console.log(`Data imported: ${data.journal.length} trades from backup`);
-        } catch (err) {
-          console.error('Import error:', err);
-          showToast('❌ Failed to import data', 'error');
-        }
-      };
-      reader.readAsText(file);
+        showToast('📤 Data imported successfully', 'success');
+      } catch (error) {
+        console.error('Import error:', error);
+        showToast(error?.message || '❌ Failed to import data', 'error');
+      }
     });
 
     input.click();
   },
 
   clearAllData() {
-    if (clearDataModalModule) clearDataModalModule.open();
+    if (clearDataModalModule?.open) {
+      clearDataModalModule.open();
+    }
   },
 
-  confirmClearAllData() {
-    // Clear localStorage
-    localStorage.removeItem('riskCalcSettings');
-    localStorage.removeItem('riskCalcJournal');
-    localStorage.removeItem('riskCalcJournalMeta');
+  async confirmClearAllData() {
+    try {
+      await api.delete('/user/data');
+      await this.refreshUIFromBackend();
 
-    // Reset state
-    const savedTheme = state.settings.theme; // Preserve theme
-    state.state.settings = {
-      startingAccountSize: 10000,
-      defaultRiskPercent: 1,
-      defaultMaxPositionPercent: 100,
-      dynamicAccountEnabled: true,
-      theme: savedTheme, // Keep theme
-      sarMember: true
-    };
-    state.state.account = {
-      currentSize: 10000,
-      realizedPnL: 0,
-      riskPercent: 1,
-      maxPositionPercent: 100
-    };
-    state.state.journal.entries = [];
+      if (clearDataModalModule?.close) {
+        clearDataModalModule.close();
+      }
 
-    // Reset achievements & progress
-    state.state.journalMeta = {
-      achievements: {
-        unlocked: [],
-        progress: {
-          totalTrades: 0,
-          currentStreak: 0,
-          longestStreak: 0,
-          lastTradeDate: null,
-          tradesWithNotes: 0,
-          tradesWithThesis: 0,
-          completeWizardCount: 0
-        }
-      },
-      settings: {
-        wizardEnabled: false,
-        celebrationsEnabled: true
-      },
-      schemaVersion: 1
-    };
-
-    // Save the reset state to localStorage so it persists
-    state.saveSettings();
-    state.saveJournal();
-    state.saveJournalMeta();
-
-    // Refresh UI
-    if (settingsModule) settingsModule.loadAndApply();
-    if (calculatorModule) calculatorModule.calculate();
-    if (journalModule) journalModule.render();
-
-    if (clearDataModalModule) clearDataModalModule.close();
-    showToast('🗑️ All data cleared', 'success');
-    console.log('All data cleared - reset to defaults');
+      showToast('🗑️ All data cleared', 'success');
+    } catch (error) {
+      console.error('Clear data error:', error);
+      showToast(error?.message || '❌ Failed to clear data', 'error');
+    }
   },
 
   exportCSV() {
@@ -174,24 +193,39 @@ export const dataManager = {
       return;
     }
 
-    const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Target', 'Shares', 'Position Size', 'Risk $', 'Risk %', 'Status', 'Exit Price', 'P&L', 'Notes'];
-    const rows = trades.map(t => [
-      new Date(t.timestamp).toLocaleDateString(),
+    const headers = [
+      'Date',
+      'Ticker',
+      'Entry',
+      'Stop',
+      'Target',
+      'Shares',
+      'Position Size',
+      'Risk $',
+      'Risk %',
+      'Status',
+      'Exit Price',
+      'P&L',
+      'Notes',
+    ];
+
+    const rows = trades.map((t) => [
+      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
       t.ticker,
-      t.entry,
-      t.stop,
-      t.target || '',
+      t.entry ?? t.entry_price,
+      t.stop ?? t.stop_price,
+      t.target ?? t.target_price ?? '',
       t.shares,
-      t.positionSize?.toFixed(2) || '',
-      t.riskDollars?.toFixed(2) || '',
-      t.riskPercent,
+      Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
+      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+      t.riskPercent ?? t.risk_percent ?? '',
       t.status,
-      t.exitPrice || '',
-      t.pnl?.toFixed(2) || '',
-      `"${(t.notes || '').replace(/"/g, '""')}"`
+      t.exitPrice ?? t.exit_price ?? '',
+      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+      `"${(t.notes || '').replace(/"/g, '""')}"`,
     ]);
 
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     this.downloadFile(csv, 'trades.csv', 'text/csv');
     showToast('📥 CSV exported', 'success');
   },
@@ -203,24 +237,39 @@ export const dataManager = {
       return;
     }
 
-    const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Target', 'Shares', 'Position Size', 'Risk $', 'Risk %', 'Status', 'Exit Price', 'P&L', 'Notes'];
-    const rows = trades.map(t => [
-      new Date(t.timestamp).toLocaleDateString(),
+    const headers = [
+      'Date',
+      'Ticker',
+      'Entry',
+      'Stop',
+      'Target',
+      'Shares',
+      'Position Size',
+      'Risk $',
+      'Risk %',
+      'Status',
+      'Exit Price',
+      'P&L',
+      'Notes',
+    ];
+
+    const rows = trades.map((t) => [
+      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
       t.ticker,
-      t.entry,
-      t.stop,
-      t.target || '',
+      t.entry ?? t.entry_price,
+      t.stop ?? t.stop_price,
+      t.target ?? t.target_price ?? '',
       t.shares,
-      t.positionSize?.toFixed(2) || '',
-      t.riskDollars?.toFixed(2) || '',
-      t.riskPercent,
+      Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
+      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+      t.riskPercent ?? t.risk_percent ?? '',
       t.status,
-      t.exitPrice || '',
-      t.pnl?.toFixed(2) || '',
-      (t.notes || '').replace(/\t/g, ' ')
+      t.exitPrice ?? t.exit_price ?? '',
+      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+      (t.notes || '').replace(/\t/g, ' '),
     ]);
 
-    const tsv = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+    const tsv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
     this.downloadFile(tsv, 'trades.tsv', 'text/tab-separated-values');
     showToast('📥 TSV exported', 'success');
   },
@@ -233,23 +282,28 @@ export const dataManager = {
     }
 
     const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
-    const rows = trades.map(t => [
-      new Date(t.timestamp).toLocaleDateString(),
+
+    const rows = trades.map((t) => [
+      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
       t.ticker,
-      t.entry,
-      t.stop,
+      t.entry ?? t.entry_price,
+      t.stop ?? t.stop_price,
       t.shares,
-      t.riskDollars?.toFixed(2) || '',
+      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
       t.status,
-      t.pnl?.toFixed(2) || ''
+      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
     ]);
 
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    navigator.clipboard.writeText(csv).then(() => {
-      showToast('📋 CSV copied to clipboard', 'success');
-    }).catch(() => {
-      showToast('❌ Failed to copy', 'error');
-    });
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+    navigator.clipboard
+      .writeText(csv)
+      .then(() => {
+        showToast('📋 CSV copied to clipboard', 'success');
+      })
+      .catch(() => {
+        showToast('❌ Failed to copy', 'error');
+      });
   },
 
   copyTSV() {
@@ -260,23 +314,28 @@ export const dataManager = {
     }
 
     const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
-    const rows = trades.map(t => [
-      new Date(t.timestamp).toLocaleDateString(),
+
+    const rows = trades.map((t) => [
+      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
       t.ticker,
-      t.entry,
-      t.stop,
+      t.entry ?? t.entry_price,
+      t.stop ?? t.stop_price,
       t.shares,
-      t.riskDollars?.toFixed(2) || '',
+      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
       t.status,
-      t.pnl?.toFixed(2) || ''
+      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
     ]);
 
-    const tsv = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
-    navigator.clipboard.writeText(tsv).then(() => {
-      showToast('📋 TSV copied to clipboard (paste into Excel)', 'success');
-    }).catch(() => {
-      showToast('❌ Failed to copy', 'error');
-    });
+    const tsv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
+
+    navigator.clipboard
+      .writeText(tsv)
+      .then(() => {
+        showToast('📋 TSV copied to clipboard (paste into Excel)', 'success');
+      })
+      .catch(() => {
+        showToast('❌ Failed to copy', 'error');
+      });
   },
 
   downloadFile(content, filename, mimeType) {
@@ -289,5 +348,5 @@ export const dataManager = {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
+  },
 };

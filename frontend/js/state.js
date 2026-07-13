@@ -2,23 +2,36 @@
  * State Management - Centralized app state with event system
  */
 
+import { api } from './api.js';
+
 class AppState {
   constructor() {
-    this.state = {
+    this.state = this.getDefaultState();
+    this.listeners = new Map();
+  }
+
+  getDefaultState() {
+    return {
       settings: {
         startingAccountSize: 10000,
+        currentAccountSize: 10000,
+        realizedPnL: 0,
         defaultRiskPercent: 1,
         defaultMaxPositionPercent: 100,
         dynamicAccountEnabled: true,
         theme: 'dark',
-        sarMember: true
+        sarMember: true,
+        wizardEnabled: true,
+        celebrationsEnabled: true,
+        soundEnabled: false,
+        compoundSettings: {},
       },
 
       account: {
         currentSize: 10000,
         realizedPnL: 0,
         riskPercent: 1,
-        maxPositionPercent: 100
+        maxPositionPercent: 100,
       },
 
       trade: {
@@ -26,7 +39,7 @@ class AppState {
         entry: null,
         stop: null,
         target: null,
-        notes: ''
+        notes: '',
       },
 
       results: {
@@ -41,18 +54,17 @@ class AppState {
         roi: null,
         riskReward: null,
         isLimited: false,
-        percentOfAccount: 0
+        percentOfAccount: 0,
       },
 
       journal: {
         entries: [],
-        filter: 'all'
+        filter: 'all',
       },
 
-      // Journal meta: achievements, streaks, wizard settings
       journalMeta: {
         achievements: {
-          unlocked: [], // { id, unlockedAt, notified }
+          unlocked: [],
           progress: {
             totalTrades: 0,
             currentStreak: 0,
@@ -60,28 +72,25 @@ class AppState {
             lastTradeDate: null,
             tradesWithNotes: 0,
             tradesWithThesis: 0,
-            completeWizardCount: 0
-          }
+            completeWizardCount: 0,
+          },
         },
         settings: {
-          wizardEnabled: true,  // Default ON to encourage ticker entry
-          celebrationsEnabled: true
+          wizardEnabled: true,
+          celebrationsEnabled: true,
         },
-        schemaVersion: 1
+        schemaVersion: 1,
       },
 
       ui: {
         scenariosExpanded: false,
         alertExpanded: false,
         settingsOpen: false,
-        journalOpen: false
-      }
+        journalOpen: false,
+      },
     };
-
-    this.listeners = new Map();
   }
 
-  // Event system
   on(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
@@ -100,80 +109,389 @@ class AppState {
 
   emit(event, data) {
     if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach(callback => callback(data));
+      this.listeners.get(event).forEach((callback) => callback(data));
     }
   }
 
-  // Settings methods
-  updateSettings(updates) {
-    Object.assign(this.state.settings, updates);
-    this.emit('settingsChanged', this.state.settings);
-    this.saveSettings();
+  applyTheme(theme) {
+    const resolvedTheme =
+      theme === 'system'
+        ? (
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches
+          )
+          ? 'dark'
+          : 'light'
+        : theme || 'dark';
+
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
   }
 
-  // Account methods
+  mapBackendSettings(row) {
+    if (!row) return;
+
+    this.state.settings = {
+      ...this.state.settings,
+      startingAccountSize: Number(row.starting_account_size ?? 10000),
+      currentAccountSize: Number(row.current_account_size ?? 10000),
+      realizedPnL: Number(row.realized_pnl ?? 0),
+      defaultRiskPercent: Number(row.default_risk_percent ?? 1),
+      defaultMaxPositionPercent: Number(row.default_max_position_percent ?? 100),
+      dynamicAccountEnabled: !!row.dynamic_account_enabled,
+      theme: row.theme ?? 'dark',
+      sarMember: !!row.sar_member,
+      wizardEnabled: !!row.wizard_enabled,
+      celebrationsEnabled: !!row.celebrations_enabled,
+      soundEnabled: !!row.sound_enabled,
+      compoundSettings: row.compound_settings ?? {},
+    };
+
+    this.state.account.realizedPnL = this.state.settings.realizedPnL;
+    this.state.account.currentSize = this.state.settings.currentAccountSize;
+    this.state.account.riskPercent = this.state.settings.defaultRiskPercent;
+    this.state.account.maxPositionPercent = this.state.settings.defaultMaxPositionPercent;
+  }
+
+mapBackendJournal(entries = []) {
+  this.state.journal.entries = entries.map((entry) => ({
+    ...entry,
+    entry: entry.entry ?? entry.entry_price,
+    stop: entry.stop ?? entry.stop_price,
+    target: entry.target ?? entry.target_price,
+    originalStop: entry.originalStop ?? entry.original_stop,
+    currentStop: entry.currentStop ?? entry.current_stop,
+    originalShares: entry.originalShares ?? entry.original_shares,
+    remainingShares: entry.remainingShares ?? entry.remaining_shares,
+    exitPrice: entry.exitPrice ?? entry.exit_price,
+    exitDate: entry.exitDate ?? entry.exit_date,
+    positionSize: entry.positionSize ?? entry.position_size,
+    riskDollars: entry.riskDollars ?? entry.risk_dollars,
+    riskPercent: entry.riskPercent ?? entry.risk_percent,
+    stopDistance: entry.stopDistance ?? entry.stop_distance,
+    totalRealizedPnL: entry.totalRealizedPnL ?? entry.total_realized_pnl ?? 0,
+    wizardComplete: entry.wizardComplete ?? entry.wizard_complete ?? false,
+    wizardSkipped: entry.wizardSkipped ?? entry.wizard_skipped ?? [],
+    trimHistory: entry.trimHistory ?? entry.trim_history ?? [],
+    timestamp: entry.timestamp ?? entry.opened_at ?? entry.created_at,
+  }));
+
+  this.recalculateAccountFromJournal({ emitEvent: false });
+}
+
+  mapBackendJournalMeta(meta) {
+    if (!meta) return;
+
+    const progress = meta.achievements?.progress || {};
+    const unlocked = meta.achievements?.unlocked || [];
+
+    this.state.journalMeta = {
+      achievements: {
+        unlocked: unlocked.map((a) => ({
+          id: a.id || a.achievement_key,
+          achievementKey: a.achievement_key || a.id,
+          unlockedAt: a.unlockedAt || a.unlocked_at,
+          notified: !!a.notified,
+        })),
+        progress: {
+          totalTrades: Number(progress.total_trades ?? progress.totalTrades ?? 0),
+          currentStreak: Number(progress.current_streak ?? progress.currentStreak ?? 0),
+          longestStreak: Number(progress.longest_streak ?? progress.longestStreak ?? 0),
+          lastTradeDate: progress.last_trade_date ?? progress.lastTradeDate ?? null,
+          tradesWithNotes: Number(progress.trades_with_notes ?? progress.tradesWithNotes ?? 0),
+          tradesWithThesis: Number(progress.trades_with_thesis ?? progress.tradesWithThesis ?? 0),
+          completeWizardCount: Number(
+            progress.complete_wizard_count ?? progress.completeWizardCount ?? 0
+          ),
+        },
+      },
+      settings: {
+        wizardEnabled: this.state.settings.wizardEnabled,
+        celebrationsEnabled: this.state.settings.celebrationsEnabled,
+      },
+      schemaVersion: meta.schemaVersion ?? progress.schema_version ?? 1,
+    };
+  }
+
+  async hydrate() {
+  const [settingsRes, journalRes, metaRes] = await Promise.allSettled([
+    api.get('/user/settings'),
+    api.get('/user/journal'),
+    api.get('/user/journal-meta'),
+  ]);
+
+  if (settingsRes.status === 'fulfilled') {
+    this.mapBackendSettings(settingsRes.value?.settings);
+  }
+
+  if (journalRes.status === 'fulfilled') {
+    this.mapBackendJournal(journalRes.value?.entries || []);
+  }
+
+  if (metaRes.status === 'fulfilled') {
+    this.mapBackendJournalMeta(metaRes.value?.meta);
+  }
+
+  this.applyTheme(this.state.settings.theme);
+
+  this.emit('accountChanged', { old: null, new: this.state.account });
+
+}
+
+  async updateSettings(updates) {
+    const payload = {
+      startingAccountSize: updates.startingAccountSize ?? this.state.settings.startingAccountSize,
+      currentAccountSize: updates.currentAccountSize ?? this.state.account.currentSize,
+      realizedPnL: updates.realizedPnL ?? this.state.account.realizedPnL,
+      defaultRiskPercent: updates.defaultRiskPercent ?? this.state.settings.defaultRiskPercent,
+      defaultMaxPositionPercent:
+        updates.defaultMaxPositionPercent ?? this.state.settings.defaultMaxPositionPercent,
+      dynamicAccountEnabled:
+        updates.dynamicAccountEnabled ?? this.state.settings.dynamicAccountEnabled,
+      theme: updates.theme ?? this.state.settings.theme,
+      sarMember: updates.sarMember ?? this.state.settings.sarMember,
+      wizardEnabled: updates.wizardEnabled ?? this.state.settings.wizardEnabled,
+      celebrationsEnabled:
+        updates.celebrationsEnabled ?? this.state.settings.celebrationsEnabled,
+      soundEnabled: updates.soundEnabled ?? this.state.settings.soundEnabled,
+      compoundSettings: updates.compoundSettings ?? this.state.settings.compoundSettings,
+    };
+
+    const oldAccount = { ...this.state.account };
+
+    const result = await api.patch('/user/settings', payload);
+    this.mapBackendSettings(result.settings);
+
+    this.applyTheme(this.state.settings.theme);
+
+    this.emit('settingsChanged', this.state.settings);
+    this.emit('accountChanged', { old: oldAccount, new: this.state.account });
+
+    return this.state.settings;
+  }
+
   updateAccount(updates) {
     const oldAccount = { ...this.state.account };
     Object.assign(this.state.account, updates);
     this.emit('accountChanged', { old: oldAccount, new: this.state.account });
   }
 
-  // Trade methods
   updateTrade(updates) {
     Object.assign(this.state.trade, updates);
     this.emit('tradeChanged', this.state.trade);
   }
 
-  // Results methods
   updateResults(results) {
-    this.state.results = { ...this.state.results, ...results };
-    this.emit('resultsChanged', this.state.results);
-  }
+  this.state.results = { ...this.state.results, ...results };
+  this.emit('resultsChanged', this.state.results);
+  this.emit('resultsRendered', this.state.results);
+}
 
-  // Journal methods
-  addJournalEntry(entry) {
+  async addJournalEntry(entry) {
+    const result = await api.post('/user/journal', entry);
     const newEntry = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      ...entry
+      ...result.entry,
+      entry: result.entry.entry ?? result.entry.entry_price,
+      stop: result.entry.stop ?? result.entry.stop_price,
+      target: result.entry.target ?? result.entry.target_price,
+      exitPrice: result.entry.exitPrice ?? result.entry.exit_price,
+      exitDate: result.entry.exitDate ?? result.entry.exit_date,
+      positionSize: result.entry.positionSize ?? result.entry.position_size,
+      riskDollars: result.entry.riskDollars ?? result.entry.risk_dollars,
+      riskPercent: result.entry.riskPercent ?? result.entry.risk_percent,
+      stopDistance: result.entry.stopDistance ?? result.entry.stop_distance,
+      totalRealizedPnL: result.entry.totalRealizedPnL ?? result.entry.total_realized_pnl ?? 0,
+      wizardComplete: result.entry.wizardComplete ?? result.entry.wizard_complete ?? false,
+      wizardSkipped: result.entry.wizardSkipped ?? result.entry.wizard_skipped ?? [],
+      trimHistory: result.entry.trimHistory ?? result.entry.trim_history ?? [],
+      timestamp: result.entry.timestamp ?? result.entry.opened_at ?? result.entry.created_at,
     };
+
     this.state.journal.entries.unshift(newEntry);
-    this.saveJournal();
+    this.recalculateAccountFromJournal();
     this.emit('journalEntryAdded', newEntry);
     return newEntry;
   }
 
-  updateJournalEntry(id, updates) {
-    const entry = this.state.journal.entries.find(e => e.id === id);
-    if (entry) {
-      Object.assign(entry, updates);
-      this.saveJournal();
-      this.emit('journalEntryUpdated', entry);
-    }
-    return entry;
-  }
+async updateJournalEntry(id, updates) {
+  const result = await api.patch(`/user/journal/${id}`, updates);
+  const updated = result?.entry ?? result ?? {};
 
-  deleteJournalEntry(id) {
-    const index = this.state.journal.entries.findIndex(e => e.id === id);
+  const index = this.state.journal.entries.findIndex((e) => String(e.id) === String(id));
+  if (index === -1) return null;
+
+  const existing = this.state.journal.entries[index];
+
+  const merged = {
+    ...existing,
+    ...updated,
+
+    entry: updated.entry ?? updated.entry_price ?? existing.entry ?? existing.entry_price ?? null,
+    stop: updated.stop ?? updated.stop_price ?? existing.stop ?? existing.stop_price ?? null,
+    target: updated.target ?? updated.target_price ?? existing.target ?? existing.target_price ?? null,
+
+    originalStop:
+      updated.originalStop ?? updated.original_stop ??
+      existing.originalStop ?? existing.original_stop ?? null,
+
+    currentStop:
+      updated.currentStop ?? updated.current_stop ??
+      updated.stop ?? updated.stop_price ??
+      existing.currentStop ?? existing.current_stop ??
+      existing.stop ?? existing.stop_price ?? null,
+
+    shares:
+      updated.shares ?? existing.shares ?? 0,
+
+    originalShares:
+      updated.originalShares ?? updated.original_shares ??
+      existing.originalShares ?? existing.original_shares ??
+      updated.shares ?? existing.shares ?? 0,
+
+    remainingShares:
+      updated.remainingShares ?? updated.remaining_shares ??
+      existing.remainingShares ?? existing.remaining_shares ??
+      updated.shares ?? existing.shares ?? 0,
+
+    exitPrice:
+      updated.exitPrice ?? updated.exit_price ??
+      existing.exitPrice ?? existing.exit_price ?? null,
+
+    exitDate:
+      updated.exitDate ?? updated.exit_date ??
+      existing.exitDate ?? existing.exit_date ?? null,
+
+    positionSize:
+      updated.positionSize ?? updated.position_size ??
+      existing.positionSize ?? existing.position_size ?? 0,
+
+    riskDollars:
+      updated.riskDollars ?? updated.risk_dollars ??
+      existing.riskDollars ?? existing.risk_dollars ?? 0,
+
+    riskPercent:
+      updated.riskPercent ?? updated.risk_percent ??
+      existing.riskPercent ?? existing.risk_percent ?? 0,
+
+    stopDistance:
+      updated.stopDistance ?? updated.stop_distance ??
+      existing.stopDistance ?? existing.stop_distance ?? 0,
+
+    totalRealizedPnL:
+      updated.totalRealizedPnL ?? updated.total_realized_pnl ??
+      existing.totalRealizedPnL ?? existing.total_realized_pnl ?? 0,
+
+    wizardComplete:
+      updated.wizardComplete ?? updated.wizard_complete ??
+      existing.wizardComplete ?? existing.wizard_complete ?? false,
+
+    wizardSkipped:
+      updated.wizardSkipped ?? updated.wizard_skipped ??
+      existing.wizardSkipped ?? existing.wizard_skipped ?? [],
+
+    trimHistory:
+      updated.trimHistory ?? updated.trim_history ??
+      existing.trimHistory ?? existing.trim_history ??
+      existing.exits ?? [],
+
+    trim_history:
+      updated.trim_history ?? updated.trimHistory ??
+      existing.trim_history ?? existing.trimHistory ??
+      existing.exits ?? [],
+
+    exits:
+      updated.exits ??
+      existing.exits ??
+      existing.trimHistory ??
+      existing.trim_history ??
+      [],
+
+    timestamp:
+      updated.timestamp ?? updated.opened_at ?? updated.created_at ??
+      existing.timestamp ?? existing.opened_at ?? existing.created_at ?? null,
+  };
+
+  this.state.journal.entries[index] = merged;
+
+  this.recalculateAccountFromJournal();
+  this.emit('journalEntryUpdated', merged);
+  return merged;
+}
+  async deleteJournalEntry(id) {
+    await api.delete(`/user/journal/${id}`);
+
+    const index = this.state.journal.entries.findIndex((e) => String(e.id) === String(id));
     if (index > -1) {
       const deleted = this.state.journal.entries.splice(index, 1)[0];
-      this.saveJournal();
+      this.recalculateAccountFromJournal();
       this.emit('journalEntryDeleted', deleted);
       return deleted;
     }
+
     return null;
   }
+async addJournalExit(id, payload) {
+  const normalizedPayload = {
+    sharesClosed: Number(payload.sharesClosed ?? payload.shares ?? 0),
+    exitPrice: Number(payload.exitPrice ?? 0),
+    exitDate: payload.exitDate ?? new Date().toISOString(),
+    rMultiple: Number(payload.rMultiple ?? 0),
+    pnl: Number(payload.pnl ?? 0),
+    percentTrimmed: Number(payload.percentTrimmed ?? 0),
+    exitType: payload.exitType ?? 'trim',
+    newStop: payload.newStop ?? null,
+  };
+
+  const result = await api.post(`/user/journal/${id}/exits`, normalizedPayload);
+
+  const index = this.state.journal.entries.findIndex((e) => String(e.id) === String(id));
+  if (index > -1) {
+    const existing = this.state.journal.entries[index];
+    const updatedEntry = result.entry;
+    const createdExit = result.exit;
+
+    const trimHistory = Array.isArray(existing.trimHistory) ? [...existing.trimHistory] : [];
+    trimHistory.push(createdExit);
+
+    this.state.journal.entries[index] = {
+  ...existing,
+  ...updatedEntry,
+  entry: updatedEntry.entry ?? updatedEntry.entry_price,
+  stop: updatedEntry.stop ?? updatedEntry.stop_price,
+  target: updatedEntry.target ?? updatedEntry.target_price,
+  originalStop: updatedEntry.originalStop ?? updatedEntry.original_stop,
+  currentStop: updatedEntry.currentStop ?? updatedEntry.current_stop,
+  originalShares: updatedEntry.originalShares ?? updatedEntry.original_shares,
+  remainingShares: updatedEntry.remainingShares ?? updatedEntry.remaining_shares,
+  exitPrice: updatedEntry.exitPrice ?? updatedEntry.exit_price,
+  exitDate: updatedEntry.exitDate ?? updatedEntry.exit_date,
+  positionSize: updatedEntry.positionSize ?? updatedEntry.position_size,
+  riskDollars: updatedEntry.riskDollars ?? updatedEntry.risk_dollars,
+  riskPercent: updatedEntry.riskPercent ?? updatedEntry.risk_percent,
+  stopDistance: updatedEntry.stopDistance ?? updatedEntry.stop_distance,
+  totalRealizedPnL: updatedEntry.totalRealizedPnL ?? updatedEntry.total_realized_pnl ?? 0,
+  wizardComplete: updatedEntry.wizardComplete ?? updatedEntry.wizard_complete ?? false,
+  wizardSkipped: updatedEntry.wizardSkipped ?? updatedEntry.wizard_skipped ?? [],
+  trimHistory,
+  timestamp: updatedEntry.timestamp ?? updatedEntry.opened_at ?? updatedEntry.created_at,
+};
+
+    this.recalculateAccountFromJournal();
+    this.emit('journalEntryUpdated', this.state.journal.entries[index]);
+    return this.state.journal.entries[index];
+  }
+
+  return null;
+}
 
   getOpenTrades() {
-    return this.state.journal.entries.filter(e => e.status === 'open');
+    return this.state.journal.entries.filter((e) => e.status === 'open' || e.status === 'trimmed');
   }
 
   getFilteredEntries(filter = 'all') {
     if (filter === 'all') return this.state.journal.entries;
-    return this.state.journal.entries.filter(e => e.status === filter);
+    return this.state.journal.entries.filter((e) => e.status === filter);
   }
 
-  // UI state methods
   toggleUI(key) {
     this.state.ui[key] = !this.state.ui[key];
     this.emit('uiChanged', { key, value: this.state.ui[key] });
@@ -184,94 +502,27 @@ class AppState {
     this.emit('uiChanged', { key, value });
   }
 
-  // Persistence
-  saveSettings() {
-    try {
-      localStorage.setItem('riskCalcSettings', JSON.stringify(this.state.settings));
-    } catch (e) {
-      console.error('Failed to save settings:', e);
-    }
-  }
-
-  loadSettings() {
-    try {
-      const saved = localStorage.getItem('riskCalcSettings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Replace settings object entirely to ensure all properties are reset
-        this.state.settings = {
-          startingAccountSize: parsed.startingAccountSize ?? 10000,
-          defaultRiskPercent: parsed.defaultRiskPercent ?? 1,
-          defaultMaxPositionPercent: parsed.defaultMaxPositionPercent ?? 100,
-          dynamicAccountEnabled: parsed.dynamicAccountEnabled ?? true,
-          theme: parsed.theme ?? 'dark',
-          sarMember: parsed.sarMember ?? true
-        };
-        this.state.account.currentSize = this.state.settings.startingAccountSize;
-        this.state.account.riskPercent = this.state.settings.defaultRiskPercent;
-        this.state.account.maxPositionPercent = this.state.settings.defaultMaxPositionPercent;
-      }
-    } catch (e) {
-      console.error('Failed to load settings:', e);
-    }
-  }
-
-  saveJournal() {
-    try {
-      localStorage.setItem('riskCalcJournal', JSON.stringify(this.state.journal.entries));
-    } catch (e) {
-      console.error('Failed to save journal:', e);
-    }
-  }
-
-  loadJournal() {
-    try {
-      const saved = localStorage.getItem('riskCalcJournal');
-      if (saved) {
-        this.state.journal.entries = JSON.parse(saved);
-
-        // Calculate realized P&L from closed and trimmed trades
-        // Use totalRealizedPnL for trades with trim history, fallback to pnl for legacy
-        this.state.account.realizedPnL = this.state.journal.entries
-          .filter(t => (t.status === 'closed' || t.status === 'trimmed'))
-          .reduce((sum, t) => sum + (t.totalRealizedPnL ?? t.pnl ?? 0), 0);
-
-        if (this.state.settings.dynamicAccountEnabled) {
-          this.state.account.currentSize =
-            this.state.settings.startingAccountSize + this.state.account.realizedPnL;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load journal:', e);
-    }
-  }
-
-  // JournalMeta methods
   updateJournalMeta(updates) {
     Object.assign(this.state.journalMeta, updates);
-    this.saveJournalMeta();
     this.emit('journalMetaChanged', this.state.journalMeta);
   }
 
   updateJournalMetaSettings(updates) {
     Object.assign(this.state.journalMeta.settings, updates);
-    this.saveJournalMeta();
     this.emit('journalMetaSettingsChanged', this.state.journalMeta.settings);
   }
 
   updateProgress(key, value) {
     this.state.journalMeta.achievements.progress[key] = value;
-    this.saveJournalMeta();
+    this.emit('journalMetaChanged', this.state.journalMeta);
   }
 
-  // Streak calculation (calendar days)
   updateStreak() {
     const progress = this.state.journalMeta.achievements.progress;
     const today = new Date().toDateString();
     const lastDate = progress.lastTradeDate ? new Date(progress.lastTradeDate).toDateString() : null;
 
     if (lastDate === today) {
-      // Same day, don't increment
       return progress.currentStreak;
     }
 
@@ -281,39 +532,33 @@ class AppState {
       );
 
       if (daysDiff === 1) {
-        // Consecutive day
         progress.currentStreak += 1;
       } else {
-        // Streak broken, reset to 1
         progress.currentStreak = 1;
       }
     } else {
-      // First trade ever
       progress.currentStreak = 1;
     }
 
-    // Update longest streak
     if (progress.currentStreak > progress.longestStreak) {
       progress.longestStreak = progress.currentStreak;
     }
 
     progress.lastTradeDate = new Date().toISOString();
-    this.saveJournalMeta();
     this.emit('streakUpdated', progress.currentStreak);
     return progress.currentStreak;
   }
 
-  // Achievement methods
   unlockAchievement(id) {
     const unlocked = this.state.journalMeta.achievements.unlocked;
-    if (!unlocked.find(a => a.id === id)) {
+    if (!unlocked.find((a) => a.id === id || a.achievementKey === id)) {
       const achievement = {
         id,
+        achievementKey: id,
         unlockedAt: new Date().toISOString(),
-        notified: false
+        notified: false,
       };
       unlocked.push(achievement);
-      this.saveJournalMeta();
       this.emit('achievementUnlocked', achievement);
       return achievement;
     }
@@ -321,74 +566,128 @@ class AppState {
   }
 
   isAchievementUnlocked(id) {
-    return this.state.journalMeta.achievements.unlocked.some(a => a.id === id);
+    return this.state.journalMeta.achievements.unlocked.some(
+      (a) => a.id === id || a.achievementKey === id
+    );
   }
 
   markAchievementNotified(id) {
-    const achievement = this.state.journalMeta.achievements.unlocked.find(a => a.id === id);
+    const achievement = this.state.journalMeta.achievements.unlocked.find(
+      (a) => a.id === id || a.achievementKey === id
+    );
     if (achievement) {
       achievement.notified = true;
-      this.saveJournalMeta();
     }
   }
 
-  // Migration helper for existing journal entries
   migrateJournalEntries() {
     let migrated = false;
-    this.state.journal.entries = this.state.journal.entries.map(entry => {
-      if (!entry.hasOwnProperty('thesis')) {
+    this.state.journal.entries = this.state.journal.entries.map((entry) => {
+      if (!Object.prototype.hasOwnProperty.call(entry, 'thesis')) {
         migrated = true;
         return {
           ...entry,
           thesis: null,
           wizardComplete: false,
-          wizardSkipped: []
+          wizardSkipped: [],
         };
       }
       return entry;
     });
+
     if (migrated) {
-      this.saveJournal();
-      console.log('Migrated journal entries to new schema');
+      console.log('Migrated journal entries in memory');
     }
   }
 
-  // JournalMeta persistence
-  saveJournalMeta() {
-    try {
-      localStorage.setItem('riskCalcJournalMeta', JSON.stringify(this.state.journalMeta));
-    } catch (e) {
-      console.error('Failed to save journal meta:', e);
-    }
+
+  getDashboardSettingsSummary() {
+  const acc = Number(this.state.account.currentSize || 0);
+  const max = Number(this.state.settings.defaultMaxPositionPercent || 0);
+  return `$${Math.round(acc).toLocaleString()} acc. · Max ${max}%`;
+}
+
+getOpenRiskSummary() {
+  const openTrades = this.getOpenTrades();
+
+  const openRiskDollars = openTrades.reduce((sum, trade) => {
+    const shares = Number(trade.remainingShares ?? trade.shares ?? 0);
+    const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+    const activeStop = Number(trade.currentStop ?? trade.stop ?? trade.stop_price ?? 0);
+    const grossRisk = shares * Math.max(0, entry - activeStop);
+    const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0);
+    const isTrimmed = trade.status === 'trimmed';
+
+    const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
+    return sum + netRisk;
+  }, 0);
+
+  const accountSize = Number(this.state.account.currentSize || 0);
+  const openRiskPercent = accountSize > 0 ? (openRiskDollars / accountSize) * 100 : 0;
+
+  let level = 'LOW';
+  if (openRiskPercent >= 2) level = 'HIGH';
+  else if (openRiskPercent >= 0.5) level = 'MEDIUM';
+
+  return {
+    dollars: openRiskDollars,
+    percent: openRiskPercent,
+    level,
+    count: openTrades.length,
+  };
+}
+
+getActiveTradesForDashboard() {
+  return this.getOpenTrades().map((trade) => ({
+    id: trade.id,
+    ticker: trade.ticker || '—',
+    entry: Number(trade.entry ?? trade.entry_price ?? 0),
+    stop: Number(trade.stop ?? trade.stop_price ?? 0),
+    target: Number(trade.target ?? trade.target_price ?? 0),
+    shares: Number(trade.shares ?? 0),
+    riskDollars: Number(trade.riskDollars ?? trade.risk_dollars ?? 0),
+    status: trade.status || 'open',
+    openedAt: trade.opened_at || trade.created_at || trade.timestamp || null,
+  }));
+}
+
+ recalculateAccountFromJournal({ emitEvent = true } = {}) {
+  const oldAccount = { ...this.state.account };
+
+  const realizedPnL = this.state.journal.entries
+    .filter((t) => t.status === 'closed' || t.status === 'trimmed')
+    .reduce((sum, t) => sum + Number(t.totalRealizedPnL ?? t.pnl ?? 0), 0);
+
+  this.state.account.realizedPnL = realizedPnL;
+
+  if (this.state.settings.dynamicAccountEnabled) {
+    this.state.account.currentSize =
+      Number(this.state.settings.startingAccountSize) + realizedPnL;
+  } else {
+    this.state.account.currentSize = Number(this.state.settings.startingAccountSize);
   }
 
-  loadJournalMeta() {
-    try {
-      const saved = localStorage.getItem('riskCalcJournalMeta');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Deep merge to preserve defaults for missing keys
-        this.state.journalMeta = {
-          achievements: {
-            unlocked: parsed.achievements?.unlocked || [],
-            progress: {
-              ...this.state.journalMeta.achievements.progress,
-              ...(parsed.achievements?.progress || {})
-            }
-          },
-          settings: {
-            ...this.state.journalMeta.settings,
-            ...(parsed.settings || {})
-          },
-          schemaVersion: parsed.schemaVersion || 1
-        };
-      }
-    } catch (e) {
-      console.error('Failed to load journal meta:', e);
-    }
+  this.state.settings.currentAccountSize = this.state.account.currentSize;
+  this.state.settings.realizedPnL = this.state.account.realizedPnL;
+
+  if (emitEvent) {
+    this.emit('accountChanged', { old: oldAccount, new: this.state.account });
+  }
+}
+
+  reset() {
+    this.state = this.getDefaultState();
+    this.applyTheme(this.state.settings.theme);
+
+    this.emit('settingsChanged', this.state.settings);
+    this.emit('accountChanged', { old: null, new: this.state.account });
+    this.emit('tradeChanged', this.state.trade);
+    this.emit('resultsChanged', this.state.results);
+    this.emit('journalHydrated', this.state.journal.entries);
+    this.emit('journalMetaChanged', this.state.journalMeta);
+    this.emit('uiChanged', this.state.ui);
   }
 
-  // Getters
   get settings() { return this.state.settings; }
   get account() { return this.state.account; }
   get trade() { return this.state.trade; }
@@ -398,6 +697,5 @@ class AppState {
   get ui() { return this.state.ui; }
 }
 
-// Export singleton instance
 export const state = new AppState();
 export { AppState };

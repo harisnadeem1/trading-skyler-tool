@@ -33,18 +33,22 @@ class CompoundView {
     this.updatePresetStates();
 
     // Listen for account size changes
-    state.on('accountSizeChanged', (size) => {
-      // Only update if user hasn't manually changed the value
-      if (this.startingCapital === state.account.currentSize ||
-          this.startingCapital === 10000) {
-        this.startingCapital = size;
-        if (this.elements.input) {
-          this.elements.input.value = size.toLocaleString();
-        }
-        this.updatePresetStates();
-        this.render();
-      }
-    });
+    state.on('accountChanged', ({ new: newAccount }) => {
+  const nextSize = Number(newAccount?.currentSize ?? 0);
+  if (!nextSize) return;
+
+  if (
+    this.startingCapital === 10000 ||
+    this.startingCapital === Number(state.settings.currentAccountSize ?? 0)
+  ) {
+    this.startingCapital = nextSize;
+    if (this.elements.input) {
+      this.elements.input.value = nextSize.toLocaleString();
+    }
+    this.updatePresetStates();
+    this.render();
+  }
+});
 
     this.render();
   }

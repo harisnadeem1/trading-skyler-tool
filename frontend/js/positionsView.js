@@ -136,9 +136,11 @@ class PositionsView {
 
     // Calculate NET risk (remaining risk minus realized profit for trimmed trades)
     const totalRisk = activeTrades.reduce((sum, t) => {
-      const shares = t.remainingShares ?? t.shares;
-      const riskPerShare = t.entry - t.stop;
-      const grossRisk = shares * riskPerShare;
+      const shares = Number(t.remainingShares ?? t.shares ?? 0);
+const activeStop = Number(t.currentStop ?? t.stop ?? 0);
+const entry = Number(t.entry ?? 0);
+const riskPerShare = Math.max(0, entry - activeStop);
+const grossRisk = shares * riskPerShare;
 
       // For trimmed trades, subtract realized profit (net risk can't go below 0)
       const realizedPnL = t.totalRealizedPnL || 0;
@@ -160,6 +162,7 @@ class PositionsView {
       level = 'MEDIUM';
       levelClass = 'risk-medium';
     }
+    console.log(level,riskPercent);
 
     if (this.elements.openRisk) {
       this.elements.openRisk.textContent = `${formatCurrency(totalRisk)} (${formatPercent(riskPercent)})`;
@@ -175,11 +178,13 @@ class PositionsView {
     if (!this.elements.grid) return;
 
     this.elements.grid.innerHTML = positions.map(trade => {
-      const shares = trade.remainingShares ?? trade.shares;
-      const riskPerShare = trade.entry - trade.stop;
-      const grossRisk = shares * riskPerShare;
-      const isTrimmed = trade.status === 'trimmed';
-      const realizedPnL = trade.totalRealizedPnL || 0;
+      const shares = Number(trade.remainingShares ?? trade.shares ?? 0);
+const originalShares = Number(trade.originalShares ?? trade.shares ?? 0);
+const entry = Number(trade.entry ?? 0);
+const activeStop = Number(trade.currentStop ?? trade.stop ?? 0);
+const grossRisk = shares * Math.max(0, entry - activeStop);
+const isTrimmed = trade.status === 'trimmed';
+const realizedPnL = Number(trade.totalRealizedPnL ?? 0);
 
       // For trimmed trades, calculate NET risk (remaining risk - realized profit)
       const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
@@ -210,7 +215,7 @@ class PositionsView {
           <div class="position-card__details">
             <div class="position-card__detail">
               <span class="position-card__detail-label">Shares</span>
-              <span class="position-card__detail-value">${shares}${isTrimmed ? ` / ${trade.originalShares}` : ''}</span>
+              <span class="position-card__detail-value">${shares}${isTrimmed ? ` / ${originalShares}` : ''}</span>
             </div>
             <div class="position-card__detail">
               <span class="position-card__detail-label">Entry</span>
@@ -218,7 +223,7 @@ class PositionsView {
             </div>
             <div class="position-card__detail">
               <span class="position-card__detail-label">Stop</span>
-              <span class="position-card__detail-value">${formatCurrency(trade.stop)}</span>
+              <span class="position-card__detail-value">${formatCurrency(activeStop)}</span>
             </div>
             ${trade.target ? `
             <div class="position-card__detail">
@@ -258,24 +263,22 @@ class PositionsView {
   }
 
   bindCardActions() {
-    // Close/Trim buttons
-    this.elements.grid.querySelectorAll('[data-action="close"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.target.dataset.id);
-        trimModal.open(id);
-      });
+  this.elements.grid.querySelectorAll('[data-action="close"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      trimModal.open(id);
     });
+  });
 
-    // Delete buttons
-    this.elements.grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.target.dataset.id);
-        if (confirm('Delete this trade?')) {
-          state.deleteJournalEntry(id);
-        }
-      });
+  this.elements.grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      if (confirm('Delete this trade?')) {
+        state.deleteJournalEntry(id);
+      }
     });
-  }
+  });
+}
 
   showEmptyState() {
     if (this.elements.grid) {

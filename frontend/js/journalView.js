@@ -3,7 +3,7 @@
  */
 
 import { state } from './state.js';
-import { formatCurrency, formatPercent, formatDate } from './utils.js';
+import { formatCurrency, formatDate } from './utils.js';
 import { trimModal } from './trimModal.js';
 import { viewManager } from './viewManager.js';
 import { dataManager } from './dataManager.js';
@@ -14,7 +14,6 @@ class JournalView {
     this.currentFilter = 'all';
     this.sortColumn = 'date';
     this.sortDirection = 'desc';
-    this.expandedRows = new Set();
   }
 
   init() {
@@ -22,12 +21,18 @@ class JournalView {
     this.bindEvents();
     this.render();
 
-    // Listen for journal changes
     state.on('journalEntryAdded', () => this.render());
-    state.on('journalEntryUpdated', () => this.render());
-    state.on('journalEntryDeleted', () => this.render());
 
-    // Listen for view changes
+    state.on('journalEntryUpdated', () => {
+      this.render();
+      this.refreshOpenModal();
+    });
+
+    state.on('journalEntryDeleted', () => {
+      this.render();
+      this.closeTradeModal();
+    });
+
     state.on('viewChanged', (data) => {
       if (data.to === 'journal') this.render();
     });
@@ -35,10 +40,8 @@ class JournalView {
 
   cacheElements() {
     this.elements = {
-      // Header
       journalCount: document.getElementById('journalCount'),
 
-      // Summary bar
       totalPnL: document.getElementById('journalTotalPnL'),
       winRate: document.getElementById('journalWinRate'),
       wins: document.getElementById('journalWins'),
@@ -46,51 +49,69 @@ class JournalView {
       avgWin: document.getElementById('journalAvgWin'),
       avgLoss: document.getElementById('journalAvgLoss'),
 
-      // Table
       tableBody: document.getElementById('journalTableBody'),
       tableContainer: document.querySelector('.journal-table-container'),
 
-      // Empty state
       empty: document.getElementById('journalEmpty'),
       goToDashboard: document.getElementById('journalGoToDashboard'),
 
-      // Export buttons
       exportCSV: document.getElementById('journalExportCSV'),
       exportTSV: document.getElementById('journalExportTSV'),
 
-      // Filter buttons
+      tradeModal: document.getElementById('journalTradeModal'),
+      tradeModalBody: document.getElementById('journalTradeModalBody'),
+      tradeModalClose: document.getElementById('journalTradeModalClose'),
+
       filterButtons: document.querySelectorAll('.journal-view .filter-btn')
     };
   }
 
   bindEvents() {
-    // Go to dashboard button
     if (this.elements.goToDashboard) {
       this.elements.goToDashboard.addEventListener('click', () => {
         viewManager.navigateTo('dashboard');
       });
     }
 
-    // Filter buttons
+    if (this.elements.tradeModalClose && this.elements.tradeModal) {
+      this.elements.tradeModalClose.addEventListener('click', () => {
+        this.closeTradeModal();
+      });
+    }
+
+    if (this.elements.tradeModal) {
+      this.elements.tradeModal.addEventListener('click', (e) => {
+        const rect = this.elements.tradeModal.getBoundingClientRect();
+        const clickedBackdrop =
+          e.clientX < rect.left ||
+          e.clientX > rect.right ||
+          e.clientY < rect.top ||
+          e.clientY > rect.bottom;
+
+        if (clickedBackdrop) {
+          this.closeTradeModal();
+        }
+      });
+    }
+
     this.elements.filterButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         this.setFilter(e.target.dataset.filter);
       });
     });
 
-    // Export buttons
     if (this.elements.exportCSV) {
       this.elements.exportCSV.addEventListener('click', () => {
         dataManager.exportCSV();
       });
     }
+
     if (this.elements.exportTSV) {
       this.elements.exportTSV.addEventListener('click', () => {
         dataManager.exportTSV();
       });
     }
 
-    // Table header click for sorting (delegated)
     const table = document.getElementById('journalTable');
     if (table) {
       table.querySelector('thead').addEventListener('click', (e) => {
@@ -105,7 +126,6 @@ class JournalView {
   setFilter(filter) {
     this.currentFilter = filter;
 
-    // Update active button state
     this.elements.filterButtons.forEach(btn => {
       btn.classList.toggle('filter-btn--active', btn.dataset.filter === filter);
     });
@@ -120,8 +140,52 @@ class JournalView {
       this.sortColumn = column;
       this.sortDirection = 'desc';
     }
+
     this.render();
   }
+
+  normalizeTrade(trade) {
+  if (!trade) return null;
+
+  const trimHistoryRaw = Array.isArray(trade.trimHistory)
+    ? trade.trimHistory
+    : Array.isArray(trade.trim_history)
+      ? trade.trim_history
+      : Array.isArray(trade.exits)
+        ? trade.exits
+        : [];
+
+  const trimHistory = trimHistoryRaw.map((trim) => ({
+    id: trim.id ?? null,
+    date: trim.date ?? trim.exitDate ?? trim.exit_date ?? trim.created_at ?? null,
+    sharesClosed: Number(trim.sharesClosed ?? trim.shares_closed ?? trim.shares ?? 0),
+    exitPrice: Number(trim.exitPrice ?? trim.exit_price ?? 0),
+    pnl: Number(trim.pnl ?? 0),
+    rMultiple: Number(trim.rMultiple ?? trim.r_multiple ?? 0),
+    exitType: trim.exitType ?? trim.exit_type ?? 'trim',
+    percentTrimmed: Number(trim.percentTrimmed ?? trim.percent_trimmed ?? 0),
+    newStop: trim.newStop ?? trim.new_stop ?? null
+  }));
+
+  return {
+    ...trade,
+    id: String(trade.id),
+    ticker: trade.ticker ?? '',
+    status: trade.status ?? 'open',
+    timestamp: trade.timestamp ?? trade.created_at ?? null,
+    entry: Number(trade.entry ?? trade.entry_price ?? 0),
+    stop: Number(trade.stop ?? trade.stop_price ?? 0),
+    currentStop: Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0),
+    shares: Number(trade.shares ?? 0),
+    remainingShares: Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0),
+    originalShares: Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0),
+    riskDollars: Number(trade.riskDollars ?? trade.risk_dollars ?? 0),
+    totalRealizedPnL: Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0),
+    notes: trade.notes ?? '',
+    thesis: trade.thesis ?? null,
+    trimHistory
+  };
+}
 
   getFilteredTrades() {
     const entries = state.journal.entries;
@@ -139,13 +203,13 @@ class JournalView {
         break;
       case 'winners':
         filtered = entries.filter(t => {
-          const pnl = t.totalRealizedPnL ?? t.pnl ?? 0;
+          const pnl = t.totalRealizedPnL ?? t.total_realized_pnl ?? t.pnl ?? 0;
           return (t.status === 'closed' || t.status === 'trimmed') && pnl > 0;
         });
         break;
       case 'losers':
         filtered = entries.filter(t => {
-          const pnl = t.totalRealizedPnL ?? t.pnl ?? 0;
+          const pnl = t.totalRealizedPnL ?? t.total_realized_pnl ?? t.pnl ?? 0;
           return (t.status === 'closed' || t.status === 'trimmed') && pnl < 0;
         });
         break;
@@ -153,7 +217,6 @@ class JournalView {
         filtered = entries;
     }
 
-    // Sort
     return this.sortTrades(filtered);
   }
 
@@ -161,7 +224,8 @@ class JournalView {
     const direction = this.sortDirection === 'asc' ? 1 : -1;
 
     return [...trades].sort((a, b) => {
-      let aVal, bVal;
+      let aVal;
+      let bVal;
 
       switch (this.sortColumn) {
         case 'date':
@@ -169,16 +233,16 @@ class JournalView {
           bVal = new Date(b.timestamp).getTime();
           break;
         case 'ticker':
-          aVal = a.ticker.toLowerCase();
-          bVal = b.ticker.toLowerCase();
+          aVal = String(a.ticker || '').toLowerCase();
+          bVal = String(b.ticker || '').toLowerCase();
           break;
         case 'entry':
-          aVal = a.entry;
-          bVal = b.entry;
+          aVal = Number(a.entry ?? a.entry_price ?? 0);
+          bVal = Number(b.entry ?? b.entry_price ?? 0);
           break;
         case 'pnl':
-          aVal = a.totalRealizedPnL ?? a.pnl ?? 0;
-          bVal = b.totalRealizedPnL ?? b.pnl ?? 0;
+          aVal = Number(a.totalRealizedPnL ?? a.total_realized_pnl ?? a.pnl ?? 0);
+          bVal = Number(b.totalRealizedPnL ?? b.total_realized_pnl ?? b.pnl ?? 0);
           break;
         default:
           aVal = new Date(a.timestamp).getTime();
@@ -195,15 +259,12 @@ class JournalView {
     const trades = this.getFilteredTrades();
     const allTrades = state.journal.entries;
 
-    // Update count
     if (this.elements.journalCount) {
       this.elements.journalCount.textContent = `${allTrades.length} trade${allTrades.length !== 1 ? 's' : ''}`;
     }
 
-    // Render summary bar
     this.renderSummary();
 
-    // Show empty state or table
     if (trades.length === 0) {
       this.showEmptyState();
     } else {
@@ -213,64 +274,82 @@ class JournalView {
   }
 
   renderSummary() {
-    const closedTrades = state.journal.entries.filter(
-      t => t.status === 'closed' || t.status === 'trimmed'
-    );
+    const realizedTrades = state.journal.entries
+      .map((trade) => {
+        const rawPnL = trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0;
+        const realizedPnL = Number(rawPnL);
 
-    // Total P&L
-    const totalPnL = closedTrades.reduce((sum, t) => {
-      return sum + (t.totalRealizedPnL ?? t.pnl ?? 0);
-    }, 0);
+        return {
+          ...trade,
+          realizedPnL: Number.isFinite(realizedPnL) ? realizedPnL : 0,
+        };
+      })
+      .filter((trade) => trade.status === 'closed' || trade.status === 'trimmed');
+
+    const totalPnL = realizedTrades.reduce((sum, trade) => sum + trade.realizedPnL, 0);
 
     if (this.elements.totalPnL) {
       const isPositive = totalPnL >= 0;
       this.elements.totalPnL.textContent = `${isPositive ? '+' : ''}${formatCurrency(totalPnL)}`;
-      this.elements.totalPnL.className = `journal-summary-bar__value journal-summary-bar__value--lg ${isPositive ? 'journal-summary-bar__value--positive' : 'journal-summary-bar__value--negative'}`;
+      this.elements.totalPnL.className =
+        `journal-summary-bar__value journal-summary-bar__value--lg ${isPositive
+          ? 'journal-summary-bar__value--positive'
+          : 'journal-summary-bar__value--negative'
+        }`;
     }
 
-    // Wins and losses
-    const winningTrades = closedTrades.filter(t => (t.totalRealizedPnL ?? t.pnl ?? 0) > 0);
-    const losingTrades = closedTrades.filter(t => (t.totalRealizedPnL ?? t.pnl ?? 0) < 0);
+    const winningTrades = realizedTrades.filter((trade) => trade.realizedPnL > 0);
+    const losingTrades = realizedTrades.filter((trade) => trade.realizedPnL < 0);
+
     const wins = winningTrades.length;
     const losses = losingTrades.length;
-    const total = wins + losses;
+    const decidedTrades = wins + losses;
 
-    // Win rate
     if (this.elements.winRate) {
-      const winRate = total > 0 ? (wins / total) * 100 : null;
+      const winRate = decidedTrades > 0 ? (wins / decidedTrades) * 100 : null;
       this.elements.winRate.textContent = winRate !== null ? `${winRate.toFixed(1)}%` : '—';
     }
 
-    // Wins count
     if (this.elements.wins) {
-      this.elements.wins.textContent = wins.toString();
+      this.elements.wins.textContent = String(wins);
     }
 
-    // Losses count
     if (this.elements.losses) {
-      this.elements.losses.textContent = losses.toString();
+      this.elements.losses.textContent = String(losses);
     }
 
-    // Average win
     if (this.elements.avgWin) {
       if (wins > 0) {
-        const totalWinPnL = winningTrades.reduce((sum, t) => sum + (t.totalRealizedPnL ?? t.pnl ?? 0), 0);
+        const totalWinPnL = winningTrades.reduce((sum, trade) => sum + trade.realizedPnL, 0);
         const avgWin = totalWinPnL / wins;
-        this.elements.avgWin.textContent = `+${formatCurrency(avgWin)}`;
-        this.elements.avgWin.className = 'journal-summary-bar__value journal-summary-bar__value--positive';
+
+        if (Number.isFinite(avgWin)) {
+          this.elements.avgWin.textContent = `+${formatCurrency(avgWin)}`;
+          this.elements.avgWin.className =
+            'journal-summary-bar__value journal-summary-bar__value--positive';
+        } else {
+          this.elements.avgWin.textContent = '—';
+          this.elements.avgWin.className = 'journal-summary-bar__value';
+        }
       } else {
         this.elements.avgWin.textContent = '—';
         this.elements.avgWin.className = 'journal-summary-bar__value';
       }
     }
 
-    // Average loss
     if (this.elements.avgLoss) {
       if (losses > 0) {
-        const totalLossPnL = losingTrades.reduce((sum, t) => sum + (t.totalRealizedPnL ?? t.pnl ?? 0), 0);
+        const totalLossPnL = losingTrades.reduce((sum, trade) => sum + trade.realizedPnL, 0);
         const avgLoss = totalLossPnL / losses;
-        this.elements.avgLoss.textContent = formatCurrency(avgLoss);
-        this.elements.avgLoss.className = 'journal-summary-bar__value journal-summary-bar__value--negative';
+
+        if (Number.isFinite(avgLoss)) {
+          this.elements.avgLoss.textContent = formatCurrency(avgLoss);
+          this.elements.avgLoss.className =
+            'journal-summary-bar__value journal-summary-bar__value--negative';
+        } else {
+          this.elements.avgLoss.textContent = '—';
+          this.elements.avgLoss.className = 'journal-summary-bar__value';
+        }
       } else {
         this.elements.avgLoss.textContent = '—';
         this.elements.avgLoss.className = 'journal-summary-bar__value';
@@ -281,7 +360,6 @@ class JournalView {
   renderTable(trades) {
     if (!this.elements.tableBody) return;
 
-    // Update sort indicators in headers
     const headers = document.querySelectorAll('.journal-view .journal-table th[data-sort]');
     headers.forEach(th => {
       th.classList.remove('sort-asc', 'sort-desc');
@@ -291,59 +369,64 @@ class JournalView {
     });
 
     this.elements.tableBody.innerHTML = trades.map(trade => {
-      const pnl = trade.totalRealizedPnL ?? trade.pnl ?? 0;
+      const pnl = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0);
       const hasPnL = trade.status === 'closed' || trade.status === 'trimmed';
-      const shares = trade.remainingShares ?? trade.shares;
-      const sharesDisplay = trade.originalShares
-        ? `${shares}/${trade.originalShares}`
-        : shares;
 
-      // Calculate R-multiple
+      const shares = Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0);
+      const originalShares = Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0);
+      const sharesDisplay = originalShares ? `${shares}/${originalShares}` : shares;
+
       let rMultiple = null;
-      if (hasPnL && trade.riskDollars > 0) {
-        rMultiple = pnl / trade.riskDollars;
+      const riskDollars = Number(trade.riskDollars ?? trade.risk_dollars ?? 0);
+      if (hasPnL && riskDollars > 0) {
+        rMultiple = pnl / riskDollars;
       }
 
-      // Calculate P&L % based on position cost
       let pnlPercent = null;
       if (hasPnL) {
-        const totalShares = trade.originalShares || trade.shares;
-        const positionCost = trade.entry * totalShares;
+        const totalShares = Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0);
+        const entryPrice = Number(trade.entry ?? trade.entry_price ?? 0);
+        const positionCost = entryPrice * totalShares;
         if (positionCost > 0) {
           pnlPercent = (pnl / positionCost) * 100;
         }
       }
 
-      // Check if trade is "free rolled" - realized profit covers remaining risk
       const isTrimmed = trade.status === 'trimmed';
-      const realizedPnL = trade.totalRealizedPnL || 0;
-      const currentRisk = shares * (trade.entry - trade.stop);
+      const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0);
+      const activeStop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+      const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+      const currentRisk = shares * Math.max(0, entry - activeStop);
       const isFreeRoll = isTrimmed && realizedPnL >= (currentRisk - 0.01);
 
-      // Determine display status
       let statusClass = trade.status;
       let statusText = trade.status.charAt(0).toUpperCase() + trade.status.slice(1);
+
       if (isFreeRoll) {
         statusClass = 'freeroll';
         statusText = 'Free Rolled';
       }
 
-      const isExpanded = this.expandedRows.has(trade.id);
-
       return `
         <tr class="journal-table__row" data-id="${trade.id}">
           <td>${formatDate(trade.timestamp)}</td>
           <td><strong>${trade.ticker}</strong></td>
-          <td>${formatCurrency(trade.entry)}</td>
-          <td>${trade.exitPrice ? formatCurrency(trade.exitPrice) : '—'}</td>
+          <td>${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</td>
+          <td>${trade.exitPrice || trade.exit_price ? formatCurrency(trade.exitPrice ?? trade.exit_price) : '—'}</td>
           <td>${sharesDisplay}</td>
           <td class="${hasPnL ? (pnl >= 0 ? 'journal-table__pnl--positive' : 'journal-table__pnl--negative') : ''}">
             ${hasPnL ? `${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}` : '—'}
           </td>
-          <td class="${hasPnL ? (pnlPercent >= 0 ? 'journal-table__pnl--positive' : 'journal-table__pnl--negative') : ''}">
+          <td class="${hasPnL && pnlPercent !== null ? (pnlPercent >= 0 ? 'journal-table__pnl--positive' : 'journal-table__pnl--negative') : ''}">
             ${pnlPercent !== null ? `${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%` : '—'}
           </td>
-          <td>${rMultiple !== null ? (Math.abs(rMultiple) < 0.05 ? '<span class="tag tag--breakeven">BE</span>' : `${rMultiple >= 0 ? '+' : ''}${rMultiple.toFixed(1)}R`) : '—'}</td>
+          <td>
+            ${rMultiple !== null
+              ? (Math.abs(rMultiple) < 0.05
+                ? '<span class="tag tag--breakeven">BE</span>'
+                : `${rMultiple >= 0 ? '+' : ''}${rMultiple.toFixed(1)}R`)
+              : '—'}
+          </td>
           <td>
             <span class="journal-table__status journal-table__status--${statusClass}">
               ${statusText}
@@ -354,26 +437,27 @@ class JournalView {
             <button class="journal-table__action-btn journal-table__action-btn--delete" data-action="delete" data-id="${trade.id}" title="Delete trade">🗑️</button>
           </td>
         </tr>
-        <tr class="journal-table__row-details ${isExpanded ? 'expanded' : ''}" data-details-id="${trade.id}">
-          <td colspan="10">
-            ${this.renderRowDetails(trade)}
-          </td>
-        </tr>
       `;
     }).join('');
 
-    // Bind row actions
     this.bindRowActions();
   }
 
-  renderRowDetails(trade) {
-    const isTrimmed = trade.status === 'trimmed';
-    const isClosed = trade.status === 'closed';
-    const isActive = !isClosed;
-    const shares = trade.remainingShares ?? trade.shares;
+  renderRowDetails(rawTrade) {
+  const trade = this.normalizeTrade(rawTrade);
+  if (!trade) return '';
+
+  const isTrimmed = trade.status === 'trimmed';
+  const isClosed = trade.status === 'closed';
+  const isActive = !isClosed;
+  const shares = trade.remainingShares;
+  const activeStop = trade.currentStop;
+  const trimHistory = trade.trimHistory;
+
+    
 
     return `
-      <div class="journal-row-details">
+      <div class="journal-row-details" data-trade-id="${trade.id}">
         <div class="journal-row-details__section">
           <div class="journal-row-details__label">Trade Details</div>
           <div class="journal-row-details__trade-container" data-trade-id="${trade.id}">
@@ -381,11 +465,11 @@ class JournalView {
               <div class="journal-row-details__trade-grid">
                 <div class="journal-row-details__trade-item">
                   <span class="journal-row-details__trade-label">Entry</span>
-                  <span class="journal-row-details__trade-value">${formatCurrency(trade.entry)}</span>
+                  <span class="journal-row-details__trade-value">${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</span>
                 </div>
                 <div class="journal-row-details__trade-item">
                   <span class="journal-row-details__trade-label">Stop</span>
-                  <span class="journal-row-details__trade-value">${formatCurrency(trade.stop)}</span>
+                  <span class="journal-row-details__trade-value">${formatCurrency(activeStop)}</span>
                 </div>
                 <div class="journal-row-details__trade-item">
                   <span class="journal-row-details__trade-label">Shares</span>
@@ -394,20 +478,21 @@ class JournalView {
               </div>
               <button class="btn btn--xs btn--ghost" data-action="edit-trade" data-id="${trade.id}">Edit</button>
             </div>
+
             <div class="journal-row-details__trade-edit" style="display: none;">
               <div class="journal-row-details__trade-grid">
                 <div class="journal-row-details__trade-item">
                   <label class="journal-row-details__trade-label" for="editEntry-${trade.id}">Entry</label>
                   <div class="journal-row-details__input-wrapper">
                     <span class="journal-row-details__input-prefix">$</span>
-                    <input type="text" class="journal-row-details__trade-input" id="editEntry-${trade.id}" value="${trade.entry}" autocomplete="off">
+                    <input type="text" class="journal-row-details__trade-input" id="editEntry-${trade.id}" value="${trade.entry ?? trade.entry_price ?? ''}" autocomplete="off">
                   </div>
                 </div>
                 <div class="journal-row-details__trade-item">
                   <label class="journal-row-details__trade-label" for="editStop-${trade.id}">Stop</label>
                   <div class="journal-row-details__input-wrapper">
                     <span class="journal-row-details__input-prefix">$</span>
-                    <input type="text" class="journal-row-details__trade-input" id="editStop-${trade.id}" value="${trade.stop}" autocomplete="off">
+                    <input type="text" class="journal-row-details__trade-input" id="editStop-${trade.id}" value="${activeStop}" autocomplete="off">
                   </div>
                 </div>
                 <div class="journal-row-details__trade-item">
@@ -422,6 +507,7 @@ class JournalView {
             </div>
           </div>
         </div>
+
         <div class="journal-row-details__section">
           <div class="journal-row-details__label">Notes</div>
           <div class="journal-row-details__notes-container" data-trade-id="${trade.id}">
@@ -438,30 +524,46 @@ class JournalView {
             </div>
           </div>
         </div>
+
         ${trade.thesis ? `
-        <div class="journal-row-details__section">
-          <div class="journal-row-details__label">Thesis</div>
-          <div class="journal-row-details__value">
-            ${trade.thesis.setup ? `Setup: ${trade.thesis.setup}` : ''}
-            ${trade.thesis.theme ? `<br>Theme: ${trade.thesis.theme}` : ''}
-            ${trade.thesis.conviction ? `<br>Conviction: ${'★'.repeat(trade.thesis.conviction)}${'☆'.repeat(5 - trade.thesis.conviction)}` : ''}
+          <div class="journal-row-details__section">
+            <div class="journal-row-details__label">Thesis</div>
+            <div class="journal-row-details__value">
+              ${trade.thesis.setup ? `Setup: ${trade.thesis.setup}` : ''}
+              ${trade.thesis.theme ? `<br>Theme: ${trade.thesis.theme}` : ''}
+              ${trade.thesis.conviction ? `<br>Conviction: ${'★'.repeat(trade.thesis.conviction)}${'☆'.repeat(5 - trade.thesis.conviction)}` : ''}
+            </div>
           </div>
-        </div>
         ` : ''}
-        ${trade.trimHistory && trade.trimHistory.length > 0 ? `
-        <div class="journal-row-details__section">
-          <div class="journal-row-details__label">Trade Log</div>
-          <div class="journal-row-details__value journal-row-details__trade-log">
-            ${trade.trimHistory.map((trim, index) => {
-              const isLastEntry = index === trade.trimHistory.length - 1;
-              const isClose = isLastEntry && trade.status === 'closed';
-              const actionText = isClose ? 'Closed' : 'Trimmed';
-              const statusClass = isClose ? 'closed' : 'trimmed';
-              return `<div class="trade-log-entry"><span class="journal-table__status journal-table__status--${statusClass}">${actionText}</span> ${formatDate(trim.date)}: ${trim.shares} shares @ ${formatCurrency(trim.exitPrice)} = <span class="${trim.pnl >= 0 ? 'text-success' : 'text-danger'}">${trim.pnl >= 0 ? '+' : ''}${formatCurrency(trim.pnl)}</span> (${trim.rMultiple >= 0 ? '+' : ''}${trim.rMultiple.toFixed(1)}R)</div>`;
-            }).join('')}
+
+        ${trimHistory.length > 0 ? `
+  <div class="journal-row-details__section">
+    <div class="journal-row-details__label">Trade Log</div>
+    <div class="journal-row-details__value journal-row-details__trade-log">
+      ${trimHistory.map((trim, index) => {
+        const isLastEntry = index === trimHistory.length - 1;
+        const isClose = trim.exitType === 'close' || (isLastEntry && trade.status === 'closed');
+        const actionText = isClose ? 'Closed' : 'Trimmed';
+        const statusClass = isClose ? 'closed' : 'trimmed';
+
+        return `
+          <div class="trade-log-entry">
+            <span class="journal-table__status journal-table__status--${statusClass}">
+              ${actionText}
+            </span>
+            ${trim.date ? formatDate(trim.date) : '—'}:
+            ${trim.sharesClosed} shares @ ${formatCurrency(trim.exitPrice)} =
+            <span class="${trim.pnl >= 0 ? 'text-success' : 'text-danger'}">
+              ${trim.pnl >= 0 ? '+' : ''}${formatCurrency(trim.pnl)}
+            </span>
+            (${trim.rMultiple >= 0 ? '+' : ''}${Number(trim.rMultiple).toFixed(1)}R)
           </div>
-        </div>
-        ` : ''}
+        `;
+      }).join('')}
+    </div>
+  </div>
+` : ''}
+
         <div class="journal-row-details__actions">
           ${isActive ? `
             <button class="btn btn--sm btn--primary" data-action="close" data-id="${trade.id}">
@@ -474,38 +576,108 @@ class JournalView {
     `;
   }
 
+  openTradeModal(tradeId) {
+  if (!this.elements.tradeModal || !this.elements.tradeModalBody) return;
+
+  const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+  const trade = this.normalizeTrade(rawTrade);
+  if (!trade) return;
+
+  const titleEl = document.getElementById('journalTradeModalTitle');
+  if (titleEl) {
+    titleEl.textContent = `${trade.ticker} Trade Details`;
+  }
+
+  this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
+  this.elements.tradeModal.dataset.tradeId = String(tradeId);
+
+  this.bindModalActions();
+
+  if (typeof this.elements.tradeModal.showModal === 'function' && !this.elements.tradeModal.open) {
+    this.elements.tradeModal.showModal();
+  }
+}
+
+  closeTradeModal() {
+    if (this.elements.tradeModal?.open) {
+      this.elements.tradeModal.close();
+    }
+
+    if (this.elements.tradeModalBody) {
+      this.elements.tradeModalBody.innerHTML = '';
+    }
+
+    if (this.elements.tradeModal) {
+      this.elements.tradeModal.dataset.tradeId = '';
+    }
+  }
+
+  refreshOpenModal() {
+  if (!this.elements.tradeModal?.open) return;
+
+  const tradeId = this.elements.tradeModal.dataset.tradeId;
+  if (!tradeId) return;
+
+  const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+  const trade = this.normalizeTrade(rawTrade);
+
+  if (!trade) {
+    this.closeTradeModal();
+    return;
+  }
+
+  const titleEl = document.getElementById('journalTradeModalTitle');
+  if (titleEl) {
+    titleEl.textContent = `${trade.ticker} Trade Details`;
+  }
+
+  this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
+  this.bindModalActions();
+}
+
   bindRowActions() {
-    // Expand buttons
+    if (!this.elements.tableBody) return;
+
     this.elements.tableBody.querySelectorAll('[data-action="expand"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        this.toggleRowExpand(id);
+        const id = e.currentTarget.dataset.id;
+        this.openTradeModal(id);
       });
     });
 
-    // Close/Trim buttons
-    this.elements.tableBody.querySelectorAll('[data-action="close"]').forEach(btn => {
+    this.elements.tableBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
+        const id = e.currentTarget.dataset.id;
+        if (confirm('Delete this trade?')) {
+          state.deleteJournalEntry(id);
+        }
+      });
+    });
+  }
+
+  bindModalActions() {
+    if (!this.elements.tradeModalBody) return;
+
+    this.elements.tradeModalBody.querySelectorAll('[data-action="close"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
         trimModal.open(id);
       });
     });
 
-    // Delete buttons
-    this.elements.tableBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    this.elements.tradeModalBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
+        const id = e.currentTarget.dataset.id;
         if (confirm('Delete this trade?')) {
           state.deleteJournalEntry(id);
         }
       });
     });
 
-    // Edit notes buttons
-    this.elements.tableBody.querySelectorAll('[data-action="edit-notes"]').forEach(btn => {
+    this.elements.tradeModalBody.querySelectorAll('[data-action="edit-notes"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
         if (container) {
           container.querySelector('.journal-row-details__notes-view').style.display = 'none';
           container.querySelector('.journal-row-details__notes-edit').style.display = 'block';
@@ -514,37 +686,37 @@ class JournalView {
       });
     });
 
-    // Save notes buttons
-    this.elements.tableBody.querySelectorAll('[data-action="save-notes"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
-        if (container) {
-          const newNotes = container.querySelector('.journal-row-details__notes-input').value;
-          state.updateJournalEntry(id, { notes: newNotes });
-        }
-      });
-    });
+   this.elements.tradeModalBody.querySelectorAll('[data-action="save-notes"]').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id;
+    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
+    if (!container) return;
 
-    // Cancel notes buttons
-    this.elements.tableBody.querySelectorAll('[data-action="cancel-notes"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
-        const trade = state.journal.entries.find(t => t.id === id);
-        if (container && trade) {
-          container.querySelector('.journal-row-details__notes-input').value = trade.notes || '';
-          container.querySelector('.journal-row-details__notes-view').style.display = 'flex';
-          container.querySelector('.journal-row-details__notes-edit').style.display = 'none';
-        }
-      });
-    });
+    const newNotes = container.querySelector('.journal-row-details__notes-input').value;
+    await state.updateJournalEntry(id, { notes: newNotes });
+  });
+});
 
-    // Edit trade buttons
-    this.elements.tableBody.querySelectorAll('[data-action="edit-trade"]').forEach(btn => {
+   this.elements.tradeModalBody.querySelectorAll('[data-action="cancel-notes"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
+    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+    const trade = this.normalizeTrade(rawTrade);
+
+    if (container && trade) {
+      container.querySelector('.journal-row-details__notes-input').value = trade.notes || '';
+      container.querySelector('.journal-row-details__notes-view').style.display = 'flex';
+      container.querySelector('.journal-row-details__notes-edit').style.display = 'none';
+    }
+  });
+});
+
+    this.elements.tradeModalBody.querySelectorAll('[data-action="edit-trade"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+
         if (container) {
           container.querySelector('.journal-row-details__trade-view').style.display = 'none';
           container.querySelector('.journal-row-details__trade-edit').style.display = 'block';
@@ -553,96 +725,73 @@ class JournalView {
       });
     });
 
-    // Save trade buttons
-    this.elements.tableBody.querySelectorAll('[data-action="save-trade"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
-        const trade = state.journal.entries.find(t => t.id === id);
-        if (container && trade) {
-          const newEntry = parseFloat(container.querySelector(`#editEntry-${id}`).value);
-          const newStop = parseFloat(container.querySelector(`#editStop-${id}`).value);
-          const newShares = parseInt(container.querySelector(`#editShares-${id}`).value);
+ this.elements.tradeModalBody.querySelectorAll('[data-action="save-trade"]').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id;
+    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+    const trade = this.normalizeTrade(rawTrade);
 
-          // Validate inputs
-          if (isNaN(newEntry) || newEntry <= 0) {
-            alert('Please enter a valid entry price');
-            return;
-          }
-          if (isNaN(newStop) || newStop <= 0) {
-            alert('Please enter a valid stop loss');
-            return;
-          }
-          if (isNaN(newShares) || newShares <= 0) {
-            alert('Please enter a valid number of shares');
-            return;
-          }
+    if (!container || !trade) return;
 
-          // Calculate updated values
-          const stopDistance = Math.abs(newEntry - newStop);
-          const riskDollars = stopDistance * newShares;
-          const positionSize = newEntry * newShares;
+    const newEntry = parseFloat(container.querySelector(`#editEntry-${id}`).value);
+    const newStop = parseFloat(container.querySelector(`#editStop-${id}`).value);
+    const newRemainingShares = parseInt(container.querySelector(`#editShares-${id}`).value, 10);
 
-          // Build update object
-          const updates = {
-            entry: newEntry,
-            stop: newStop,
-            currentStop: newStop,
-            stopDistance: stopDistance,
-            riskDollars: riskDollars,
-            positionSize: positionSize
-          };
-
-          // Update shares - handle both remaining and original
-          if (trade.status === 'open') {
-            updates.shares = newShares;
-            updates.remainingShares = newShares;
-            updates.originalShares = newShares;
-          } else {
-            // For trimmed trades, only update remaining shares
-            updates.remainingShares = newShares;
-          }
-
-          state.updateJournalEntry(id, updates);
-        }
-      });
-    });
-
-    // Cancel trade edit buttons
-    this.elements.tableBody.querySelectorAll('[data-action="cancel-trade"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const container = this.elements.tableBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
-        const trade = state.journal.entries.find(t => t.id === id);
-        if (container && trade) {
-          const shares = trade.remainingShares ?? trade.shares;
-          container.querySelector(`#editEntry-${id}`).value = trade.entry;
-          container.querySelector(`#editStop-${id}`).value = trade.stop;
-          container.querySelector(`#editShares-${id}`).value = shares;
-          container.querySelector('.journal-row-details__trade-view').style.display = 'flex';
-          container.querySelector('.journal-row-details__trade-edit').style.display = 'none';
-        }
-      });
-    });
-  }
-
-  toggleRowExpand(id) {
-    if (this.expandedRows.has(id)) {
-      this.expandedRows.delete(id);
-    } else {
-      this.expandedRows.add(id);
+    if (!Number.isFinite(newEntry) || newEntry <= 0) {
+      alert('Please enter a valid entry price');
+      return;
     }
 
-    // Toggle classes
-    const expandBtn = this.elements.tableBody.querySelector(`[data-action="expand"][data-id="${id}"]`);
-    const detailsRow = this.elements.tableBody.querySelector(`[data-details-id="${id}"]`);
+    if (!Number.isFinite(newStop) || newStop <= 0) {
+      alert('Please enter a valid stop loss');
+      return;
+    }
 
-    if (expandBtn) {
-      expandBtn.classList.toggle('expanded', this.expandedRows.has(id));
+    if (!Number.isFinite(newRemainingShares) || newRemainingShares <= 0) {
+      alert('Please enter a valid number of shares');
+      return;
     }
-    if (detailsRow) {
-      detailsRow.classList.toggle('expanded', this.expandedRows.has(id));
+
+    const stopDistance = Math.abs(newEntry - newStop);
+    const riskDollars = stopDistance * newRemainingShares;
+    const positionSize = newEntry * newRemainingShares;
+
+    const updates = {
+      entry: newEntry,
+      stop: newStop,
+      currentStop: newStop,
+      stopDistance,
+      riskDollars,
+      positionSize,
+      remainingShares: newRemainingShares
+    };
+
+    if (trade.status === 'open' && trade.trimHistory.length === 0) {
+      updates.shares = newRemainingShares;
+      updates.originalShares = newRemainingShares;
     }
+
+    await state.updateJournalEntry(id, updates);
+  });
+});
+
+    this.elements.tradeModalBody.querySelectorAll('[data-action="cancel-trade"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+    const trade = this.normalizeTrade(rawTrade);
+
+    if (container && trade) {
+      container.querySelector(`#editEntry-${id}`).value = trade.entry;
+      container.querySelector(`#editStop-${id}`).value = trade.currentStop;
+      container.querySelector(`#editShares-${id}`).value = trade.remainingShares;
+      container.querySelector('.journal-row-details__trade-view').style.display = 'flex';
+      container.querySelector('.journal-row-details__trade-edit').style.display = 'none';
+    }
+  });
+});
   }
 
   showEmptyState() {

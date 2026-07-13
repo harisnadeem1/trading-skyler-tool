@@ -8,7 +8,6 @@ import { showToast } from './ui.js';
 import { trimModal } from './trimModal.js';
 import { dataManager } from './dataManager.js';
 import { wizard } from './wizard.js';
-import { confetti } from './confetti.js';
 import { viewManager } from './viewManager.js';
 
 class Journal {
@@ -21,124 +20,115 @@ class Journal {
     this.bindEvents();
     this.render();
 
-    // Listen for state changes
     state.on('journalEntryAdded', () => this.render());
     state.on('journalEntryUpdated', () => this.render());
     state.on('journalEntryDeleted', () => this.render());
+    state.on('journalHydrated', () => this.render());
+    state.on('accountChanged', () => {
+  this.renderActiveTrades();
+  this.renderRiskSummary();
+});
+    state.on('settingsChanged', () => this.updateWizardHint());
 
-    // Listen for calculation results to enable/disable log button
     state.on('resultsRendered', (results) => {
       this.updateLogButtonState(results);
     });
 
-    // Initial button state check
     this.updateLogButtonState(state.results);
-
-    // Listen for wizard setting changes to show/hide hint
-    state.on('journalMetaSettingsChanged', () => {
-      this.updateWizardHint();
-    });
-
-    // Initial wizard hint state
     this.updateWizardHint();
   }
 
-  cacheElements() {
-    this.elements = {
-      // Log trade
-      tradeNotes: document.getElementById('tradeNotes'),
-      logTradeBtn: document.getElementById('logTradeBtn'),
-      wizardHint: document.getElementById('wizardHint'),
+ cacheElements() {
+  this.elements = {
+    tradeNotes: document.getElementById('tradeNotes'),
+    logTradeBtn: document.getElementById('logTradeBtn'),
+    wizardHint: document.getElementById('wizardHint'),
 
-      // Active trades
-      activeTrades: document.getElementById('activeTrades'),
-      activeTradeCount: document.getElementById('activeTradeCount'),
-      riskSummary: document.getElementById('riskSummary'),
-      viewPositionsBtn: document.getElementById('viewPositionsBtn'),
+    activeTrades: document.getElementById('activeTrades'),
+    activeTradeCount: document.getElementById('activeTradeCount'),
+    riskSummary: document.getElementById('riskSummary'),
+    viewPositionsBtn: document.getElementById('viewPositionsBtn'),
 
-      // Modal
-      journalModal: document.getElementById('journalModal'),
-      journalModalOverlay: document.getElementById('journalModalOverlay'),
-      closeJournalBtn: document.getElementById('closeJournalBtn'),
-      viewJournalBtn: document.getElementById('viewJournalBtn'),
-      journalTableBody: document.getElementById('journalTableBody'),
-      journalSummaryText: document.getElementById('journalSummaryText'),
+    journalModal: document.getElementById('journalModal'),
+    journalModalOverlay: document.getElementById('journalModalOverlay'),
+    closeJournalBtn: document.getElementById('closeJournalBtn'),
+    viewJournalBtn: document.getElementById('viewJournalBtn'),
+    journalTableBody: document.getElementById('journalTableBody'),
 
-      // Export buttons (journal panel)
-      exportCSVBtn: document.getElementById('exportCSVBtn'),
-      exportTSVBtn: document.getElementById('exportTSVBtn'),
-      exportPDFBtn: document.getElementById('exportPDFBtn'),
+    journalCount: document.getElementById('journalCount'),
+    journalTotalPnL: document.getElementById('journalTotalPnL'),
+    journalWinRate: document.getElementById('journalWinRate'),
+    journalWins: document.getElementById('journalWins'),
+    journalLosses: document.getElementById('journalLosses'),
+    journalAvgWin: document.getElementById('journalAvgWin'),
+    journalAvgLoss: document.getElementById('journalAvgLoss'),
 
-      // Export buttons (journal modal)
-      journalCopyCSV: document.getElementById('journalCopyCSV'),
-      journalCopyTSV: document.getElementById('journalCopyTSV'),
-      journalDownload: document.getElementById('journalDownload')
-    };
-  }
+    exportCSVBtn: document.getElementById('journalExportCSV'),
+    exportTSVBtn: document.getElementById('journalExportTSV'),
+    exportPDFBtn: document.getElementById('journalExportPDF'),
+
+    journalCopyCSV: document.getElementById('journalCopyCSV'),
+    journalCopyTSV: document.getElementById('journalCopyTSV')
+  };
+}
 
   bindEvents() {
-    // Log trade button
     if (this.elements.logTradeBtn) {
-      this.elements.logTradeBtn.addEventListener('click', (e) => {
-        // Shift+Click bypasses wizard even if enabled
+      this.elements.logTradeBtn.addEventListener('click', async (e) => {
         const skipWizard = e.shiftKey;
-        this.logTrade(skipWizard);
+        await this.logTrade(skipWizard);
       });
     }
 
-    // Navigate to Journal view (replaces modal)
     if (this.elements.viewJournalBtn) {
       this.elements.viewJournalBtn.addEventListener('click', () => {
         viewManager.navigateTo('journal');
       });
     }
 
-    // Navigate to Positions view
     if (this.elements.viewPositionsBtn) {
       this.elements.viewPositionsBtn.addEventListener('click', () => {
         viewManager.navigateTo('positions');
       });
     }
 
-    // Filter buttons
-    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
         e.target.classList.add('active');
         this.renderTable(e.target.dataset.filter);
       });
     });
 
-    // Export buttons (journal panel)
     if (this.elements.exportCSVBtn) {
       this.elements.exportCSVBtn.addEventListener('click', () => dataManager.exportCSV());
     }
+
     if (this.elements.exportTSVBtn) {
       this.elements.exportTSVBtn.addEventListener('click', () => dataManager.exportTSV());
     }
+
     if (this.elements.exportPDFBtn) {
       this.elements.exportPDFBtn.addEventListener('click', () => {
         showToast('📄 PDF export coming soon. Use CSV for now.', 'warning');
       });
     }
 
-    // Export buttons (journal modal)
     if (this.elements.journalCopyCSV) {
       this.elements.journalCopyCSV.addEventListener('click', () => dataManager.copyCSV());
     }
+
     if (this.elements.journalCopyTSV) {
       this.elements.journalCopyTSV.addEventListener('click', () => dataManager.copyTSV());
     }
-    if (this.elements.journalDownload) {
-      this.elements.journalDownload.addEventListener('click', () => dataManager.exportCSV());
-    }
 
-    // Make close/delete functions globally available
+  
+
     window.closeTrade = (id) => this.closeTrade(id);
     window.deleteTrade = (id) => this.deleteTrade(id);
   }
 
-  logTrade(skipWizard = false) {
+  async logTrade(skipWizard = false) {
     const results = state.results;
     const trade = state.trade;
 
@@ -147,16 +137,13 @@ class Journal {
       return;
     }
 
-    // Check if wizard is enabled and should be used
-    const wizardEnabled = state.journalMeta.settings.wizardEnabled || false;
-    
+    const wizardEnabled = !!state.settings.wizardEnabled;
+
     if (wizardEnabled && !skipWizard) {
-      // Open wizard instead of directly logging
       wizard.open();
       return;
     }
 
-    // Direct logging (wizard disabled or shift+click bypass)
     const entry = {
       ticker: trade.ticker || 'UNKNOWN',
       entry: trade.entry,
@@ -165,6 +152,8 @@ class Journal {
       currentStop: trade.stop,
       target: trade.target,
       shares: results.shares,
+      originalShares: results.shares,
+      remainingShares: results.shares,
       positionSize: results.positionSize,
       riskDollars: results.riskDollars,
       riskPercent: state.account.riskPercent,
@@ -174,48 +163,44 @@ class Journal {
       exitPrice: null,
       exitDate: null,
       pnl: null,
+      totalRealizedPnL: 0,
       thesis: null,
       wizardComplete: false,
-      wizardSkipped: []
+      wizardSkipped: [],
     };
 
-    const newEntry = state.addJournalEntry(entry);
+    try {
+      const newEntry = await state.addJournalEntry(entry);
 
-    // Update progress
-    const progress = state.journalMeta.achievements.progress;
-    progress.totalTrades++;
+      const progress = state.journalMeta.achievements.progress;
+      progress.totalTrades += 1;
 
-    if (entry.notes) {
-      progress.tradesWithNotes++;
+      if (entry.notes) {
+        progress.tradesWithNotes += 1;
+      }
+
+      state.updateStreak();
+
+      state.emit('tradeLogged', {
+        entry: newEntry,
+        wizardComplete: false,
+        thesis: null,
+      });
+
+      if (state.settings.celebrationsEnabled) {
+        state.emit('triggerConfetti');
+      }
+
+      if (this.elements.tradeNotes) {
+        this.elements.tradeNotes.value = '';
+      }
+
+      showToast(`✅ ${entry.ticker} trade logged!`, 'success');
+      this.updateLogButtonState({ shares: 0 });
+    } catch (error) {
+      console.error('Failed to log trade:', error);
+      showToast('❌ Failed to log trade', 'error');
     }
-
-    // Update streak
-    state.updateStreak();
-
-    // Save progress
-    state.saveJournalMeta();
-
-    // Emit tradeLogged event for achievements
-    state.emit('tradeLogged', {
-      entry: newEntry,
-      wizardComplete: false,
-      thesis: null
-    });
-
-    // Trigger confetti if celebrations enabled
-    if (state.journalMeta.settings.celebrationsEnabled) {
-      state.emit('triggerConfetti');
-    }
-
-    // Clear notes
-    if (this.elements.tradeNotes) {
-      this.elements.tradeNotes.value = '';
-    }
-
-    showToast(`✅ ${entry.ticker} trade logged!`, 'success');
-
-    // Disable button after logging (will re-enable when new calculation happens)
-    this.updateLogButtonState({ shares: 0 });
   }
 
   updateLogButtonState(results) {
@@ -233,32 +218,36 @@ class Journal {
   updateWizardHint() {
     if (!this.elements.wizardHint) return;
 
-    const wizardEnabled = state.journalMeta.settings.wizardEnabled || false;
+    const wizardEnabled = !!state.settings.wizardEnabled;
     this.elements.wizardHint.style.display = wizardEnabled ? '' : 'none';
   }
 
   closeTrade(id) {
-    // Open trim modal instead of browser prompt
     trimModal.open(id);
   }
 
-  deleteTrade(id) {
+  async deleteTrade(id) {
     if (!confirm('Delete this trade?')) return;
 
-    const deleted = state.deleteJournalEntry(id);
-    if (deleted) {
-      showToast('🗑️ Trade deleted', 'success');
+    try {
+      const deleted = await state.deleteJournalEntry(id);
+      if (deleted) {
+        showToast('🗑️ Trade deleted', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to delete trade:', error);
+      showToast('❌ Failed to delete trade', 'error');
     }
   }
 
   render() {
     this.renderActiveTrades();
     this.renderRiskSummary();
+    this.renderTable(state.journal.filter || 'all');
   }
 
   renderActiveTrades() {
-    // Include both open and trimmed trades (they still have positions)
-    const activeTrades = state.journal.entries.filter(e => e.status === 'open' || e.status === 'trimmed');
+    const activeTrades = state.getOpenTrades();
 
     if (this.elements.activeTradeCount) {
       this.elements.activeTradeCount.textContent = `${activeTrades.length} active`;
@@ -277,96 +266,112 @@ class Journal {
       return;
     }
 
-    this.elements.activeTrades.innerHTML = activeTrades.slice(0, 5).map(trade => {
-      const shares = trade.remainingShares ?? trade.shares;
-      const riskPerShare = trade.entry - trade.stop;
-      const currentRisk = shares * riskPerShare;
-      const isTrimmed = trade.status === 'trimmed';
-      const realizedPnL = trade.totalRealizedPnL || 0;
-      const target5R = trade.entry + (5 * riskPerShare);
+    this.elements.activeTrades.innerHTML = activeTrades
+      .slice(0, 5)
+      .map((trade) => {
+        const shares = Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0);
+        const originalShares = Number(
+          trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0
+        );
+        const entryPrice = Number(trade.entry ?? trade.entry_price ?? 0);
+        const stopPrice = Number(
+          trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0
+        );
+        const riskPerShare = entryPrice - stopPrice;
+        const currentRisk = shares * riskPerShare;
+        const isTrimmed = trade.status === 'trimmed';
+        const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0);
+        const target5R = entryPrice + (5 * riskPerShare);
+        const isFreeRoll = isTrimmed && realizedPnL >= currentRisk - 0.01;
+        const netRisk = isTrimmed ? Math.max(0, currentRisk - realizedPnL) : currentRisk;
 
-      // Check if trade is "free rolled" - realized profit covers remaining risk
-      // Use small tolerance for floating point comparison
-      const isFreeRoll = isTrimmed && realizedPnL >= (currentRisk - 0.01);
+        const riskPercent =
+          state.account.currentSize > 0 ? (netRisk / state.account.currentSize) * 100 : 0;
 
-      // For trimmed trades, calculate NET risk (remaining risk - realized profit)
-      // Net risk can't go below 0 (that's when it becomes "free roll")
-      const netRisk = isTrimmed ? Math.max(0, currentRisk - realizedPnL) : currentRisk;
+        let riskColorClass = 'text-success';
+        if (riskPercent >= 2) {
+          riskColorClass = 'text-danger';
+        } else if (riskPercent >= 0.5) {
+          riskColorClass = 'text-warning';
+        }
 
-      // Calculate risk percentage and color based on net risk
-      const riskPercent = (netRisk / state.account.currentSize) * 100;
-      let riskColorClass = 'text-success'; // green for < 0.5%
-      if (riskPercent >= 2) {
-        riskColorClass = 'text-danger'; // red for 2%+
-      } else if (riskPercent >= 1) {
-        riskColorClass = 'text-warning'; // yellow for 1%-2%
-      } else if (riskPercent >= 0.5) {
-        riskColorClass = 'text-warning'; // yellow for 0.5%-1%
-      }
+        let statusClass;
+        let statusText;
 
-      // Determine status badge
-      let statusClass, statusText;
-      if (isFreeRoll) {
-        statusClass = 'freeroll';
-        statusText = 'Free Rolled';
-      } else if (isTrimmed) {
-        statusClass = 'trimmed';
-        statusText = 'Trimmed';
-      } else {
-        statusClass = 'active';
-        statusText = 'Open';
-      }
+        if (isFreeRoll) {
+          statusClass = 'freeroll';
+          statusText = 'Free Rolled';
+        } else if (isTrimmed) {
+          statusClass = 'trimmed';
+          statusText = 'Trimmed';
+        } else {
+          statusClass = 'active';
+          statusText = 'Open';
+        }
 
-      return `
-        <div class="trade-card" data-id="${trade.id}">
-          <div class="trade-card__header">
-            <div class="trade-card__header-left">
-              <span class="trade-card__ticker">${trade.ticker}</span>
-              <span class="trade-card__shares">${shares} shares${isTrimmed ? ` (${trade.originalShares} orig)` : ''}</span>
+        return `
+          <div class="trade-card" data-id="${trade.id}">
+            <div class="trade-card__header">
+              <div class="trade-card__header-left">
+                <span class="trade-card__ticker">${trade.ticker}</span>
+                <span class="trade-card__shares">${shares} shares${isTrimmed ? ` (${originalShares} orig)` : ''}</span>
+              </div>
+              <span class="status-badge status-badge--${statusClass}">${statusText}</span>
             </div>
-            <span class="status-badge status-badge--${statusClass}">${statusText}</span>
+
+            <div class="trade-card__details">
+              <div class="trade-card__detail">
+                <span class="trade-card__label">Entry</span>
+                <span class="trade-card__value text-primary">${formatCurrency(entryPrice)}</span>
+              </div>
+
+              <div class="trade-card__detail">
+                <span class="trade-card__label">Stop</span>
+                <span class="trade-card__value text-danger">${formatCurrency(stopPrice)}</span>
+              </div>
+
+              <div class="trade-card__detail">
+                <span class="trade-card__label">5R Target</span>
+                <span class="trade-card__value text-warning">${formatCurrency(target5R)}</span>
+              </div>
+
+              <div class="trade-card__detail">
+                <span class="trade-card__label">Risk</span>
+                <span class="trade-card__value ${riskColorClass}">
+                  ${riskPercent.toFixed(2)}% (${formatCurrency(netRisk)})
+                </span>
+              </div>
+
+              ${isTrimmed ? `
+              <div class="trade-card__detail">
+                <span class="trade-card__label">Realized</span>
+                <span class="trade-card__value ${realizedPnL >= 0 ? 'text-success' : 'text-danger'}">
+                  ${realizedPnL >= 0 ? '+' : ''}${formatCurrency(realizedPnL)}
+                </span>
+              </div>
+              ` : ''}
+            </div>
+
+            <div class="trade-card__actions">
+              <button class="btn btn--sm btn--secondary" onclick="closeTrade('${trade.id}')">
+                ${isTrimmed ? 'Trim More' : 'Manage'}
+              </button>
+              <button class="btn btn--sm btn--secondary btn--danger-outline" onclick="deleteTrade('${trade.id}')">
+                Delete
+              </button>
+            </div>
           </div>
-          <div class="trade-card__details">
-            <div class="trade-card__detail">
-              <span class="trade-card__label">Entry</span>
-              <span class="trade-card__value text-primary">${formatCurrency(trade.entry)}</span>
-            </div>
-            <div class="trade-card__detail">
-              <span class="trade-card__label">Stop</span>
-              <span class="trade-card__value text-danger">${formatCurrency(trade.stop)}</span>
-            </div>
-            <div class="trade-card__detail">
-              <span class="trade-card__label">5R Target</span>
-              <span class="trade-card__value text-warning">${formatCurrency(target5R)}</span>
-            </div>
-            <div class="trade-card__detail">
-              <span class="trade-card__label">Risk</span>
-              <span class="trade-card__value ${riskColorClass}">${riskPercent.toFixed(2)}% (${formatCurrency(netRisk)})</span>
-            </div>
-            ${isTrimmed ? `
-            <div class="trade-card__detail">
-              <span class="trade-card__label">Realized</span>
-              <span class="trade-card__value ${realizedPnL >= 0 ? 'text-success' : 'text-danger'}">${realizedPnL >= 0 ? '+' : ''}${formatCurrency(realizedPnL)}</span>
-            </div>
-            ` : ''}
-          </div>
-          <div class="trade-card__actions">
-            <button class="btn btn--sm btn--secondary" onclick="closeTrade(${trade.id})">${isTrimmed ? 'Trim More' : 'Manage'}</button>
-            <button class="btn btn--sm btn--secondary btn--danger-outline" onclick="deleteTrade(${trade.id})">Delete</button>
-          </div>
-        </div>
-      `;
-    }).join('');
+        `;
+      })
+      .join('');
   }
 
   renderRiskSummary() {
     if (!this.elements.riskSummary) return;
 
-    // Include both open and trimmed trades (they still have positions at risk)
-    const activeTrades = state.journal.entries.filter(e => e.status === 'open' || e.status === 'trimmed');
+    const summary = state.getOpenRiskSummary();
 
-    // Show CASH status when no active trades
-    if (activeTrades.length === 0) {
+    if (summary.count === 0) {
       this.elements.riskSummary.innerHTML = `
         <span class="risk-summary__label">Status:</span>
         <span class="risk-summary__indicator risk-summary__indicator--low">CASH</span>
@@ -374,30 +379,15 @@ class Journal {
       return;
     }
 
-    // Calculate NET risk (remaining risk minus realized profit for trimmed trades)
-    const totalRisk = activeTrades.reduce((sum, t) => {
-      const shares = t.remainingShares ?? t.shares;
-      const riskPerShare = t.entry - t.stop;
-      const grossRisk = shares * riskPerShare;
-
-      // For trimmed trades, subtract realized profit (net risk can't go below 0)
-      const realizedPnL = t.totalRealizedPnL || 0;
-      const isTrimmed = t.status === 'trimmed';
-      const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
-
-      return sum + netRisk;
-    }, 0);
-    const riskPercent = (totalRisk / state.account.currentSize) * 100;
-
-    let level = 'low';
-    if (riskPercent > 2) level = 'high';
-    else if (riskPercent > 0.5) level = 'medium';
+    const levelClass = summary.level.toLowerCase();
 
     this.elements.riskSummary.innerHTML = `
       <span class="risk-summary__label">Open Risk:</span>
-      <span class="risk-summary__value">${formatCurrency(totalRisk)}</span>
-      <span class="risk-summary__percent">(${formatPercent(riskPercent)})</span>
-      <span class="risk-summary__indicator risk-summary__indicator--${level}">${level.toUpperCase()}</span>
+      <span class="risk-summary__value">${formatCurrency(summary.dollars)}</span>
+      <span class="risk-summary__percent">(${formatPercent(summary.percent)})</span>
+      <span class="risk-summary__indicator risk-summary__indicator--${levelClass}">
+        ${summary.level}
+      </span>
     `;
   }
 
@@ -419,6 +409,7 @@ class Journal {
   renderTable(filter = 'all') {
     if (!this.elements.journalTableBody) return;
 
+    state.state.journal.filter = filter;
     const trades = state.getFilteredEntries(filter);
 
     if (trades.length === 0) {
@@ -433,55 +424,51 @@ class Journal {
       return;
     }
 
-    this.elements.journalTableBody.innerHTML = trades.map(trade => {
-      const date = formatDate(trade.timestamp);
-      const isTrimmed = trade.status === 'trimmed';
-      const isClosed = trade.status === 'closed';
+    this.elements.journalTableBody.innerHTML = trades
+      .map((trade) => {
+        const date = formatDate(trade.timestamp || trade.opened_at || trade.created_at);
+        const isTrimmed = trade.status === 'trimmed';
+        const pnlValue = trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl;
 
-      // Use totalRealizedPnL for trimmed/closed trades, fallback to pnl for legacy
-      const pnlValue = trade.totalRealizedPnL ?? trade.pnl;
-      const pnlDisplay = pnlValue !== null && pnlValue !== undefined
-        ? `<span class="${pnlValue >= 0 ? 'text-success' : 'text-danger'}">${pnlValue >= 0 ? '+' : ''}${formatCurrency(pnlValue)}</span>`
-        : '—';
+        const pnlDisplay =
+          pnlValue !== null && pnlValue !== undefined
+            ? `<span class="${pnlValue >= 0 ? 'text-success' : 'text-danger'}">${pnlValue >= 0 ? '+' : ''}${formatCurrency(pnlValue)}</span>`
+            : '—';
 
-      // Show remaining shares for trimmed trades
-      const sharesDisplay = isTrimmed
-        ? `${trade.remainingShares}/${trade.originalShares}`
-        : trade.shares;
+        const sharesDisplay = isTrimmed
+          ? `${trade.remainingShares ?? trade.remaining_shares ?? trade.shares}/${trade.originalShares ?? trade.original_shares ?? trade.shares}`
+          : trade.shares;
 
-      return `
-        <tr data-id="${trade.id}">
-          <td>${date}</td>
-          <td>${trade.ticker}</td>
-          <td>${formatCurrency(trade.entry)}</td>
-          <td>${formatCurrency(trade.stop)}</td>
-          <td>${sharesDisplay}</td>
-          <td>${formatCurrency(trade.riskDollars)}</td>
-          <td><span class="status-badge status-badge--${trade.status}">${trade.status}</span></td>
-          <td>${pnlDisplay}</td>
-          <td>
-            <button class="btn btn--ghost btn--sm" onclick="deleteTrade(${trade.id})">×</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <tr data-id="${trade.id}">
+            <td>${date}</td>
+            <td>${trade.ticker}</td>
+            <td>${formatCurrency(trade.entry ?? trade.entry_price)}</td>
+            <td>${formatCurrency(trade.stop ?? trade.stop_price)}</td>
+            <td>${sharesDisplay}</td>
+            <td>${formatCurrency(trade.riskDollars ?? trade.risk_dollars ?? 0)}</td>
+            <td><span class="status-badge status-badge--${trade.status}">${trade.status}</span></td>
+            <td>${pnlDisplay}</td>
+            <td>
+              <button class="btn btn--ghost btn--sm" onclick="deleteTrade('${trade.id}')">×</button>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
 
-    // Summary - use totalRealizedPnL for accurate counting
-    const getPnL = (t) => t.totalRealizedPnL ?? t.pnl ?? 0;
-    const wins = trades.filter(t => getPnL(t) > 0).length;
-    const losses = trades.filter(t => getPnL(t) < 0).length;
-    const open = trades.filter(t => t.status === 'open').length;
-    const trimmed = trades.filter(t => t.status === 'trimmed').length;
+    const getPnL = (t) => Number(t.totalRealizedPnL ?? t.total_realized_pnl ?? t.pnl ?? 0);
+    const wins = trades.filter((t) => getPnL(t) > 0).length;
+    const losses = trades.filter((t) => getPnL(t) < 0).length;
+    const open = trades.filter((t) => t.status === 'open').length;
+    const trimmed = trades.filter((t) => t.status === 'trimmed').length;
     const totalPnL = trades.reduce((sum, t) => sum + getPnL(t), 0);
 
     if (this.elements.journalSummaryText) {
       const activeCount = open + trimmed;
       const parts = [];
-
-      // Trade count
       parts.push(`${trades.length} trade${trades.length !== 1 ? 's' : ''}`);
 
-      // Build stats string - only show non-zero values
       const statParts = [];
       if (wins > 0) statParts.push(`${wins} win${wins !== 1 ? 's' : ''}`);
       if (losses > 0) statParts.push(`${losses} loss${losses !== 1 ? 'es' : ''}`);
@@ -491,7 +478,6 @@ class Journal {
         parts.push(statParts.join(', '));
       }
 
-      // P&L (only if there are closed trades)
       if (wins > 0 || losses > 0) {
         parts.push(`${totalPnL >= 0 ? '+' : ''}${formatCurrency(totalPnL)}`);
       }

@@ -11,21 +11,21 @@ class EquityChart {
     this.ctx = null;
     this.container = null;
     this.emptyState = null;
+    this.view = null;
     this.dpr = window.devicePixelRatio || 1;
+    this.frameId = null;
 
-    // Chart colors
     this.colors = {
-      line: '#3b82f6',      // Primary blue
+      line: '#3b82f6',
       fill: 'rgba(59, 130, 246, 0.1)',
       fillEnd: 'rgba(59, 130, 246, 0)',
-      profit: '#22c55e',     // Success green
-      loss: '#ef4444',       // Danger red
+      profit: '#22c55e',
+      loss: '#ef4444',
       grid: 'rgba(255, 255, 255, 0.05)',
-      text: '#64748b',       // Muted text
-      axis: '#2a3545'        // Border subtle
+      text: '#64748b',
+      axis: '#2a3545'
     };
 
-    // Light theme colors (applied via CSS custom properties check)
     this.lightColors = {
       line: '#2563eb',
       fill: 'rgba(37, 99, 235, 0.08)',
@@ -42,6 +42,7 @@ class EquityChart {
     this.canvas = document.getElementById('equityChartCanvas');
     this.container = document.getElementById('equityChartContainer');
     this.emptyState = document.getElementById('equityChartEmpty');
+    this.view = document.getElementById('statsView');
 
     if (!this.canvas || !this.container) {
       console.warn('EquityChart: Required elements not found');
@@ -49,62 +50,129 @@ class EquityChart {
     }
 
     this.ctx = this.canvas.getContext('2d');
-    this.resize();
 
-    // Handle resize
-    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('resize', () => this.scheduleRender());
 
-    // Listen for view changes to render
     state.on('viewChanged', (data) => {
-      if (data.to === 'stats') {
-        setTimeout(() => this.render(), 100); // Small delay for DOM update
-      }
-    });
+  if (data.to === 'stats') {
+    this.handleViewShown();
+  }
+});
 
-    // Listen for journal changes
-    state.on('journalEntryAdded', () => this.render());
-    state.on('journalEntryUpdated', () => this.render());
-    state.on('journalEntryDeleted', () => this.render());
+    state.on('journalEntryAdded', () => this.scheduleRender());
+    state.on('journalEntryUpdated', () => this.scheduleRender());
+    state.on('journalEntryDeleted', () => this.scheduleRender());
+    state.on('settingsChanged', () => this.scheduleRender());
+    state.on('accountChanged', () => this.scheduleRender());
+
+    this.scheduleRender();
   }
 
-  resize() {
-    if (!this.canvas || !this.container) return;
+  isVisible() {
+    if (!this.view || !this.container) return false;
+    if (this.view.classList.contains('view--hidden')) return false;
 
     const rect = this.container.getBoundingClientRect();
-    this.canvas.width = rect.width * this.dpr;
-    this.canvas.height = rect.height * this.dpr;
-    this.canvas.style.width = `${rect.width}px`;
-    this.canvas.style.height = `${rect.height}px`;
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  scheduleRender(forceResize = false) {
+    if (this.frameId) {
+      cancelAnimationFrame(this.frameId);
+    }
+
+    this.frameId = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.frameId = null;
+
+        if (!this.isVisible()) return;
+
+        if (forceResize) {
+          this.resize();
+        } else {
+          this.render();
+        }
+      });
+    });
+  }
+
+
+  handleViewShown() {
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  const tryRender = () => {
+    attempts += 1;
+
+    if (this.isVisible()) {
+      this.resize();
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      requestAnimationFrame(tryRender);
+    }
+  };
+
+  requestAnimationFrame(tryRender);
+}
+
+  resize() {
+    if (!this.canvas || !this.container || !this.ctx) return;
+    if (!this.isVisible()) return;
+
+    const rect = this.container.getBoundingClientRect();
+    this.dpr = window.devicePixelRatio || 1;
+
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = Math.max(1, Math.floor(rect.height));
+
+    this.canvas.width = width * this.dpr;
+    this.canvas.height = height * this.dpr;
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(this.dpr, this.dpr);
 
     this.render();
   }
 
   getColors() {
-    // Check if light theme
     const isLight = document.documentElement.dataset.theme === 'light';
     return isLight ? this.lightColors : this.colors;
   }
 
   render() {
-    if (!this.ctx || !this.canvas) return;
+    if (!this.ctx || !this.canvas || !this.container) return;
+    if (!this.isVisible()) return;
+
+    const rect = this.container.getBoundingClientRect();
+    const cssWidth = Math.max(1, Math.floor(rect.width));
+    const cssHeight = Math.max(1, Math.floor(rect.height));
+
+    if (
+      this.canvas.width !== cssWidth * this.dpr ||
+      this.canvas.height !== cssHeight * this.dpr
+    ) {
+      this.resize();
+      return;
+    }
 
     const data = stats.buildEquityCurve();
     const width = this.canvas.width / this.dpr;
     const height = this.canvas.height / this.dpr;
     const colors = this.getColors();
 
-    // Clear canvas
     this.ctx.clearRect(0, 0, width, height);
 
-    // Check for empty state
     if (data.length < 2) {
       this.showEmptyState(true);
       return;
     }
+
     this.showEmptyState(false);
 
-    // Chart padding
     const padding = {
       top: 20,
       right: 20,
@@ -115,39 +183,32 @@ class EquityChart {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    // Calculate min/max for scaling
-    const values = data.map(d => d.balance);
+    if (chartWidth <= 0 || chartHeight <= 0) return;
+
+    const values = data.map((d) => d.balance);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
     const valueRange = maxValue - minValue || 1;
 
-    // Add 10% padding to range
     const paddedMin = minValue - valueRange * 0.1;
     const paddedMax = maxValue + valueRange * 0.1;
-    const paddedRange = paddedMax - paddedMin;
+    const paddedRange = paddedMax - paddedMin || 1;
 
-    // X scale (time)
-    const dates = data.map(d => d.date);
+    const dates = data.map((d) => d.date);
     const minDate = Math.min(...dates);
     const maxDate = Math.max(...dates);
     const dateRange = maxDate - minDate || 1;
 
-    const scaleX = (date) => padding.left + ((date - minDate) / dateRange) * chartWidth;
-    const scaleY = (value) => padding.top + chartHeight - ((value - paddedMin) / paddedRange) * chartHeight;
+    const scaleX = (date) =>
+      padding.left + ((date - minDate) / dateRange) * chartWidth;
 
-    // Draw grid lines
+    const scaleY = (value) =>
+      padding.top + chartHeight - ((value - paddedMin) / paddedRange) * chartHeight;
+
     this.drawGrid(padding, chartWidth, chartHeight, paddedMin, paddedMax, colors);
-
-    // Draw fill gradient
     this.drawFill(data, scaleX, scaleY, padding, chartHeight, colors);
-
-    // Draw line
     this.drawLine(data, scaleX, scaleY, colors);
-
-    // Draw points
     this.drawPoints(data, scaleX, scaleY, colors);
-
-    // Draw Y-axis labels
     this.drawYAxisLabels(padding, chartHeight, paddedMin, paddedMax, colors);
   }
 
@@ -155,7 +216,6 @@ class EquityChart {
     this.ctx.strokeStyle = colors.grid;
     this.ctx.lineWidth = 1;
 
-    // Horizontal grid lines (5 lines)
     for (let i = 0; i <= 4; i++) {
       const y = padding.top + (chartHeight / 4) * i;
       this.ctx.beginPath();
@@ -168,7 +228,12 @@ class EquityChart {
   drawFill(data, scaleX, scaleY, padding, chartHeight, colors) {
     if (data.length < 2) return;
 
-    const gradient = this.ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+    const gradient = this.ctx.createLinearGradient(
+      0,
+      padding.top,
+      0,
+      padding.top + chartHeight
+    );
     gradient.addColorStop(0, colors.fill);
     gradient.addColorStop(1, colors.fillEnd);
 
@@ -179,7 +244,6 @@ class EquityChart {
       this.ctx.lineTo(scaleX(data[i].date), scaleY(data[i].balance));
     }
 
-    // Close the path along the bottom
     this.ctx.lineTo(scaleX(data[data.length - 1].date), padding.top + chartHeight);
     this.ctx.lineTo(scaleX(data[0].date), padding.top + chartHeight);
     this.ctx.closePath();
@@ -207,21 +271,19 @@ class EquityChart {
   }
 
   drawPoints(data, scaleX, scaleY, colors) {
-    // Skip first point (starting balance)
     for (let i = 1; i < data.length; i++) {
       const point = data[i];
       const x = scaleX(point.date);
       const y = scaleY(point.balance);
       const isProfit = point.pnl >= 0;
 
-      // Draw circle
       this.ctx.beginPath();
       this.ctx.arc(x, y, 4, 0, Math.PI * 2);
       this.ctx.fillStyle = isProfit ? colors.profit : colors.loss;
       this.ctx.fill();
 
-      // White border
-      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.strokeStyle =
+        document.documentElement.dataset.theme === 'light' ? '#ffffff' : '#0f172a';
       this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
     }
@@ -245,9 +307,11 @@ class EquityChart {
   }
 
   formatCurrency(value) {
-    if (Math.abs(value) >= 1000000) {
+    const abs = Math.abs(value);
+
+    if (abs >= 1000000) {
       return '$' + (value / 1000000).toFixed(1) + 'M';
-    } else if (Math.abs(value) >= 1000) {
+    } else if (abs >= 1000) {
       return '$' + (value / 1000).toFixed(1) + 'k';
     }
     return '$' + value.toFixed(0);

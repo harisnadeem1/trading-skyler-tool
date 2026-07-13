@@ -13,7 +13,6 @@ class TradeWizard {
     this.totalSteps = 4;
     this.skippedSteps = [];
 
-    // Thesis data collected during wizard
     this.thesis = {
       setupType: null,
       theme: null,
@@ -32,19 +31,15 @@ class TradeWizard {
 
   cacheElements() {
     this.elements = {
-      // Modal
       modal: document.getElementById('wizardModal'),
       overlay: document.getElementById('wizardModalOverlay'),
       closeBtn: document.getElementById('closeWizardBtn'),
 
-      // Progress
       progressSteps: document.querySelectorAll('.wizard-progress__step'),
       connectors: document.querySelectorAll('.wizard-progress__connector'),
 
-      // Steps
       steps: document.querySelectorAll('.wizard-step'),
 
-      // Step 1 - Trade Details
       wizardTickerInput: document.getElementById('wizardTickerInput'),
       wizardTickerHint: document.getElementById('wizardTickerHint'),
       wizardEntry: document.getElementById('wizardEntry'),
@@ -56,7 +51,6 @@ class TradeWizard {
       skipAllBtn: document.getElementById('wizardSkipAll'),
       next1Btn: document.getElementById('wizardNext1'),
 
-      // Step 2 - Thesis
       setupBtns: document.querySelectorAll('[data-setup]'),
       themeInput: document.getElementById('wizardTheme'),
       convictionStars: document.querySelectorAll('.wizard-star'),
@@ -64,7 +58,6 @@ class TradeWizard {
       skip2Btn: document.getElementById('wizardSkip2'),
       next2Btn: document.getElementById('wizardNext2'),
 
-      // Step 3 - Entry Tactics
       entryTypeBtns: document.querySelectorAll('[data-entry-type]'),
       riskReasoningInput: document.getElementById('wizardRiskReasoning'),
       notesInput: document.getElementById('wizardNotes'),
@@ -72,7 +65,6 @@ class TradeWizard {
       skip3Btn: document.getElementById('wizardSkip3'),
       next3Btn: document.getElementById('wizardNext3'),
 
-      // Step 4 - Confirmation
       confirmTicker: document.getElementById('wizardConfirmTicker'),
       confirmPosition: document.getElementById('wizardConfirmPosition'),
       confirmRisk: document.getElementById('wizardConfirmRisk'),
@@ -87,17 +79,14 @@ class TradeWizard {
       back4Btn: document.getElementById('wizardBack4'),
       confirmBtn: document.getElementById('wizardConfirmBtn'),
 
-      // Confetti
       confettiCanvas: document.getElementById('confettiCanvas')
     };
   }
 
   bindEvents() {
-    // Close modal
     this.elements.closeBtn?.addEventListener('click', () => this.close());
     this.elements.overlay?.addEventListener('click', () => this.close());
 
-    // Keyboard
     document.addEventListener('keydown', (e) => {
       if (!this.isOpen()) return;
       if (e.key === 'Escape') this.close();
@@ -107,50 +96,43 @@ class TradeWizard {
       }
     });
 
-    // Step 1 buttons - require ticker before proceeding
-    this.elements.skipAllBtn?.addEventListener('click', () => {
-      if (this.validateTicker()) this.skipAll();
+    this.elements.skipAllBtn?.addEventListener('click', async () => {
+      if (this.validateTicker()) await this.skipAll();
     });
     this.elements.next1Btn?.addEventListener('click', () => {
       if (this.validateTicker()) this.goToStep(2);
     });
 
-    // Step 2 buttons
     this.elements.back2Btn?.addEventListener('click', () => this.goToStep(1));
     this.elements.skip2Btn?.addEventListener('click', () => this.skipStep(2));
     this.elements.next2Btn?.addEventListener('click', () => this.goToStep(3));
 
-    // Step 3 buttons
     this.elements.back3Btn?.addEventListener('click', () => this.goToStep(2));
     this.elements.skip3Btn?.addEventListener('click', () => this.skipStep(3));
     this.elements.next3Btn?.addEventListener('click', () => this.goToStep(4));
 
-    // Step 4 buttons
     this.elements.back4Btn?.addEventListener('click', () => this.goToStep(3));
-    this.elements.confirmBtn?.addEventListener('click', () => this.confirmTrade());
+    this.elements.confirmBtn?.addEventListener('click', async () => this.confirmTrade());
 
-    // Setup type buttons
-    this.elements.setupBtns?.forEach(btn => {
+    this.elements.setupBtns?.forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.elements.setupBtns.forEach(b => b.classList.remove('active'));
+        this.elements.setupBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.thesis.setupType = btn.dataset.setup;
       });
     });
 
-    // Entry type buttons
-    this.elements.entryTypeBtns?.forEach(btn => {
+    this.elements.entryTypeBtns?.forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.elements.entryTypeBtns.forEach(b => b.classList.remove('active'));
+        this.elements.entryTypeBtns.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.thesis.entryType = btn.dataset.entryType;
       });
     });
 
-    // Conviction stars
-    this.elements.convictionStars?.forEach(star => {
+    this.elements.convictionStars?.forEach((star) => {
       star.addEventListener('click', () => {
-        const level = parseInt(star.dataset.conviction);
+        const level = parseInt(star.dataset.conviction, 10);
         this.thesis.conviction = level;
         this.elements.convictionStars.forEach((s, i) => {
           s.classList.toggle('active', i < level);
@@ -158,12 +140,10 @@ class TradeWizard {
       });
     });
 
-    // Ticker input - update state and UI as user types
     this.elements.wizardTickerInput?.addEventListener('input', () => {
       const ticker = this.elements.wizardTickerInput.value.toUpperCase();
-      this.elements.wizardTickerInput.value = ticker; // Force uppercase
+      this.elements.wizardTickerInput.value = ticker;
       this.updateTickerHint();
-      // Update state so it persists
       state.updateTrade({ ticker });
     });
   }
@@ -175,7 +155,6 @@ class TradeWizard {
   open() {
     if (!this.elements.modal) return;
 
-    // Reset state
     this.currentStep = 1;
     this.skippedSteps = [];
     this.thesis = {
@@ -187,18 +166,13 @@ class TradeWizard {
     };
     this.notes = '';
 
-    // Reset UI
     this.resetForm();
-
-    // Pre-fill from calculator
     this.prefillFromCalculator();
 
-    // Show modal
     this.elements.modal.classList.add('open');
     this.elements.overlay?.classList.add('open');
     document.body.style.overflow = 'hidden';
 
-    // Show step 1
     this.showStep(1);
   }
 
@@ -209,18 +183,15 @@ class TradeWizard {
   }
 
   resetForm() {
-    // Reset buttons
-    this.elements.setupBtns?.forEach(b => b.classList.remove('active'));
-    this.elements.entryTypeBtns?.forEach(b => b.classList.remove('active'));
-    this.elements.convictionStars?.forEach(s => s.classList.remove('active'));
+    this.elements.setupBtns?.forEach((b) => b.classList.remove('active'));
+    this.elements.entryTypeBtns?.forEach((b) => b.classList.remove('active'));
+    this.elements.convictionStars?.forEach((s) => s.classList.remove('active'));
 
-    // Reset inputs
     if (this.elements.themeInput) this.elements.themeInput.value = '';
     if (this.elements.riskReasoningInput) this.elements.riskReasoningInput.value = '';
     if (this.elements.notesInput) this.elements.notesInput.value = '';
 
-    // Reset progress
-    this.elements.progressSteps?.forEach(step => {
+    this.elements.progressSteps?.forEach((step) => {
       step.classList.remove('active', 'completed');
     });
     this.elements.progressSteps?.[0]?.classList.add('active');
@@ -239,7 +210,6 @@ class TradeWizard {
   validateTicker() {
     const ticker = this.elements.wizardTickerInput?.value.trim();
     if (!ticker) {
-      // Shake the input to indicate error
       this.elements.wizardTickerInput?.classList.add('wizard-ticker-input--shake');
       this.elements.wizardTickerInput?.focus();
       setTimeout(() => {
@@ -255,7 +225,6 @@ class TradeWizard {
     const results = state.results;
     const account = state.account;
 
-    // Step 1 ticker input
     if (this.elements.wizardTickerInput) {
       this.elements.wizardTickerInput.value = trade.ticker || '';
       this.updateTickerHint();
@@ -279,7 +248,6 @@ class TradeWizard {
       this.elements.wizardTarget.textContent = trade.target ? formatCurrency(trade.target) : '—';
     }
 
-    // Step 4 confirmation - will be updated in updateConfirmation()
     if (this.elements.confirmTicker) {
       this.elements.confirmTicker.textContent = trade.ticker || 'No Ticker';
     }
@@ -296,7 +264,6 @@ class TradeWizard {
   showStep(step) {
     this.currentStep = step;
 
-    // Update steps visibility
     this.elements.steps?.forEach((stepEl, i) => {
       const stepNum = i + 1;
       stepEl.classList.remove('active', 'exit-left');
@@ -305,7 +272,6 @@ class TradeWizard {
       }
     });
 
-    // Update progress indicators
     this.elements.progressSteps?.forEach((progressStep, i) => {
       const stepNum = i + 1;
       progressStep.classList.remove('active', 'completed');
@@ -316,7 +282,6 @@ class TradeWizard {
       }
     });
 
-    // Update confirmation on step 4
     if (step === 4) {
       this.updateConfirmation();
     }
@@ -324,10 +289,7 @@ class TradeWizard {
 
   goToStep(step) {
     if (step < 1 || step > this.totalSteps) return;
-
-    // Collect data before leaving current step
     this.collectStepData();
-
     this.showStep(step);
   }
 
@@ -346,19 +308,16 @@ class TradeWizard {
     this.goToStep(step + 1);
   }
 
-  skipAll() {
-    // Direct save without wizard
-    this.logTrade(false);
+  async skipAll() {
+    await this.logTrade(false);
     this.close();
   }
 
   collectStepData() {
-    // Step 2 - Thesis
     if (this.currentStep === 2) {
       this.thesis.theme = this.elements.themeInput?.value.trim() || null;
     }
 
-    // Step 3 - Entry Tactics
     if (this.currentStep === 3) {
       this.thesis.riskReasoning = this.elements.riskReasoningInput?.value.trim() || null;
       this.notes = this.elements.notesInput?.value.trim() || '';
@@ -366,14 +325,12 @@ class TradeWizard {
   }
 
   updateConfirmation() {
-    // Update ticker from input
     const ticker = this.elements.wizardTickerInput?.value.trim() || '';
     if (this.elements.confirmTicker) {
       this.elements.confirmTicker.textContent = ticker || 'No Ticker';
       this.elements.confirmTicker.classList.toggle('wizard-confirmation__ticker--empty', !ticker);
     }
 
-    // Update setup row
     if (this.thesis.setupType) {
       this.elements.confirmSetupRow.style.display = 'flex';
       this.elements.confirmSetup.textContent = this.thesis.setupType.toUpperCase();
@@ -381,7 +338,6 @@ class TradeWizard {
       this.elements.confirmSetupRow.style.display = 'none';
     }
 
-    // Update theme row
     if (this.thesis.theme) {
       this.elements.confirmThemeRow.style.display = 'flex';
       this.elements.confirmTheme.textContent = this.thesis.theme;
@@ -389,7 +345,6 @@ class TradeWizard {
       this.elements.confirmThemeRow.style.display = 'none';
     }
 
-    // Update entry type row
     if (this.thesis.entryType) {
       this.elements.confirmEntryTypeRow.style.display = 'flex';
       this.elements.confirmEntryType.textContent =
@@ -398,17 +353,16 @@ class TradeWizard {
       this.elements.confirmEntryTypeRow.style.display = 'none';
     }
 
-    // Show streak preview
     const progress = state.journalMeta.achievements.progress;
     const today = new Date().toDateString();
-    const lastDate = progress.lastTradeDate ? new Date(progress.lastTradeDate).toDateString() : null;
+    const lastDate = progress.lastTradeDate
+      ? new Date(progress.lastTradeDate).toDateString()
+      : null;
 
     if (lastDate !== today && progress.currentStreak > 0) {
-      // Will extend streak
       this.elements.streakDisplay.style.display = 'flex';
       this.elements.streakText.textContent = `${progress.currentStreak + 1} day streak!`;
     } else if (!lastDate) {
-      // First trade ever
       this.elements.streakDisplay.style.display = 'flex';
       this.elements.streakText.textContent = 'Start your streak!';
     } else {
@@ -416,92 +370,93 @@ class TradeWizard {
     }
   }
 
-  confirmTrade() {
+  async confirmTrade() {
     this.collectStepData();
-    this.logTrade(true);
+    await this.logTrade(true);
     this.close();
   }
 
-  logTrade(wizardComplete = false) {
+  async logTrade(wizardComplete = false) {
     const trade = state.trade;
     const results = state.results;
     const account = state.account;
 
-    // Build entry
     const entry = {
-      ticker: trade.ticker,
+      ticker: this.elements.wizardTickerInput?.value.trim() || trade.ticker,
       entry: trade.entry,
       stop: trade.stop,
       originalStop: trade.stop,
       currentStop: trade.stop,
       target: trade.target,
       shares: results.shares,
+      originalShares: results.shares,
+      remainingShares: results.shares,
       positionSize: results.positionSize,
       riskDollars: results.riskDollars,
       riskPercent: account.riskPercent,
       stopDistance: results.stopDistance,
       notes: this.notes || trade.notes || '',
       status: 'open',
-
-      // Thesis data
+      exitPrice: null,
+      exitDate: null,
+      pnl: null,
+      totalRealizedPnL: 0,
       thesis: this.hasThesisData() ? { ...this.thesis } : null,
       wizardComplete,
       wizardSkipped: [...this.skippedSteps]
     };
 
-    // Add to journal
-    const newEntry = state.addJournalEntry(entry);
+    try {
+      const newEntry = await state.addJournalEntry(entry);
 
-    // Update progress
-    const progress = state.journalMeta.achievements.progress;
-    progress.totalTrades++;
+      const progress = state.journalMeta.achievements.progress;
+      progress.totalTrades += 1;
 
-    if (this.notes) {
-      progress.tradesWithNotes++;
-    }
-    if (this.hasThesisData()) {
-      progress.tradesWithThesis++;
-    }
-    if (wizardComplete && this.skippedSteps.length === 0) {
-      progress.completeWizardCount++;
-    }
+      if (this.notes) {
+        progress.tradesWithNotes += 1;
+      }
+      if (this.hasThesisData()) {
+        progress.tradesWithThesis += 1;
+      }
+      if (wizardComplete && this.skippedSteps.length === 0) {
+        progress.completeWizardCount += 1;
+      }
 
-    // Update streak
-    state.updateStreak();
+      state.updateStreak();
 
-    // Save progress
-    state.saveJournalMeta();
+      state.emit('tradeLogged', {
+        entry: newEntry,
+        wizardComplete,
+        thesis: this.thesis
+      });
 
-    // Trigger events for achievements/celebrations
-    state.emit('tradeLogged', {
-      entry: newEntry,
-      wizardComplete,
-      thesis: this.thesis
-    });
+      this.showSuccessToast();
 
-    // Show success toast
-    this.showSuccessToast();
-
-    // Trigger confetti if celebrations enabled
-    if (state.journalMeta.settings.celebrationsEnabled) {
-      state.emit('triggerConfetti');
+      if (state.settings.celebrationsEnabled) {
+        state.emit('triggerConfetti');
+      }
+    } catch (error) {
+      console.error('Failed to log wizard trade:', error);
+      showToast('❌ Failed to log trade', 'error');
     }
   }
 
   hasThesisData() {
-    return this.thesis.setupType ||
-           this.thesis.theme ||
-           this.thesis.conviction ||
-           this.thesis.entryType ||
-           this.thesis.riskReasoning;
+    return (
+      this.thesis.setupType ||
+      this.thesis.theme ||
+      this.thesis.conviction ||
+      this.thesis.entryType ||
+      this.thesis.riskReasoning
+    );
   }
 
   showSuccessToast() {
     const messages = [
-      "✅ Trade logged! Good luck!",
-      "🎯 Nice setup! Tracked.",
+      '✅ Trade logged! Good luck!',
+      '🎯 Nice setup! Tracked.',
       "🔥 You're on a roll! Trade saved.",
-      "📝 Disciplined trader! Logged.",
+      '📝 Disciplined trader! Logged.',
       "✅ Trade captured! Let's go!"
     ];
     const message = messages[Math.floor(Math.random() * messages.length)];
