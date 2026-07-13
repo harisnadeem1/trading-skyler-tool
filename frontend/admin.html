@@ -28,21 +28,26 @@
   </div>
 
   <main id="admin-app" class="admin-shell" style="display: none;">
-    <div class="admin-wrap">
-      <header class="admin-header">
-        <div class="admin-brand">
-          <div class="admin-brand__mark" aria-hidden="true">G</div>
-          <div class="admin-title">
-            <h1>GianKom Admin</h1>
-          </div>
+  <div class="admin-wrap">
+    <header class="admin-header">
+      <div class="admin-brand">
+        <div class="admin-brand__mark" aria-hidden="true">G</div>
+        <div class="admin-title">
+          <h1>GianKom Admin</h1>
         </div>
+      </div>
 
-        <div class="admin-actions">
-          <a href="./index.html" class="admin-btn admin-btn--ghost">Open app</a>
-          <button id="admin-logout-btn" class="admin-btn" type="button">Logout</button>
-        </div>
-      </header>
+      <div class="admin-actions">
+        <button id="admin-logout-btn" class="admin-btn" type="button">Logout</button>
+      </div>
+    </header>
 
+    <section class="admin-tabs" aria-label="Admin sections">
+      <button class="admin-tab is-active" type="button" data-admin-tab="invites">Invites</button>
+      <button class="admin-tab" type="button" data-admin-tab="users">Users</button>
+    </section>
+
+    <section id="admin-panel-invites" class="admin-panel is-active">
       <section class="admin-stats">
         <article class="admin-stat-card">
           <span class="admin-stat-card__label">Total invites</span>
@@ -104,12 +109,10 @@
               <span class="admin-info-item__step">01</span>
               <p>Admin creates an invite for a specific email address.</p>
             </div>
-
             <div class="admin-info-item">
               <span class="admin-info-item__step">02</span>
               <p>Send one-time signup link with token validation to the user.</p>
             </div>
-
             <div class="admin-info-item">
               <span class="admin-info-item__step">03</span>
               <p>After signup, the invite becomes used and the user can log in normally.</p>
@@ -119,40 +122,158 @@
       </section>
 
       <section class="admin-card admin-card--table">
-  <div class="admin-card__header">
-    <div>
-      <h2>Invites</h2>
-      <p>Track pending, accepted, and expired invitations.</p>
-    </div>
+        <div class="admin-card__header">
+          <div>
+            <h2>Invites</h2>
+            <p>Track pending, accepted, and expired invitations.</p>
+          </div>
 
-    <button id="refresh-invites-btn" class="admin-btn admin-btn--ghost" type="button">
-      Refresh
-    </button>
-  </div>
+          <button id="refresh-invites-btn" class="admin-btn admin-btn--ghost" type="button">
+            Refresh
+          </button>
+        </div>
 
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>Status</th>
-          <th>Created</th>
-          <th>Accepted</th>
-          <th>Expires</th>
-          <th>Time left</th>
-          <th>Link</th>
-        </tr>
-      </thead>
-      <tbody id="invites-tbody">
-        <tr>
-          <td colspan="7" class="admin-table__empty">No invites found yet.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Accepted</th>
+                <th>Expires</th>
+                <th>Time left</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="invites-tbody">
+              <tr>
+                <td colspan="7" class="admin-table__empty">No invites found yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+   <section id="admin-panel-users" class="admin-panel" hidden>
+  <section class="admin-user-overview">
+    <article class="admin-stat-card">
+      <span class="admin-stat-card__label">Total users</span>
+      <strong id="stat-total-users">0</strong>
+    </article>
+
+    <article class="admin-stat-card">
+      <span class="admin-stat-card__label">Active users</span>
+      <strong id="stat-active-users">0</strong>
+    </article>
+
+    <article class="admin-stat-card">
+      <span class="admin-stat-card__label">Total trades</span>
+      <strong id="stat-total-trades">0</strong>
+    </article>
+
+    <article class="admin-stat-card">
+      <span class="admin-stat-card__label">Open positions</span>
+      <strong id="stat-open-positions">0</strong>
+    </article>
+  </section>
+
+  <section class="admin-users-workspace">
+    <aside class="admin-users-sidebar admin-card">
+      <div class="admin-card__header admin-card__header--stack">
+        <div>
+          <h2>Users</h2>
+          <p>Select a user to inspect their account and journal.</p>
+        </div>
+
+        <div class="admin-users-toolbar">
+          <input
+            id="user-search"
+            class="admin-users-search"
+            type="search"
+            placeholder="Search by email"
+            autocomplete="off"
+          />
+          <button id="refresh-users-btn" class="admin-btn admin-btn--ghost" type="button">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div id="users-list" class="admin-users-list">
+        <div class="admin-empty-state">No users found.</div>
+      </div>
+
+      <div class="admin-pagination">
+        <button id="users-prev-btn" class="admin-btn admin-btn--ghost" type="button">Previous</button>
+        <span id="users-page-label" class="admin-pagination__label">Page 1</span>
+        <button id="users-next-btn" class="admin-btn admin-btn--ghost" type="button">Next</button>
+      </div>
+    </aside>
+
+    <section class="admin-user-detail">
+      <div id="user-detail-hero" class="admin-card admin-user-hero">
+        <div class="admin-empty-state">Select a user from the left side.</div>
+      </div>
+
+        <section id="user-account-card" class="admin-card">
+          <div class="admin-card__header">
+            <div>
+              <h2>Account</h2>
+              <p>Profile and risk settings.</p>
+            </div>
+          </div>
+          <div class="admin-empty-state">Select a user to load account details.</div>
+        </section>
+
+        <section id="user-stats-card" class="admin-card">
+          <div class="admin-card__header">
+            <div>
+              <h2>Trading stats</h2>
+              <p>Journal and performance summary.</p>
+            </div>
+          </div>
+          <div class="admin-empty-state">Select a user to load stats.</div>
+        </section>
+
+      <section id="user-positions-card" class="admin-card admin-card--table">
+        <div class="admin-card__header">
+          <div>
+            <h2>Open positions</h2>
+            <p>Currently active trades for the selected user.</p>
+          </div>
+        </div>
+        <div class="admin-empty-state">No user selected.</div>
+      </section>
+
+      <section id="user-journal-card" class="admin-card admin-card--table">
+        <div class="admin-card__header">
+          <div>
+            <h2>Recent journal</h2>
+            <p>Latest journal entries and trade lifecycle activity.</p>
+          </div>
+        </div>
+        <div class="admin-empty-state">No user selected.</div>
+      </section>
+
+
+       <section id="user-exits-card" class="admin-card">
+          <div class="admin-card__header">
+            <div>
+              <h2>Recent exits</h2>
+              <p>Latest trims and closes.</p>
+            </div>
+          </div>
+          <div class="admin-empty-state">No user selected.</div>
+        </section>
+
+      
+    </section>
+  </section>
 </section>
-    </div>
-  </main>
+  </div>
+</main>
 
   <script type="module" src="./js/admin.js"></script>
 </body>
