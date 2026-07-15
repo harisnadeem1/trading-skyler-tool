@@ -42,16 +42,21 @@ class Calculator {
   }
 
   syncRiskButton() {
-    const currentRisk = state.account.riskPercent || state.settings.defaultRiskPercent;
-    document.querySelectorAll('.risk-btn').forEach(btn => {
-      const btnRisk = parseFloat(btn.dataset.risk);
-      if (btnRisk === currentRisk) {
-        btn.classList.add('risk-btn--active');
-      } else {
-        btn.classList.remove('risk-btn--active');
-      }
-    });
+  const currentRisk = state.account.riskPercent || state.settings.defaultRiskPercent;
+
+  document.querySelectorAll('.risk-btn').forEach(btn => {
+    const btnRisk = parseFloat(btn.dataset.risk);
+    if (btnRisk === currentRisk) {
+      btn.classList.add('risk-btn--active');
+    } else {
+      btn.classList.remove('risk-btn--active');
+    }
+  });
+
+  if (this.elements.customRisk) {
+    this.elements.customRisk.value = String(currentRisk);
   }
+}
 
   cacheElements() {
     this.elements = {
@@ -254,22 +259,22 @@ class Calculator {
   }
 
   handleRiskButton(e) {
-    const btn = e.target.closest('.risk-btn');
-    if (!btn) return;
+  const btn = e.target.closest('.risk-btn');
+  if (!btn) return;
 
-    const risk = parseFloat(btn.dataset.risk);
-    if (isNaN(risk)) return;
+  const risk = parseFloat(btn.dataset.risk);
+  if (isNaN(risk)) return;
 
-    document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('risk-btn--active'));
-    btn.classList.add('risk-btn--active');
+  document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('risk-btn--active'));
+  btn.classList.add('risk-btn--active');
 
-    if (this.elements.customRisk) {
-      this.elements.customRisk.value = '';
-    }
-
-    state.updateAccount({ riskPercent: risk });
-    this.calculate();
+  if (this.elements.customRisk) {
+    this.elements.customRisk.value = String(risk);
   }
+
+  state.updateAccount({ riskPercent: risk });
+  this.calculate();
+}
 
   clear() {
     if (this.elements.ticker) this.elements.ticker.value = '';

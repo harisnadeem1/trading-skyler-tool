@@ -61,7 +61,7 @@ class PositionsView {
       addEntry: document.getElementById('positionsAddEntry'),
       addStop: document.getElementById('positionsAddStop'),
       addTarget: document.getElementById('positionsAddTarget'),
-      addRisk: document.getElementById('positionsAddRisk'),
+      addShares: document.getElementById('positionsAddShares'),
 
       previewShares: document.getElementById('positionsAddPreviewShares'),
       previewPosition: document.getElementById('positionsAddPreviewPosition'),
@@ -121,7 +121,7 @@ class PositionsView {
       this.elements.addEntry,
       this.elements.addStop,
       this.elements.addTarget,
-      this.elements.addRisk
+      this.elements.addShares
     ];
 
     numericInputs.forEach((el) => {
@@ -175,9 +175,7 @@ openAddTradeModal() {
   if (this.elements.addEntry) this.elements.addEntry.value = '';
   if (this.elements.addStop) this.elements.addStop.value = '';
   if (this.elements.addTarget) this.elements.addTarget.value = '';
-  if (this.elements.addRisk) {
-    this.elements.addRisk.value = String(state.account.riskPercent ?? 1);
-  }
+  if (this.elements.addShares) this.elements.addShares.value = '';
 
   
 
@@ -209,20 +207,19 @@ getAddTradeFormData() {
     direction = stop > entry ? 'short' : 'long';
   }
 
-  return {
-    ticker: this.elements.addTicker?.value.trim().toUpperCase() || '',
-    direction,
-    entry,
-    stop,
-    target: this.elements.addTarget?.value ? Number(this.elements.addTarget.value) : null,
-    riskPercent: Number(this.elements.addRisk?.value || 0)
-  };
+ return {
+  ticker: this.elements.addTicker?.value.trim().toUpperCase() || '',
+  direction,
+  entry,
+  stop,
+  target: this.elements.addTarget?.value ? Number(this.elements.addTarget.value) : null,
+  shares: Number(this.elements.addShares?.value || 0)
+};
 }
 
 updateAddTradePreview() {
-  const { direction, entry, stop, riskPercent } = this.getAddTradeFormData();
+  const { direction, entry, stop, shares } = this.getAddTradeFormData();
   const accountSize = Number(state.account.currentSize || 0);
-  
 
   let stopPerShare = 0;
 
@@ -232,26 +229,18 @@ updateAddTradePreview() {
     stopPerShare = entry > stop ? entry - stop : 0;
   }
 
-  const riskDollars = accountSize > 0 && riskPercent > 0
-    ? (accountSize * riskPercent) / 100
+  const actualRiskDollars = shares > 0 ? shares * stopPerShare : 0;
+  const actualRiskPercent = accountSize > 0
+    ? (actualRiskDollars / accountSize) * 100
     : 0;
 
-  const shares = stopPerShare > 0
-    ? Math.floor(riskDollars / stopPerShare)
-    : 0;
-
-    const actualRiskDollars = shares * stopPerShare;
-const actualRiskPercent = accountSize > 0
-  ? (actualRiskDollars / accountSize) * 100
-  : 0;
-
-  const positionSize = shares * entry;
+  const positionSize = shares > 0 ? shares * entry : 0;
   const stopDistancePercent = entry > 0 && stopPerShare > 0
     ? (stopPerShare / entry) * 100
     : 0;
 
   if (this.elements.previewShares) {
-    this.elements.previewShares.textContent = String(shares);
+    this.elements.previewShares.textContent = String(shares || 0);
   }
 
   if (this.elements.previewPosition) {
@@ -259,12 +248,12 @@ const actualRiskPercent = accountSize > 0
   }
 
   if (this.elements.previewRisk) {
-  this.elements.previewRisk.textContent = formatCurrency(actualRiskDollars);
-}
+    this.elements.previewRisk.textContent = formatCurrency(actualRiskDollars);
+  }
 
-if (this.elements.previewRiskPercent) {
-  this.elements.previewRiskPercent.textContent = `${formatPercent(actualRiskPercent)} of account`;
-}
+  if (this.elements.previewRiskPercent) {
+    this.elements.previewRiskPercent.textContent = `${formatPercent(actualRiskPercent)} of account`;
+  }
 
   if (this.elements.previewStopDistance) {
     this.elements.previewStopDistance.textContent = formatPercent(stopDistancePercent);
@@ -274,9 +263,8 @@ if (this.elements.previewRiskPercent) {
     this.elements.previewPerShare.textContent = `${formatCurrency(stopPerShare)}/share`;
   }
 }
-
 startWizardFromPositions() {
-  const { ticker, direction, entry, stop, target, riskPercent } = this.getAddTradeFormData();
+  const { ticker, direction, entry, stop, target, shares } = this.getAddTradeFormData();
   const accountSize = Number(state.account.currentSize || 0);
 
   if (!(entry > 0)) {
@@ -289,10 +277,10 @@ startWizardFromPositions() {
     return;
   }
 
-  if (!(riskPercent > 0)) {
-    alert('Enter a valid risk %');
-    return;
-  }
+  if (!(shares > 0)) {
+  alert('Enter a valid number of shares');
+  return;
+}
 
   if (stop === entry) {
     alert('Stop loss must be different from entry');
@@ -321,12 +309,12 @@ startWizardFromPositions() {
   }
 
   const stopPerShare = Math.abs(entry - stop);
-  const riskDollars = (accountSize * riskPercent) / 100;
-  const shares = stopPerShare > 0 ? Math.floor(riskDollars / stopPerShare) : 0;
-  const positionSize = shares * entry;
-  const stopDistance = entry > 0 ? (stopPerShare / entry) * 100 : 0;
-  const actualRiskDollars = shares * stopPerShare;
-const actualRiskPercent = accountSize > 0 ? (actualRiskDollars / accountSize) * 100 : 0;
+const positionSize = shares * entry;
+const stopDistance = entry > 0 ? (stopPerShare / entry) * 100 : 0;
+const actualRiskDollars = shares * stopPerShare;
+const actualRiskPercent = accountSize > 0
+  ? (actualRiskDollars / accountSize) * 100
+  : 0;
 
   state.updateTrade({
     ticker,
@@ -338,20 +326,18 @@ const actualRiskPercent = accountSize > 0 ? (actualRiskDollars / accountSize) * 
   });
 
   state.updateResults({
-    shares,
+  shares,
   positionSize,
-  riskDollars,
+  riskDollars: actualRiskDollars,
   actualRiskDollars,
   stopDistance,
   stopPerShare,
   target,
   direction,
   actualRiskPercent
-  });
+});
 
-  state.updateAccount({
-    riskPercent
-  });
+ 
 
   this.closeAddTradeModal();
   wizard.open();
@@ -491,7 +477,8 @@ const actualRiskPercent = accountSize > 0 ? (actualRiskDollars / accountSize) * 
 
       // For trimmed trades, calculate NET risk (remaining risk - realized profit)
       const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
-      const riskPercent = (netRisk / state.account.currentSize) * 100;
+      const accountSize = Number(state.account.currentSize || 0);
+const riskPercent = accountSize > 0 ? (netRisk / accountSize) * 100 : 0;
 
       // Check if trade is "free rolled" - realized profit covers remaining risk
       const isFreeRoll = isTrimmed && realizedPnL >= (grossRisk - 0.01);

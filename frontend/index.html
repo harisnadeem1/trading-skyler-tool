@@ -773,9 +773,9 @@
               </div>
 
               <button class="positions-add-btn btn btn--success" id="positionsAddTradeBtn" type="button">
-  <span class="positions-add-btn__icon">+</span>
-  <span class="positions-add-btn__text">Add Trade</span>
-</button>
+                <span class="positions-add-btn__icon">+</span>
+                <span class="positions-add-btn__text">Add Trade</span>
+              </button>
             </div>
           </div>
         </div>
@@ -804,7 +804,7 @@
           <span class="positions-empty__icon">🧘</span>
           <h2 class="positions-empty__title">No Active Positions</h2>
           <p class="positions-empty__text">You're currently all cash. Add a trade to create a position.</p>
-          <button class="positions-empty__cta" id="positionsEmptyAddTradeBtn" type="button">
+          <button class="positions-empty__cta btn btn--success" id="positionsEmptyAddTradeBtn" type="button">
             Add Your First Trade
           </button>
         </div>
@@ -1821,148 +1821,116 @@
   </div> -->
 
     <div class="trade-create-modal" id="positionsAddTradeModal" aria-hidden="true">
-  <div class="trade-create-modal__backdrop" id="positionsAddTradeOverlay"></div>
+      <div class="trade-create-modal__backdrop" id="positionsAddTradeOverlay"></div>
 
-  <div
-    class="trade-create-modal__dialog card card--hero"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="positionsAddTradeTitle"
-  >
-    <div class="trade-create-modal__header card__header">
-      <div class="dashboard-header__left">
-        <span class="card__icon">📈</span>
-        <div>
-          <h2 class="trade-create-modal__title card__title" id="positionsAddTradeTitle">Add Trade</h2>
-          <p class="trade-create-modal__subtitle card__tagline">Calculate position and continue to wizard</p>
-        </div>
-      </div>
-
-      <button
-        class="trade-create-modal__close btn btn--clear"
-        id="positionsAddTradeClose"
-        type="button"
-        aria-label="Close add trade modal"
-      >
-        <span>×</span>
-      </button>
-    </div>
-
-    <div class="trade-create-modal__body card__body">
-      <div class="trade-create-modal__grid">
-        <div class="input-group">
-          <label class="input-label" for="positionsAddTicker">
-            Ticker
-            <span class="label-optional">(optional)</span>
-          </label>
-          <input
-            type="text"
-            class="input input--mono input--lg"
-            id="positionsAddTicker"
-            placeholder="TSLA"
-            autocomplete="off"
-          >
-        </div>
-
-        <div class="input-row">
-          <div class="input-group">
-            <label class="input-label" for="positionsAddEntry">Entry Price</label>
-            <div class="input-wrapper input-wrapper--prefix">
-              <span class="input-prefix">$</span>
-              <input
-                type="text"
-                class="input input--mono"
-                id="positionsAddEntry"
-                placeholder="0.00"
-                autocomplete="off"
-              >
+      <div class="trade-create-modal__dialog card card--hero" role="dialog" aria-modal="true"
+        aria-labelledby="positionsAddTradeTitle">
+        <div class="trade-create-modal__header card__header">
+          <div class="dashboard-header__left">
+            <span class="card__icon">📈</span>
+            <div>
+              <h2 class="trade-create-modal__title card__title" id="positionsAddTradeTitle">Add Trade</h2>
+              <p class="trade-create-modal__subtitle card__tagline">Calculate position and continue to wizard</p>
             </div>
           </div>
 
-          <div class="input-group">
-            <label class="input-label" for="positionsAddStop">Stop Loss</label>
-            <div class="input-wrapper input-wrapper--prefix">
-              <span class="input-prefix">$</span>
-              <input
-                type="text"
-                class="input input--mono"
-                id="positionsAddStop"
-                placeholder="0.00"
-                autocomplete="off"
-              >
+          <button class="trade-create-modal__close btn btn--clear" id="positionsAddTradeClose" type="button"
+            aria-label="Close add trade modal">
+            <span>×</span>
+          </button>
+        </div>
+
+        <div class="trade-create-modal__body card__body">
+          <div class="trade-create-modal__grid">
+            <div class="input-group">
+              <label class="input-label" for="positionsAddTicker">
+                Ticker
+                <span class="label-optional">(optional)</span>
+              </label>
+              <input type="text" class="input input--mono input--lg" id="positionsAddTicker" placeholder="TSLA"
+                autocomplete="off">
+            </div>
+
+            <div class="input-row">
+              <div class="input-group">
+                <label class="input-label" for="positionsAddEntry">Entry Price</label>
+                <div class="input-wrapper input-wrapper--prefix">
+                  <span class="input-prefix">$</span>
+                  <input type="text" class="input input--mono" id="positionsAddEntry" placeholder="0.00"
+                    autocomplete="off">
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="positionsAddStop">Stop Loss</label>
+                <div class="input-wrapper input-wrapper--prefix">
+                  <span class="input-prefix">$</span>
+                  <input type="text" class="input input--mono" id="positionsAddStop" placeholder="0.00"
+                    autocomplete="off">
+                </div>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="positionsAddTarget">
+                Target
+                <span class="label-optional">(optional)</span>
+              </label>
+              <div class="input-wrapper input-wrapper--prefix">
+                <span class="input-prefix">$</span>
+                <input type="text" class="input input--mono input--success" id="positionsAddTarget" placeholder="0.00"
+                  autocomplete="off">
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="positionsAddShares">Shares</label>
+              <div class="input-wrapper">
+                <input type="text" class="input input--mono" id="positionsAddShares" placeholder="100"
+                  autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <div class="trade-create-modal__summary results-grid">
+            <div class="trade-create-modal__summary-card result-card result-card--primary">
+              <span class="trade-create-modal__summary-label result-card__label">Shares to Buy</span>
+              <span class="trade-create-modal__summary-value result-card__value" id="positionsAddPreviewShares">0</span>
+              <span class="result-card__sub">shares</span>
+            </div>
+
+            <div class="trade-create-modal__summary-card result-card result-card--primary">
+              <span class="trade-create-modal__summary-label result-card__label">Position Size</span>
+              <span class="trade-create-modal__summary-value result-card__value"
+                id="positionsAddPreviewPosition">$0.00</span>
+              <span class="result-card__sub">capital used</span>
+            </div>
+
+            <div
+              class="trade-create-modal__summary-card trade-create-modal__summary-card--risk result-card result-card--danger">
+              <span class="trade-create-modal__summary-label result-card__label">Risk Amount</span>
+              <span class="trade-create-modal__summary-value result-card__value"
+                id="positionsAddPreviewRisk">$0.00</span>
+              <span class="trade-create-modal__summary-sub result-card__sub" id="positionsAddPreviewRiskPercent">0% of
+                account</span>
+            </div>
+
+            <div class="trade-create-modal__summary-card result-card result-card--stop">
+              <span class="trade-create-modal__summary-label result-card__label">Stop Distance</span>
+              <span class="trade-create-modal__summary-value result-card__value"
+                id="positionsAddPreviewStopDistance">0%</span>
+              <span class="trade-create-modal__summary-sub result-card__sub"
+                id="positionsAddPreviewPerShare">$0.00/share</span>
             </div>
           </div>
         </div>
 
-        <div class="input-group">
-          <label class="input-label" for="positionsAddTarget">
-            Target
-            <span class="label-optional">(optional)</span>
-          </label>
-          <div class="input-wrapper input-wrapper--prefix">
-            <span class="input-prefix">$</span>
-            <input
-              type="text"
-              class="input input--mono input--success"
-              id="positionsAddTarget"
-              placeholder="0.00"
-              autocomplete="off"
-            >
-          </div>
-        </div>
-
-        <div class="risk-selector">
-         
-
-          <div class="risk-selector__custom">
-            <span class="risk-selector__label">Custom</span>
-            <div class="input-wrapper input-wrapper--suffix input-wrapper--compact">
-              <input
-                type="text"
-                class="input input--mono"
-                id="positionsAddRisk"
-                placeholder="1"
-                autocomplete="off"
-              >
-              <span class="input-suffix">%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="trade-create-modal__summary results-grid">
-        <div class="trade-create-modal__summary-card result-card result-card--primary">
-          <span class="trade-create-modal__summary-label result-card__label">Shares to Buy</span>
-          <span class="trade-create-modal__summary-value result-card__value" id="positionsAddPreviewShares">0</span>
-          <span class="result-card__sub">shares</span>
-        </div>
-
-        <div class="trade-create-modal__summary-card result-card result-card--primary">
-          <span class="trade-create-modal__summary-label result-card__label">Position Size</span>
-          <span class="trade-create-modal__summary-value result-card__value" id="positionsAddPreviewPosition">$0.00</span>
-          <span class="result-card__sub">capital used</span>
-        </div>
-
-        <div class="trade-create-modal__summary-card trade-create-modal__summary-card--risk result-card result-card--danger">
-          <span class="trade-create-modal__summary-label result-card__label">Risk Amount</span>
-          <span class="trade-create-modal__summary-value result-card__value" id="positionsAddPreviewRisk">$0.00</span>
-          <span class="trade-create-modal__summary-sub result-card__sub" id="positionsAddPreviewRiskPercent">0% of account</span>
-        </div>
-
-        <div class="trade-create-modal__summary-card result-card result-card--stop">
-          <span class="trade-create-modal__summary-label result-card__label">Stop Distance</span>
-          <span class="trade-create-modal__summary-value result-card__value" id="positionsAddPreviewStopDistance">0%</span>
-          <span class="trade-create-modal__summary-sub result-card__sub" id="positionsAddPreviewPerShare">$0.00/share</span>
+        <div class="trade-create-modal__footer">
+          <button class="btn btn--secondary" id="positionsAddTradeCancel" type="button">Cancel</button>
+          <button class="btn btn--success" id="positionsAddTradeSave" type="button">Continue</button>
         </div>
       </div>
     </div>
-
-    <div class="trade-create-modal__footer">
-      <button class="btn btn--secondary" id="positionsAddTradeCancel" type="button">Cancel</button>
-      <button class="btn btn--success" id="positionsAddTradeSave" type="button">Continue</button>
-    </div>
-  </div>
-</div>
 
     <dialog id="journalTradeModal" class="journal-modal">
       <div class="journal-modal__header">
