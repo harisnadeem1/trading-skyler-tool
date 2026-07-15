@@ -42,6 +42,7 @@ class TradeWizard {
 
       wizardTickerInput: document.getElementById('wizardTickerInput'),
       wizardTickerHint: document.getElementById('wizardTickerHint'),
+      wizardDirection: document.getElementById('wizardDirection'),
       wizardEntry: document.getElementById('wizardEntry'),
       wizardStop: document.getElementById('wizardStop'),
       wizardShares: document.getElementById('wizardShares'),
@@ -252,9 +253,14 @@ class TradeWizard {
       this.elements.confirmTicker.textContent = trade.ticker || 'No Ticker';
     }
     if (this.elements.confirmPosition) {
+      const directionLabel = (trade.direction ?? 'long').toUpperCase();
       this.elements.confirmPosition.textContent =
-        `${formatNumber(results.shares || 0)} shares @ ${formatCurrency(trade.entry || 0)}`;
+        `${directionLabel} · ${formatNumber(results.shares || 0)} shares @ ${formatCurrency(trade.entry || 0)}`;
     }
+    if (this.elements.wizardDirection) {
+  this.elements.wizardDirection.textContent =
+    (trade.direction ?? 'long').toUpperCase();
+}
     if (this.elements.confirmRisk) {
       this.elements.confirmRisk.textContent =
         `${formatCurrency(results.riskDollars || 0)} (${formatPercent(account.riskPercent || 0)})`;
@@ -383,6 +389,7 @@ class TradeWizard {
 
     const entry = {
       ticker: this.elements.wizardTickerInput?.value.trim() || trade.ticker,
+      direction: trade.direction ?? 'long',
       entry: trade.entry,
       stop: trade.stop,
       originalStop: trade.stop,
@@ -425,10 +432,11 @@ class TradeWizard {
       state.updateStreak();
 
       state.emit('tradeLogged', {
-        entry: newEntry,
-        wizardComplete,
-        thesis: this.thesis
-      });
+  entry: newEntry,
+  wizardComplete,
+  thesis: this.thesis,
+  direction: newEntry.direction ?? trade.direction ?? 'long'
+});
 
       this.showSuccessToast();
 

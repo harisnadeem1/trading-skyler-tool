@@ -36,6 +36,13 @@ async function createJournalEntry(req, res) {
     return res.status(201).json({ entry });
   } catch (error) {
     console.error('createJournalEntry error:', error);
+
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({
+        message: error.message.replace('VALIDATION: ', ''),
+      });
+    }
+
     return res.status(500).json({ message: 'Failed to create journal entry' });
   }
 }
@@ -43,12 +50,21 @@ async function createJournalEntry(req, res) {
 async function updateJournalEntry(req, res) {
   try {
     const entry = await userService.updateJournalEntry(req.user.id, req.params.id, req.body);
+
     if (!entry) {
       return res.status(404).json({ message: 'Journal entry not found' });
     }
+
     return res.json({ entry });
   } catch (error) {
     console.error('updateJournalEntry error:', error);
+
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({
+        message: error.message.replace('VALIDATION: ', ''),
+      });
+    }
+
     return res.status(500).json({ message: 'Failed to update journal entry' });
   }
 }
@@ -69,12 +85,21 @@ async function deleteJournalEntry(req, res) {
 async function addJournalExit(req, res) {
   try {
     const result = await userService.addJournalExit(req.user.id, req.params.id, req.body);
+
     if (!result) {
       return res.status(404).json({ message: 'Journal entry not found' });
     }
+
     return res.status(201).json(result);
   } catch (error) {
     console.error('addJournalExit error:', error);
+
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({
+        message: error.message.replace('VALIDATION: ', ''),
+      });
+    }
+
     return res.status(500).json({ message: 'Failed to add journal exit' });
   }
 }

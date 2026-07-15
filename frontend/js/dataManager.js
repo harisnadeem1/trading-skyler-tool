@@ -196,6 +196,7 @@ export const dataManager = {
     const headers = [
       'Date',
       'Ticker',
+      'Direction',
       'Entry',
       'Stop',
       'Target',
@@ -209,21 +210,28 @@ export const dataManager = {
       'Notes',
     ];
 
-    const rows = trades.map((t) => [
-      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
-      t.ticker,
-      t.entry ?? t.entry_price,
-      t.stop ?? t.stop_price,
-      t.target ?? t.target_price ?? '',
-      t.shares,
-      Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
-      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
-      t.riskPercent ?? t.risk_percent ?? '',
-      t.status,
-      t.exitPrice ?? t.exit_price ?? '',
-      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
-      `"${(t.notes || '').replace(/"/g, '""')}"`,
-    ]);
+    const rows = trades.map((t) => {
+  const entry = Number(t.entry ?? t.entry_price ?? 0);
+  const stop = Number(t.stop ?? t.stop_price ?? 0);
+  const direction = t.direction ?? (stop > entry ? 'short' : 'long');
+
+  return [
+    new Date(t.timestamp || t.opened_at).toLocaleDateString(),
+    t.ticker,
+    direction,
+    t.entry ?? t.entry_price,
+    t.stop ?? t.stop_price,
+    t.target ?? t.target_price ?? '',
+    t.shares,
+    Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
+    Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+    t.riskPercent ?? t.risk_percent ?? '',
+    t.status,
+    t.exitPrice ?? t.exit_price ?? '',
+    t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+    `"${(t.notes || '').replace(/"/g, '""')}"`,
+  ];
+});
 
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     this.downloadFile(csv, 'trades.csv', 'text/csv');
@@ -240,6 +248,7 @@ export const dataManager = {
     const headers = [
       'Date',
       'Ticker',
+      'Direction',
       'Entry',
       'Stop',
       'Target',
@@ -253,21 +262,28 @@ export const dataManager = {
       'Notes',
     ];
 
-    const rows = trades.map((t) => [
-      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
-      t.ticker,
-      t.entry ?? t.entry_price,
-      t.stop ?? t.stop_price,
-      t.target ?? t.target_price ?? '',
-      t.shares,
-      Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
-      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
-      t.riskPercent ?? t.risk_percent ?? '',
-      t.status,
-      t.exitPrice ?? t.exit_price ?? '',
-      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
-      (t.notes || '').replace(/\t/g, ' '),
-    ]);
+    const rows = trades.map((t) => {
+  const entry = Number(t.entry ?? t.entry_price ?? 0);
+  const stop = Number(t.stop ?? t.stop_price ?? 0);
+  const direction = t.direction ?? (stop > entry ? 'short' : 'long');
+
+  return [
+    new Date(t.timestamp || t.opened_at).toLocaleDateString(),
+    t.ticker,
+    direction,
+    t.entry ?? t.entry_price,
+    t.stop ?? t.stop_price,
+    t.target ?? t.target_price ?? '',
+    t.shares,
+    Number(t.positionSize ?? t.position_size ?? 0).toFixed(2) || '',
+    Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+    t.riskPercent ?? t.risk_percent ?? '',
+    t.status,
+    t.exitPrice ?? t.exit_price ?? '',
+    t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+    (t.notes || '').replace(/\t/g, ' '),
+  ];
+});
 
     const tsv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
     this.downloadFile(tsv, 'trades.tsv', 'text/tab-separated-values');
@@ -281,18 +297,25 @@ export const dataManager = {
       return;
     }
 
-    const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
+    const headers = ['Date', 'Ticker', 'Direction', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
 
-    const rows = trades.map((t) => [
-      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
-      t.ticker,
-      t.entry ?? t.entry_price,
-      t.stop ?? t.stop_price,
-      t.shares,
-      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
-      t.status,
-      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
-    ]);
+    const rows = trades.map((t) => {
+  const entry = Number(t.entry ?? t.entry_price ?? 0);
+  const stop = Number(t.stop ?? t.stop_price ?? 0);
+  const direction = t.direction ?? (stop > entry ? 'short' : 'long');
+
+  return [
+    new Date(t.timestamp || t.opened_at).toLocaleDateString(),
+    t.ticker,
+    direction,
+    t.entry ?? t.entry_price,
+    t.stop ?? t.stop_price,
+    t.shares,
+    Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+    t.status,
+    t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+  ];
+});
 
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 
@@ -313,18 +336,25 @@ export const dataManager = {
       return;
     }
 
-    const headers = ['Date', 'Ticker', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
+   const headers = ['Date', 'Ticker', 'Direction', 'Entry', 'Stop', 'Shares', 'Risk $', 'Status', 'P&L'];
 
-    const rows = trades.map((t) => [
-      new Date(t.timestamp || t.opened_at).toLocaleDateString(),
-      t.ticker,
-      t.entry ?? t.entry_price,
-      t.stop ?? t.stop_price,
-      t.shares,
-      Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
-      t.status,
-      t.pnl != null ? Number(t.pnl).toFixed(2) : '',
-    ]);
+const rows = trades.map((t) => {
+  const entry = Number(t.entry ?? t.entry_price ?? 0);
+  const stop = Number(t.stop ?? t.stop_price ?? 0);
+  const direction = t.direction ?? (stop > entry ? 'short' : 'long');
+
+  return [
+    new Date(t.timestamp || t.opened_at).toLocaleDateString(),
+    t.ticker,
+    direction,
+    t.entry ?? t.entry_price,
+    t.stop ?? t.stop_price,
+    t.shares,
+    Number(t.riskDollars ?? t.risk_dollars ?? 0).toFixed(2) || '',
+    t.status,
+    t.pnl != null ? Number(t.pnl).toFixed(2) : '',
+  ];
+});
 
     const tsv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
 

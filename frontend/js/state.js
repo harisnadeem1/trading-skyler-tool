@@ -3,6 +3,7 @@
  */
 
 import { api } from './api.js';
+import { buildTradeEntryFromManualInput } from './tradeEntryFactory.js';
 
 class AppState {
   constructor() {
@@ -40,6 +41,7 @@ class AppState {
         stop: null,
         target: null,
         notes: '',
+        direction: 'long',
       },
 
       results: {
@@ -155,6 +157,7 @@ class AppState {
 mapBackendJournal(entries = []) {
   this.state.journal.entries = entries.map((entry) => ({
     ...entry,
+    direction: entry.direction ?? 'long',
     entry: entry.entry ?? entry.entry_price,
     stop: entry.stop ?? entry.stop_price,
     target: entry.target ?? entry.target_price,
@@ -232,6 +235,7 @@ mapBackendJournal(entries = []) {
   }
 
   this.applyTheme(this.state.settings.theme);
+  this.emit('journalHydrated', this.state.journal.entries);
 
   this.emit('accountChanged', { old: null, new: this.state.account });
 
@@ -286,31 +290,52 @@ mapBackendJournal(entries = []) {
   this.emit('resultsRendered', this.state.results);
 }
 
-  async addJournalEntry(entry) {
-    const result = await api.post('/user/journal', entry);
-    const newEntry = {
-      ...result.entry,
-      entry: result.entry.entry ?? result.entry.entry_price,
-      stop: result.entry.stop ?? result.entry.stop_price,
-      target: result.entry.target ?? result.entry.target_price,
-      exitPrice: result.entry.exitPrice ?? result.entry.exit_price,
-      exitDate: result.entry.exitDate ?? result.entry.exit_date,
-      positionSize: result.entry.positionSize ?? result.entry.position_size,
-      riskDollars: result.entry.riskDollars ?? result.entry.risk_dollars,
-      riskPercent: result.entry.riskPercent ?? result.entry.risk_percent,
-      stopDistance: result.entry.stopDistance ?? result.entry.stop_distance,
-      totalRealizedPnL: result.entry.totalRealizedPnL ?? result.entry.total_realized_pnl ?? 0,
-      wizardComplete: result.entry.wizardComplete ?? result.entry.wizard_complete ?? false,
-      wizardSkipped: result.entry.wizardSkipped ?? result.entry.wizard_skipped ?? [],
-      trimHistory: result.entry.trimHistory ?? result.entry.trim_history ?? [],
-      timestamp: result.entry.timestamp ?? result.entry.opened_at ?? result.entry.created_at,
-    };
+async addManualJournalEntry(input) {
+  const finalInput = {
+    ...input,
+    shares: Number(this.state.results.shares ?? input.shares ?? 0),
+    entry: Number(this.state.trade.entry ?? input.entry ?? 0),
+    stop: Number(this.state.trade.stop ?? input.stop ?? 0),
+    target: this.state.trade.target ?? input.target ?? null,
+    direction: this.state.trade.direction ?? input.direction ?? 'long',
+    ticker: this.state.trade.ticker ?? input.ticker ?? '',
+    notes: input.notes ?? this.state.trade.notes ?? '',
+  };
 
-    this.state.journal.entries.unshift(newEntry);
-    this.recalculateAccountFromJournal();
-    this.emit('journalEntryAdded', newEntry);
-    return newEntry;
-  }
+  const entry = buildTradeEntryFromManualInput(finalInput, this.state.account);
+  return this.addJournalEntry(entry);
+}
+
+  async addJournalEntry(entry) {
+  const result = await api.post('/user/journal', entry);
+  const newEntry = {
+    ...result.entry,
+    direction: result.entry.direction ?? 'long',
+    entry: result.entry.entry ?? result.entry.entry_price,
+    stop: result.entry.stop ?? result.entry.stop_price,
+    target: result.entry.target ?? result.entry.target_price,
+    originalStop: result.entry.originalStop ?? result.entry.original_stop ?? result.entry.stop ?? result.entry.stop_price,
+    currentStop: result.entry.currentStop ?? result.entry.current_stop ?? result.entry.stop ?? result.entry.stop_price,
+    originalShares: result.entry.originalShares ?? result.entry.original_shares ?? result.entry.shares ?? 0,
+    remainingShares: result.entry.remainingShares ?? result.entry.remaining_shares ?? result.entry.shares ?? 0,
+    exitPrice: result.entry.exitPrice ?? result.entry.exit_price,
+    exitDate: result.entry.exitDate ?? result.entry.exit_date,
+    positionSize: result.entry.positionSize ?? result.entry.position_size,
+    riskDollars: result.entry.riskDollars ?? result.entry.risk_dollars,
+    riskPercent: result.entry.riskPercent ?? result.entry.risk_percent,
+    stopDistance: result.entry.stopDistance ?? result.entry.stop_distance,
+    totalRealizedPnL: result.entry.totalRealizedPnL ?? result.entry.total_realized_pnl ?? 0,
+    wizardComplete: result.entry.wizardComplete ?? result.entry.wizard_complete ?? false,
+    wizardSkipped: result.entry.wizardSkipped ?? result.entry.wizard_skipped ?? [],
+    trimHistory: result.entry.trimHistory ?? result.entry.trim_history ?? [],
+    timestamp: result.entry.timestamp ?? result.entry.opened_at ?? result.entry.created_at,
+  };
+
+  this.state.journal.entries.unshift(newEntry);
+  this.recalculateAccountFromJournal();
+  this.emit('journalEntryAdded', newEntry);
+  return newEntry;
+}
 
 async updateJournalEntry(id, updates) {
   const result = await api.patch(`/user/journal/${id}`, updates);
@@ -324,6 +349,7 @@ async updateJournalEntry(id, updates) {
   const merged = {
     ...existing,
     ...updated,
+    direction: updated.direction ?? existing.direction ?? 'long',
 
     entry: updated.entry ?? updated.entry_price ?? existing.entry ?? existing.entry_price ?? null,
     stop: updated.stop ?? updated.stop_price ?? existing.stop ?? existing.stop_price ?? null,
@@ -455,6 +481,7 @@ async addJournalExit(id, payload) {
     this.state.journal.entries[index] = {
   ...existing,
   ...updatedEntry,
+  direction: updatedEntry.direction ?? existing.direction ?? 'long',
   entry: updatedEntry.entry ?? updatedEntry.entry_price,
   stop: updatedEntry.stop ?? updatedEntry.stop_price,
   target: updatedEntry.target ?? updatedEntry.target_price,
@@ -611,10 +638,17 @@ getOpenRiskSummary() {
   const openTrades = this.getOpenTrades();
 
   const openRiskDollars = openTrades.reduce((sum, trade) => {
-    const shares = Number(trade.remainingShares ?? trade.shares ?? 0);
-    const entry = Number(trade.entry ?? trade.entry_price ?? 0);
-    const activeStop = Number(trade.currentStop ?? trade.stop ?? trade.stop_price ?? 0);
-    const grossRisk = shares * Math.max(0, entry - activeStop);
+    const shares = Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0);
+const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+const activeStop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+const direction =
+  trade.direction ??
+  (activeStop > entry ? 'short' : 'long');
+
+const grossRisk =
+  direction === 'short'
+    ? shares * Math.max(0, activeStop - entry)
+    : shares * Math.max(0, entry - activeStop);
     const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0);
     const isTrimmed = trade.status === 'trimmed';
 
@@ -641,11 +675,15 @@ getActiveTradesForDashboard() {
   return this.getOpenTrades().map((trade) => ({
     id: trade.id,
     ticker: trade.ticker || '—',
+    direction: trade.direction ?? 'long',
     entry: Number(trade.entry ?? trade.entry_price ?? 0),
     stop: Number(trade.stop ?? trade.stop_price ?? 0),
+    currentStop: Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0),
     target: Number(trade.target ?? trade.target_price ?? 0),
     shares: Number(trade.shares ?? 0),
+    remainingShares: Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0),
     riskDollars: Number(trade.riskDollars ?? trade.risk_dollars ?? 0),
+    totalRealizedPnL: Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0),
     status: trade.status || 'open',
     openedAt: trade.opened_at || trade.created_at || trade.timestamp || null,
   }));

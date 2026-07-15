@@ -58,18 +58,26 @@ class Stats {
       (e) => e.status === 'open' || e.status === 'trimmed'
     );
 
-    const openRiskTotal = activeTrades.reduce((sum, t) => {
-      const shares = Number(t.remainingShares ?? t.remaining_shares ?? t.shares ?? 0);
-      const entryPrice = Number(t.entry ?? t.entry_price ?? 0);
-      const stopPrice = Number(
-        t.currentStop ?? t.current_stop ?? t.stop ?? t.stop_price ?? 0
-      );
-      const grossRisk = shares * (entryPrice - stopPrice);
-      const realizedPnL = Number(t.totalRealizedPnL ?? t.total_realized_pnl ?? 0);
-      const isTrimmed = t.status === 'trimmed';
-      const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
-      return sum + Math.max(0, netRisk);
-    }, 0);
+   const openRiskTotal = activeTrades.reduce((sum, t) => {
+  const shares = Number(t.remainingShares ?? t.remaining_shares ?? t.shares ?? 0);
+  const entryPrice = Number(t.entry ?? t.entry_price ?? 0);
+  const stopPrice = Number(
+    t.currentStop ?? t.current_stop ?? t.stop ?? t.stop_price ?? 0
+  );
+  const direction = t.direction ?? (stopPrice > entryPrice ? 'short' : 'long');
+
+  const riskPerShare =
+    direction === 'short'
+      ? Math.max(0, stopPrice - entryPrice)
+      : Math.max(0, entryPrice - stopPrice);
+
+  const grossRisk = shares * riskPerShare;
+  const realizedPnL = Number(t.totalRealizedPnL ?? t.total_realized_pnl ?? 0);
+  const isTrimmed = t.status === 'trimmed';
+  const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
+
+  return sum + Math.max(0, netRisk);
+}, 0);
 
     const realizedTrades = entries.filter(
       (e) =>

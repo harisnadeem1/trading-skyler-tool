@@ -145,47 +145,55 @@ class JournalView {
   }
 
   normalizeTrade(trade) {
-  if (!trade) return null;
+    if (!trade) return null;
 
-  const trimHistoryRaw = Array.isArray(trade.trimHistory)
-    ? trade.trimHistory
-    : Array.isArray(trade.trim_history)
-      ? trade.trim_history
-      : Array.isArray(trade.exits)
-        ? trade.exits
-        : [];
+    const trimHistoryRaw = Array.isArray(trade.trimHistory)
+      ? trade.trimHistory
+      : Array.isArray(trade.trim_history)
+        ? trade.trim_history
+        : Array.isArray(trade.exits)
+          ? trade.exits
+          : [];
 
-  const trimHistory = trimHistoryRaw.map((trim) => ({
-    id: trim.id ?? null,
-    date: trim.date ?? trim.exitDate ?? trim.exit_date ?? trim.created_at ?? null,
-    sharesClosed: Number(trim.sharesClosed ?? trim.shares_closed ?? trim.shares ?? 0),
-    exitPrice: Number(trim.exitPrice ?? trim.exit_price ?? 0),
-    pnl: Number(trim.pnl ?? 0),
-    rMultiple: Number(trim.rMultiple ?? trim.r_multiple ?? 0),
-    exitType: trim.exitType ?? trim.exit_type ?? 'trim',
-    percentTrimmed: Number(trim.percentTrimmed ?? trim.percent_trimmed ?? 0),
-    newStop: trim.newStop ?? trim.new_stop ?? null
-  }));
+    const trimHistory = trimHistoryRaw.map((trim) => ({
+      id: trim.id ?? null,
+      date: trim.date ?? trim.exitDate ?? trim.exit_date ?? trim.created_at ?? null,
+      sharesClosed: Number(trim.sharesClosed ?? trim.shares_closed ?? trim.shares ?? 0),
+      exitPrice: Number(trim.exitPrice ?? trim.exit_price ?? 0),
+      pnl: Number(trim.pnl ?? 0),
+      rMultiple: Number(trim.rMultiple ?? trim.r_multiple ?? 0),
+      exitType: trim.exitType ?? trim.exit_type ?? 'trim',
+      percentTrimmed: Number(trim.percentTrimmed ?? trim.percent_trimmed ?? 0),
+      newStop: trim.newStop ?? trim.new_stop ?? null
+    }));
 
-  return {
-    ...trade,
-    id: String(trade.id),
-    ticker: trade.ticker ?? '',
-    status: trade.status ?? 'open',
-    timestamp: trade.timestamp ?? trade.created_at ?? null,
-    entry: Number(trade.entry ?? trade.entry_price ?? 0),
-    stop: Number(trade.stop ?? trade.stop_price ?? 0),
-    currentStop: Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0),
-    shares: Number(trade.shares ?? 0),
-    remainingShares: Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0),
-    originalShares: Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0),
-    riskDollars: Number(trade.riskDollars ?? trade.risk_dollars ?? 0),
-    totalRealizedPnL: Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0),
-    notes: trade.notes ?? '',
-    thesis: trade.thesis ?? null,
-    trimHistory
-  };
-}
+    return {
+      ...trade,
+      id: String(trade.id),
+      ticker: trade.ticker ?? '',
+      direction:
+        trade.direction ??
+        (
+          Number(trade.stop ?? trade.stop_price ?? 0) >
+            Number(trade.entry ?? trade.entry_price ?? 0)
+            ? 'short'
+            : 'long'
+        ),
+      status: trade.status ?? 'open',
+      timestamp: trade.timestamp ?? trade.created_at ?? null,
+      entry: Number(trade.entry ?? trade.entry_price ?? 0),
+      stop: Number(trade.stop ?? trade.stop_price ?? 0),
+      currentStop: Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0),
+      shares: Number(trade.shares ?? 0),
+      remainingShares: Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0),
+      originalShares: Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0),
+      riskDollars: Number(trade.riskDollars ?? trade.risk_dollars ?? 0),
+      totalRealizedPnL: Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0),
+      notes: trade.notes ?? '',
+      thesis: trade.thesis ?? null,
+      trimHistory
+    };
+  }
 
   getFilteredTrades() {
     const entries = state.journal.entries;
@@ -396,7 +404,14 @@ class JournalView {
       const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? trade.pnl ?? 0);
       const activeStop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
       const entry = Number(trade.entry ?? trade.entry_price ?? 0);
-      const currentRisk = shares * Math.max(0, entry - activeStop);
+      const direction = trade.direction ?? (activeStop > entry ? 'short' : 'long');
+
+      const currentRiskPerShare =
+        direction === 'short'
+          ? Math.max(0, activeStop - entry)
+          : Math.max(0, entry - activeStop);
+
+      const currentRisk = shares * currentRiskPerShare;
       const isFreeRoll = isTrimmed && realizedPnL >= (currentRisk - 0.01);
 
       let statusClass = trade.status;
@@ -411,6 +426,7 @@ class JournalView {
         <tr class="journal-table__row" data-id="${trade.id}">
           <td>${formatDate(trade.timestamp)}</td>
           <td><strong>${trade.ticker}</strong></td>
+          <td>${(trade.direction ?? 'long').toUpperCase()}</td>
           <td>${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</td>
           <td>${trade.exitPrice || trade.exit_price ? formatCurrency(trade.exitPrice ?? trade.exit_price) : '—'}</td>
           <td>${sharesDisplay}</td>
@@ -422,10 +438,10 @@ class JournalView {
           </td>
           <td>
             ${rMultiple !== null
-              ? (Math.abs(rMultiple) < 0.05
-                ? '<span class="tag tag--breakeven">BE</span>'
-                : `${rMultiple >= 0 ? '+' : ''}${rMultiple.toFixed(1)}R`)
-              : '—'}
+          ? (Math.abs(rMultiple) < 0.05
+            ? '<span class="tag tag--breakeven">BE</span>'
+            : `${rMultiple >= 0 ? '+' : ''}${rMultiple.toFixed(1)}R`)
+          : '—'}
           </td>
           <td>
             <span class="journal-table__status journal-table__status--${statusClass}">
@@ -444,40 +460,44 @@ class JournalView {
   }
 
   renderRowDetails(rawTrade) {
-  const trade = this.normalizeTrade(rawTrade);
-  if (!trade) return '';
+    const trade = this.normalizeTrade(rawTrade);
+    if (!trade) return '';
 
-  const isTrimmed = trade.status === 'trimmed';
-  const isClosed = trade.status === 'closed';
-  const isActive = !isClosed;
-  const shares = trade.remainingShares;
-  const activeStop = trade.currentStop;
-  const trimHistory = trade.trimHistory;
+    const isTrimmed = trade.status === 'trimmed';
+    const isClosed = trade.status === 'closed';
+    const isActive = !isClosed;
+    const shares = trade.remainingShares;
+    const activeStop = trade.currentStop;
+    const trimHistory = trade.trimHistory;
 
-    
+
 
     return `
       <div class="journal-row-details" data-trade-id="${trade.id}">
         <div class="journal-row-details__section">
           <div class="journal-row-details__label">Trade Details</div>
           <div class="journal-row-details__trade-container" data-trade-id="${trade.id}">
-            <div class="journal-row-details__trade-view">
-              <div class="journal-row-details__trade-grid">
-                <div class="journal-row-details__trade-item">
-                  <span class="journal-row-details__trade-label">Entry</span>
-                  <span class="journal-row-details__trade-value">${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</span>
-                </div>
-                <div class="journal-row-details__trade-item">
-                  <span class="journal-row-details__trade-label">Stop</span>
-                  <span class="journal-row-details__trade-value">${formatCurrency(activeStop)}</span>
-                </div>
-                <div class="journal-row-details__trade-item">
-                  <span class="journal-row-details__trade-label">Shares</span>
-                  <span class="journal-row-details__trade-value">${shares}</span>
-                </div>
-              </div>
-              <button class="btn btn--xs btn--ghost" data-action="edit-trade" data-id="${trade.id}">Edit</button>
-            </div>
+           <div class="journal-row-details__trade-view">
+  <div class="journal-row-details__trade-grid">
+    <div class="journal-row-details__trade-item">
+      <span class="journal-row-details__trade-label">Direction</span>
+      <span class="journal-row-details__trade-value">${(trade.direction ?? 'long').toUpperCase()}</span>
+    </div>
+    <div class="journal-row-details__trade-item">
+      <span class="journal-row-details__trade-label">Entry</span>
+      <span class="journal-row-details__trade-value">${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</span>
+    </div>
+    <div class="journal-row-details__trade-item">
+      <span class="journal-row-details__trade-label">Stop</span>
+      <span class="journal-row-details__trade-value">${formatCurrency(activeStop)}</span>
+    </div>
+    <div class="journal-row-details__trade-item">
+      <span class="journal-row-details__trade-label">Shares</span>
+      <span class="journal-row-details__trade-value">${shares}</span>
+    </div>
+  </div>
+  <button class="btn btn--xs btn--ghost" data-action="edit-trade" data-id="${trade.id}">Edit</button>
+</div>
 
             <div class="journal-row-details__trade-edit" style="display: none;">
               <div class="journal-row-details__trade-grid">
@@ -541,12 +561,12 @@ class JournalView {
     <div class="journal-row-details__label">Trade Log</div>
     <div class="journal-row-details__value journal-row-details__trade-log">
       ${trimHistory.map((trim, index) => {
-        const isLastEntry = index === trimHistory.length - 1;
-        const isClose = trim.exitType === 'close' || (isLastEntry && trade.status === 'closed');
-        const actionText = isClose ? 'Closed' : 'Trimmed';
-        const statusClass = isClose ? 'closed' : 'trimmed';
+      const isLastEntry = index === trimHistory.length - 1;
+      const isClose = trim.exitType === 'close' || (isLastEntry && trade.status === 'closed');
+      const actionText = isClose ? 'Closed' : 'Trimmed';
+      const statusClass = isClose ? 'closed' : 'trimmed';
 
-        return `
+      return `
           <div class="trade-log-entry">
             <span class="journal-table__status journal-table__status--${statusClass}">
               ${actionText}
@@ -559,7 +579,7 @@ class JournalView {
             (${trim.rMultiple >= 0 ? '+' : ''}${Number(trim.rMultiple).toFixed(1)}R)
           </div>
         `;
-      }).join('')}
+    }).join('')}
     </div>
   </div>
 ` : ''}
@@ -577,26 +597,26 @@ class JournalView {
   }
 
   openTradeModal(tradeId) {
-  if (!this.elements.tradeModal || !this.elements.tradeModalBody) return;
+    if (!this.elements.tradeModal || !this.elements.tradeModalBody) return;
 
-  const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
-  const trade = this.normalizeTrade(rawTrade);
-  if (!trade) return;
+    const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+    const trade = this.normalizeTrade(rawTrade);
+    if (!trade) return;
 
-  const titleEl = document.getElementById('journalTradeModalTitle');
-  if (titleEl) {
-    titleEl.textContent = `${trade.ticker} Trade Details`;
+    const titleEl = document.getElementById('journalTradeModalTitle');
+    if (titleEl) {
+      titleEl.textContent = `${trade.ticker} Trade Details`;
+    }
+
+    this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
+    this.elements.tradeModal.dataset.tradeId = String(tradeId);
+
+    this.bindModalActions();
+
+    if (typeof this.elements.tradeModal.showModal === 'function' && !this.elements.tradeModal.open) {
+      this.elements.tradeModal.showModal();
+    }
   }
-
-  this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
-  this.elements.tradeModal.dataset.tradeId = String(tradeId);
-
-  this.bindModalActions();
-
-  if (typeof this.elements.tradeModal.showModal === 'function' && !this.elements.tradeModal.open) {
-    this.elements.tradeModal.showModal();
-  }
-}
 
   closeTradeModal() {
     if (this.elements.tradeModal?.open) {
@@ -613,27 +633,27 @@ class JournalView {
   }
 
   refreshOpenModal() {
-  if (!this.elements.tradeModal?.open) return;
+    if (!this.elements.tradeModal?.open) return;
 
-  const tradeId = this.elements.tradeModal.dataset.tradeId;
-  if (!tradeId) return;
+    const tradeId = this.elements.tradeModal.dataset.tradeId;
+    if (!tradeId) return;
 
-  const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
-  const trade = this.normalizeTrade(rawTrade);
+    const rawTrade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+    const trade = this.normalizeTrade(rawTrade);
 
-  if (!trade) {
-    this.closeTradeModal();
-    return;
+    if (!trade) {
+      this.closeTradeModal();
+      return;
+    }
+
+    const titleEl = document.getElementById('journalTradeModalTitle');
+    if (titleEl) {
+      titleEl.textContent = `${trade.ticker} Trade Details`;
+    }
+
+    this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
+    this.bindModalActions();
   }
-
-  const titleEl = document.getElementById('journalTradeModalTitle');
-  if (titleEl) {
-    titleEl.textContent = `${trade.ticker} Trade Details`;
-  }
-
-  this.elements.tradeModalBody.innerHTML = this.renderRowDetails(trade);
-  this.bindModalActions();
-}
 
   bindRowActions() {
     if (!this.elements.tableBody) return;
@@ -686,31 +706,31 @@ class JournalView {
       });
     });
 
-   this.elements.tradeModalBody.querySelectorAll('[data-action="save-notes"]').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    const id = e.currentTarget.dataset.id;
-    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
-    if (!container) return;
+    this.elements.tradeModalBody.querySelectorAll('[data-action="save-notes"]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
+        if (!container) return;
 
-    const newNotes = container.querySelector('.journal-row-details__notes-input').value;
-    await state.updateJournalEntry(id, { notes: newNotes });
-  });
-});
+        const newNotes = container.querySelector('.journal-row-details__notes-input').value;
+        await state.updateJournalEntry(id, { notes: newNotes });
+      });
+    });
 
-   this.elements.tradeModalBody.querySelectorAll('[data-action="cancel-notes"]').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const id = e.currentTarget.dataset.id;
-    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
-    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
-    const trade = this.normalizeTrade(rawTrade);
+    this.elements.tradeModalBody.querySelectorAll('[data-action="cancel-notes"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__notes-container[data-trade-id="${id}"]`);
+        const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+        const trade = this.normalizeTrade(rawTrade);
 
-    if (container && trade) {
-      container.querySelector('.journal-row-details__notes-input').value = trade.notes || '';
-      container.querySelector('.journal-row-details__notes-view').style.display = 'flex';
-      container.querySelector('.journal-row-details__notes-edit').style.display = 'none';
-    }
-  });
-});
+        if (container && trade) {
+          container.querySelector('.journal-row-details__notes-input').value = trade.notes || '';
+          container.querySelector('.journal-row-details__notes-view').style.display = 'flex';
+          container.querySelector('.journal-row-details__notes-edit').style.display = 'none';
+        }
+      });
+    });
 
     this.elements.tradeModalBody.querySelectorAll('[data-action="edit-trade"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -725,73 +745,85 @@ class JournalView {
       });
     });
 
- this.elements.tradeModalBody.querySelectorAll('[data-action="save-trade"]').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    const id = e.currentTarget.dataset.id;
-    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
-    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
-    const trade = this.normalizeTrade(rawTrade);
+    this.elements.tradeModalBody.querySelectorAll('[data-action="save-trade"]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+        const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+        const trade = this.normalizeTrade(rawTrade);
 
-    if (!container || !trade) return;
+        if (!container || !trade) return;
 
-    const newEntry = parseFloat(container.querySelector(`#editEntry-${id}`).value);
-    const newStop = parseFloat(container.querySelector(`#editStop-${id}`).value);
-    const newRemainingShares = parseInt(container.querySelector(`#editShares-${id}`).value, 10);
+        const newEntry = parseFloat(container.querySelector(`#editEntry-${id}`).value);
+        const newStop = parseFloat(container.querySelector(`#editStop-${id}`).value);
+        const newRemainingShares = parseInt(container.querySelector(`#editShares-${id}`).value, 10);
 
-    if (!Number.isFinite(newEntry) || newEntry <= 0) {
-      alert('Please enter a valid entry price');
-      return;
-    }
+        if (!Number.isFinite(newEntry) || newEntry <= 0) {
+          alert('Please enter a valid entry price');
+          return;
+        }
 
-    if (!Number.isFinite(newStop) || newStop <= 0) {
-      alert('Please enter a valid stop loss');
-      return;
-    }
+        if (!Number.isFinite(newStop) || newStop <= 0) {
+          alert('Please enter a valid stop loss');
+          return;
+        }
 
-    if (!Number.isFinite(newRemainingShares) || newRemainingShares <= 0) {
-      alert('Please enter a valid number of shares');
-      return;
-    }
+        const direction = trade.direction ?? 'long';
 
-    const stopDistance = Math.abs(newEntry - newStop);
-    const riskDollars = stopDistance * newRemainingShares;
-    const positionSize = newEntry * newRemainingShares;
+        if (direction === 'long' && newStop >= newEntry) {
+          alert('For a long trade, stop must be below entry');
+          return;
+        }
 
-    const updates = {
-      entry: newEntry,
-      stop: newStop,
-      currentStop: newStop,
-      stopDistance,
-      riskDollars,
-      positionSize,
-      remainingShares: newRemainingShares
-    };
+        if (direction === 'short' && newStop <= newEntry) {
+          alert('For a short trade, stop must be above entry');
+          return;
+        }
 
-    if (trade.status === 'open' && trade.trimHistory.length === 0) {
-      updates.shares = newRemainingShares;
-      updates.originalShares = newRemainingShares;
-    }
+        if (!Number.isFinite(newRemainingShares) || newRemainingShares <= 0) {
+          alert('Please enter a valid number of shares');
+          return;
+        }
 
-    await state.updateJournalEntry(id, updates);
-  });
-});
+        const stopDistance = Math.abs(newEntry - newStop);
+        const riskDollars = stopDistance * newRemainingShares;
+        const positionSize = newEntry * newRemainingShares;
+
+        const updates = {
+          entry: newEntry,
+          stop: newStop,
+          currentStop: newStop,
+          stopDistance,
+          riskDollars,
+          positionSize,
+          remainingShares: newRemainingShares
+        };
+
+        if (trade.status === 'open' && trade.trimHistory.length === 0) {
+          updates.shares = newRemainingShares;
+          updates.originalShares = newRemainingShares;
+        }
+
+        await state.updateJournalEntry(id, updates);
+      });
+    });
 
     this.elements.tradeModalBody.querySelectorAll('[data-action="cancel-trade"]').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const id = e.currentTarget.dataset.id;
-    const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
-    const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
-    const trade = this.normalizeTrade(rawTrade);
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const container = this.elements.tradeModalBody.querySelector(`.journal-row-details__trade-container[data-trade-id="${id}"]`);
+        const rawTrade = state.journal.entries.find(t => String(t.id) === String(id));
+        const trade = this.normalizeTrade(rawTrade);
 
-    if (container && trade) {
-      container.querySelector(`#editEntry-${id}`).value = trade.entry;
-      container.querySelector(`#editStop-${id}`).value = trade.currentStop;
-      container.querySelector(`#editShares-${id}`).value = trade.remainingShares;
-      container.querySelector('.journal-row-details__trade-view').style.display = 'flex';
-      container.querySelector('.journal-row-details__trade-edit').style.display = 'none';
-    }
-  });
-});
+        if (container && trade) {
+          container.querySelector(`#editEntry-${id}`).value = trade.entry;
+          container.querySelector(`#editStop-${id}`).value = trade.currentStop;
+          container.querySelector(`#editShares-${id}`).value = trade.remainingShares;
+          container.querySelector('.journal-row-details__trade-view').style.display = 'flex';
+          container.querySelector('.journal-row-details__trade-edit').style.display = 'none';
+        }
+      });
+    });
   }
 
   showEmptyState() {

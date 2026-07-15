@@ -82,6 +82,14 @@ class TrimModal {
 
     this.currentTrade = {
       ...trade,
+      direction:
+        trade.direction ??
+        (
+          Number(trade.stop ?? trade.stop_price ?? 0) >
+            Number(trade.entry ?? trade.entry_price ?? 0)
+            ? 'short'
+            : 'long'
+        ),
       originalShares: trade.originalShares ?? trade.original_shares ?? trade.shares,
       remainingShares: trade.remainingShares ?? trade.remaining_shares ?? trade.shares,
       originalStop: trade.originalStop ?? trade.original_stop ?? trade.stop ?? trade.stop_price,
@@ -128,9 +136,13 @@ class TrimModal {
     const originalStop = Number(trade.originalStop ?? trade.stop ?? trade.stop_price ?? 0);
     const currentStop = Number(trade.currentStop ?? trade.stop ?? trade.stop_price ?? 0);
     const entryPrice = Number(trade.entry ?? trade.entry_price ?? 0);
-    const riskPerShare = entryPrice - originalStop;
+    const direction = trade.direction ?? 'long';
+    const riskPerShare =
+      direction === 'short'
+        ? Math.max(0, originalStop - entryPrice)
+        : Math.max(0, entryPrice - originalStop);
 
-    if (this.elements.ticker) this.elements.ticker.textContent = trade.ticker;
+    if (this.elements.ticker) { this.elements.ticker.textContent = `${trade.ticker} · ${(direction || 'long').toUpperCase()}`; }
     if (this.elements.entryPrice) this.elements.entryPrice.textContent = formatCurrency(entryPrice);
     if (this.elements.originalStop) this.elements.originalStop.textContent = formatCurrency(originalStop);
     if (this.elements.stopLoss) this.elements.stopLoss.textContent = formatCurrency(currentStop);
@@ -205,8 +217,19 @@ class TrimModal {
       0
     );
 
-    const riskPerShare = entryPrice - stopPrice;
-    const rMultiple = riskPerShare !== 0 ? (exitPrice - entryPrice) / riskPerShare : 0;
+    const direction = this.currentTrade.direction ?? 'long';
+
+    const riskPerShare =
+      direction === 'short'
+        ? Math.max(0, stopPrice - entryPrice)
+        : Math.max(0, entryPrice - stopPrice);
+
+    const movePerShare =
+      direction === 'short'
+        ? (entryPrice - exitPrice)
+        : (exitPrice - entryPrice);
+
+    const rMultiple = riskPerShare !== 0 ? movePerShare / riskPerShare : 0;
 
     if (this.elements.rDisplay) {
       this.elements.rDisplay.textContent = `(${rMultiple.toFixed(1)}R)`;
@@ -217,27 +240,42 @@ class TrimModal {
     this.calculatePreview();
   }
 
-  calculateExitPrice() {
-    if (!this.currentTrade) return;
+ calculateExitPrice() {
+  if (!this.currentTrade) return;
 
-    const entryPrice = Number(this.currentTrade.entry ?? this.currentTrade.entry_price ?? 0);
-    const stopPrice = Number(
-      this.currentTrade.currentStop ??
-      this.currentTrade.current_stop ??
-      this.currentTrade.stop ??
-      this.currentTrade.stop_price ??
-      0
-    );
+  const entryPrice = Number(this.currentTrade.entry ?? this.currentTrade.entry_price ?? 0);
+  const stopPrice = Number(
+    this.currentTrade.currentStop ??
+    this.currentTrade.current_stop ??
+    this.currentTrade.stop ??
+    this.currentTrade.stop_price ??
+    0
+  );
 
-    const riskPerShare = entryPrice - stopPrice;
-    const exitPrice = entryPrice + this.selectedR * riskPerShare;
+  const direction = this.currentTrade.direction ?? 'long';
 
-    if (this.elements.exitPrice) this.elements.exitPrice.value = exitPrice.toFixed(2);
-    if (this.elements.rDisplay) {
-      this.elements.rDisplay.textContent = `(${this.selectedR}R)`;
-      this.elements.rDisplay.classList.remove('negative');
-    }
+  const riskPerShare =
+    direction === 'short'
+      ? Math.max(0, stopPrice - entryPrice)
+      : Math.max(0, entryPrice - stopPrice);
+
+  let exitPrice =
+    direction === 'short'
+      ? entryPrice - (this.selectedR * riskPerShare)
+      : entryPrice + (this.selectedR * riskPerShare);
+
+  // Guardrail for short trades: don’t go below $0
+  if (direction === 'short' && exitPrice < 0) {
+    exitPrice = 0;
+    showToast('⚠️ Selected R target goes below $0 for this short trade', 'warning');
   }
+
+  if (this.elements.exitPrice) this.elements.exitPrice.value = exitPrice.toFixed(2);
+  if (this.elements.rDisplay) {
+    this.elements.rDisplay.textContent = `(${this.selectedR}R)`;
+    this.elements.rDisplay.classList.remove('negative');
+  }
+}
 
   calculatePreview() {
     if (!this.currentTrade) return;
@@ -248,7 +286,13 @@ class TrimModal {
     const sharesRemaining = remainingShares - sharesToClose;
     const entryPrice = Number(this.currentTrade.entry ?? this.currentTrade.entry_price ?? 0);
 
-    const profitPerShare = exitPrice - entryPrice;
+    const direction = this.currentTrade.direction ?? 'long';
+
+    const profitPerShare =
+      direction === 'short'
+        ? (entryPrice - exitPrice)
+        : (exitPrice - entryPrice);
+
     const totalPnL = profitPerShare * sharesToClose;
     const isProfit = totalPnL >= 0;
 
@@ -305,9 +349,20 @@ class TrimModal {
       0
     );
 
-    const riskPerShare = entryPrice - stopPrice;
-    const rMultiple = riskPerShare !== 0 ? (exitPrice - entryPrice) / riskPerShare : 0;
-    const pnl = (exitPrice - entryPrice) * sharesToClose;
+    const direction = this.currentTrade.direction ?? 'long';
+
+    const riskPerShare =
+      direction === 'short'
+        ? Math.max(0, stopPrice - entryPrice)
+        : Math.max(0, entryPrice - stopPrice);
+
+    const movePerShare =
+      direction === 'short'
+        ? (entryPrice - exitPrice)
+        : (exitPrice - entryPrice);
+
+    const rMultiple = riskPerShare !== 0 ? movePerShare / riskPerShare : 0;
+    const pnl = movePerShare * sharesToClose;
 
     const closeDate = this.elements.dateInput?.value
       ? new Date(`${this.elements.dateInput.value}T12:00:00`).toISOString()
@@ -315,19 +370,32 @@ class TrimModal {
 
     const newStopValue = parseFloat(this.elements.newStop?.value);
 
+
+if (!isNaN(newStopValue) && newStopValue > 0) {
+  if (direction === 'long' && newStopValue >= entryPrice) {
+    showToast('⚠️ For a long trade, new stop should be below entry', 'error');
+    return;
+  }
+
+  if (direction === 'short' && newStopValue <= entryPrice) {
+    showToast('⚠️ For a short trade, new stop should be above entry', 'error');
+    return;
+  }
+}
+
     const payload = {
-  sharesClosed: sharesToClose,
-  exitPrice,
-  exitDate: closeDate,
-  rMultiple,
-  pnl,
-  percentTrimmed: this.selectedTrimPercent,
-  exitType: sharesToClose === remainingShares ? 'close' : 'trim',
-  newStop:
-    !isNaN(newStopValue) && newStopValue > 0
-      ? newStopValue
-      : null
-};
+      sharesClosed: sharesToClose,
+      exitPrice,
+      exitDate: closeDate,
+      rMultiple,
+      pnl,
+      percentTrimmed: this.selectedTrimPercent,
+      exitType: sharesToClose === remainingShares ? 'close' : 'trim',
+      newStop:
+        !isNaN(newStopValue) && newStopValue > 0
+          ? newStopValue
+          : null
+    };
 
     try {
       const updatedTrade = await state.addJournalExit(this.currentTrade.id, payload);

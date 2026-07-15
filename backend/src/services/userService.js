@@ -1,5 +1,52 @@
 const pool = require('../config/db');
 
+
+
+function normalizeDirection(value, fallback = 'long') {
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'long' || normalized === 'short') return normalized;
+  throw new Error('VALIDATION: direction must be either "long" or "short"');
+}
+
+function toNumberOrNull(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return num;
+}
+
+function validateJournalEntryPayload(payload, direction) {
+  const entry = toNumberOrNull(payload.entry_price ?? payload.entry);
+  const stop = toNumberOrNull(payload.stop_price ?? payload.stop);
+  const target = toNumberOrNull(payload.target_price ?? payload.target);
+
+  if (entry === null || entry <= 0) {
+    throw new Error('VALIDATION: entry price must be greater than 0');
+  }
+
+  if (stop === null || stop <= 0) {
+    throw new Error('VALIDATION: stop price must be greater than 0');
+  }
+
+  if (direction === 'long' && stop >= entry) {
+    throw new Error('VALIDATION: for long trades, stop price must be below entry price');
+  }
+
+  if (direction === 'short' && stop <= entry) {
+    throw new Error('VALIDATION: for short trades, stop price must be above entry price');
+  }
+
+  if (target !== null) {
+    if (direction === 'long' && target <= entry) {
+      throw new Error('VALIDATION: for long trades, target price should be above entry price');
+    }
+    if (direction === 'short' && target >= entry) {
+      throw new Error('VALIDATION: for short trades, target price should be below entry price');
+    }
+  }
+}
+
 async function getSettings(userId) {
   const { rows } = await pool.query(
     `
@@ -129,11 +176,15 @@ async function getJournalEntries(userId) {
 }
 
 async function createJournalEntry(userId, payload) {
+  const direction = normalizeDirection(payload.direction, 'long');
+  validateJournalEntryPayload(payload, direction);
+
   const { rows } = await pool.query(
     `
     INSERT INTO journal_entries (
       user_id,
       ticker,
+      direction,
       entry_price,
       stop_price,
       target_price,
@@ -162,13 +213,14 @@ async function createJournalEntry(userId, payload) {
       $6, $7, $8, $9, $10,
       $11, $12, $13, $14, $15,
       $16, $17, $18, $19, $20,
-      $21, $22, $23, $24
+      $21, $22, $23, $24, $25
     )
     RETURNING *
     `,
     [
       userId,
       payload.ticker,
+      direction,
       payload.entry_price ?? payload.entry,
       payload.stop_price ?? payload.stop,
       payload.target_price ?? payload.target ?? null,
@@ -209,64 +261,80 @@ async function updateJournalEntry(userId, entryId, payload) {
 
   const current = existing.rows[0];
 
+  const nextDirection = normalizeDirection(
+    payload.direction ?? current.direction,
+    current.direction ?? 'long'
+  );
+
+  validateJournalEntryPayload(
+    {
+      entry: payload.entry_price ?? payload.entry ?? current.entry_price,
+      stop: payload.stop_price ?? payload.stop ?? current.stop_price,
+      target: payload.target_price ?? payload.target ?? current.target_price,
+    },
+    nextDirection
+  );
+
   const next = {
-  ticker: payload.ticker ?? current.ticker,
-  entry_price: payload.entry_price ?? payload.entry ?? current.entry_price,
-  stop_price: payload.stop_price ?? payload.stop ?? current.stop_price,
-  target_price: payload.target_price ?? payload.target ?? current.target_price,
-  original_stop: payload.original_stop ?? current.original_stop,
-  current_stop: payload.current_stop ?? payload.currentStop ?? current.current_stop,
+    ticker: payload.ticker ?? current.ticker,
+    direction: nextDirection,
+    entry_price: payload.entry_price ?? payload.entry ?? current.entry_price,
+    stop_price: payload.stop_price ?? payload.stop ?? current.stop_price,
+    target_price: payload.target_price ?? payload.target ?? current.target_price,
+    original_stop: payload.original_stop ?? current.original_stop,
+    current_stop: payload.current_stop ?? payload.currentStop ?? current.current_stop,
 
-  shares: current.shares,
-  original_shares: current.original_shares,
-  remaining_shares:
-    payload.remaining_shares ??
-    payload.remainingShares ??
-    payload.shares ??
-    current.remaining_shares,
+    shares: current.shares,
+    original_shares: current.original_shares,
+    remaining_shares:
+      payload.remaining_shares ??
+      payload.remainingShares ??
+      payload.shares ??
+      current.remaining_shares,
 
-  position_size: payload.position_size ?? payload.positionSize ?? current.position_size,
-  risk_dollars: payload.risk_dollars ?? payload.riskDollars ?? current.risk_dollars,
-  risk_percent: payload.risk_percent ?? payload.riskPercent ?? current.risk_percent,
-  stop_distance: payload.stop_distance ?? payload.stopDistance ?? current.stop_distance,
-  status: payload.status ?? current.status,
-  exit_price: payload.exit_price ?? payload.exitPrice ?? current.exit_price,
-  exit_date: payload.exit_date ?? payload.exitDate ?? current.exit_date,
-  pnl: payload.pnl ?? current.pnl,
-  total_realized_pnl:
-    payload.total_realized_pnl ?? payload.totalRealizedPnL ?? current.total_realized_pnl,
-  notes: payload.notes ?? current.notes,
-  thesis: payload.thesis ?? current.thesis,
-  wizard_complete: payload.wizard_complete ?? payload.wizardComplete ?? current.wizard_complete,
-  wizard_skipped: payload.wizard_skipped ?? payload.wizardSkipped ?? current.wizard_skipped,
-};
+    position_size: payload.position_size ?? payload.positionSize ?? current.position_size,
+    risk_dollars: payload.risk_dollars ?? payload.riskDollars ?? current.risk_dollars,
+    risk_percent: payload.risk_percent ?? payload.riskPercent ?? current.risk_percent,
+    stop_distance: payload.stop_distance ?? payload.stopDistance ?? current.stop_distance,
+    status: payload.status ?? current.status,
+    exit_price: payload.exit_price ?? payload.exitPrice ?? current.exit_price,
+    exit_date: payload.exit_date ?? payload.exitDate ?? current.exit_date,
+    pnl: payload.pnl ?? current.pnl,
+    total_realized_pnl:
+      payload.total_realized_pnl ?? payload.totalRealizedPnL ?? current.total_realized_pnl,
+    notes: payload.notes ?? current.notes,
+    thesis: payload.thesis ?? current.thesis,
+    wizard_complete: payload.wizard_complete ?? payload.wizardComplete ?? current.wizard_complete,
+    wizard_skipped: payload.wizard_skipped ?? payload.wizardSkipped ?? current.wizard_skipped,
+  };
 
   const { rows } = await pool.query(
     `
     UPDATE journal_entries
     SET
       ticker = $3,
-      entry_price = $4,
-      stop_price = $5,
-      target_price = $6,
-      original_stop = $7,
-      current_stop = $8,
-      shares = $9,
-      original_shares = $10,
-      remaining_shares = $11,
-      position_size = $12,
-      risk_dollars = $13,
-      risk_percent = $14,
-      stop_distance = $15,
-      status = $16,
-      exit_price = $17,
-      exit_date = $18,
-      pnl = $19,
-      total_realized_pnl = $20,
-      notes = $21,
-      thesis = $22,
-      wizard_complete = $23,
-      wizard_skipped = $24
+      direction = $4,
+      entry_price = $5,
+      stop_price = $6,
+      target_price = $7,
+      original_stop = $8,
+      current_stop = $9,
+      shares = $10,
+      original_shares = $11,
+      remaining_shares = $12,
+      position_size = $13,
+      risk_dollars = $14,
+      risk_percent = $15,
+      stop_distance = $16,
+      status = $17,
+      exit_price = $18,
+      exit_date = $19,
+      pnl = $20,
+      total_realized_pnl = $21,
+      notes = $22,
+      thesis = $23,
+      wizard_complete = $24,
+      wizard_skipped = $25
     WHERE id = $1 AND user_id = $2
     RETURNING *
     `,
@@ -274,6 +342,7 @@ async function updateJournalEntry(userId, entryId, payload) {
       entryId,
       userId,
       next.ticker,
+      next.direction,
       next.entry_price,
       next.stop_price,
       next.target_price,
@@ -330,16 +399,38 @@ async function addJournalExit(userId, entryId, payload) {
     const eventType = payload.event_type ?? payload.eventType ?? 'trim';
     const sharesClosed = Number(payload.shares_closed ?? payload.sharesClosed ?? 0);
     const exitPrice = Number(payload.exit_price ?? payload.exitPrice ?? 0);
-    const pnl = Number(payload.pnl ?? 0);
     const percentTrimmed = payload.percent_trimmed ?? payload.percentTrimmed ?? null;
     const rMultiple = payload.r_multiple ?? payload.rMultiple ?? null;
     const exitDate = payload.exit_date ?? payload.exitDate ?? new Date().toISOString();
     const nextCurrentStop =
-  payload.new_stop ??
-  payload.newStop ??
-  payload.current_stop ??
-  payload.currentStop ??
-  null;
+      payload.new_stop ??
+      payload.newStop ??
+      payload.current_stop ??
+      payload.currentStop ??
+      null;
+
+    if (!['trim', 'close'].includes(eventType)) {
+      throw new Error('VALIDATION: event_type must be "trim" or "close"');
+    }
+
+    if (!Number.isFinite(sharesClosed) || sharesClosed <= 0) {
+      throw new Error('VALIDATION: shares_closed must be greater than 0');
+    }
+
+    const currentRemaining = Number(entry.remaining_shares ?? entry.shares ?? 0);
+    if (sharesClosed > currentRemaining) {
+      throw new Error('VALIDATION: shares_closed cannot be greater than remaining shares');
+    }
+
+    if (!Number.isFinite(exitPrice) || exitPrice <= 0) {
+      throw new Error('VALIDATION: exit_price must be greater than 0');
+    }
+
+    const direction = entry.direction ?? 'long';
+    const pnl =
+      direction === 'short'
+        ? (Number(entry.entry_price) - exitPrice) * sharesClosed
+        : (exitPrice - Number(entry.entry_price)) * sharesClosed;
 
     const exitInsert = await client.query(
       `
@@ -370,7 +461,6 @@ async function addJournalExit(userId, entryId, payload) {
       ]
     );
 
-    const currentRemaining = Number(entry.remaining_shares ?? entry.shares ?? 0);
     const remainingShares = Math.max(0, currentRemaining - sharesClosed);
     const totalRealizedPnL = Number(entry.total_realized_pnl ?? 0) + pnl;
     const nextStatus = remainingShares === 0 || eventType === 'close' ? 'closed' : 'trimmed';
@@ -469,7 +559,6 @@ async function exportUserData(userId) {
     achievementProgressResult,
     achievementsResult,
     scansResult,
-    adminLogsResult,
   ] = await Promise.all([
     pool.query(`SELECT * FROM user_settings WHERE user_id = $1 LIMIT 1`, [userId]),
     pool.query(`SELECT * FROM journal_entries WHERE user_id = $1 ORDER BY opened_at DESC, created_at DESC`, [userId]),
@@ -481,7 +570,7 @@ async function exportUserData(userId) {
 
   return {
     exportedAt: new Date().toISOString(),
-    version: 1,
+    version: 2,
     data: {
       settings: settingsResult.rows[0] || null,
       journal_entries: journalEntriesResult.rows,
@@ -529,7 +618,6 @@ async function clearUserData(userId) {
     client.release();
   }
 }
-
 
 async function importUserData(userId, payload) {
   if (!payload || typeof payload !== 'object' || !payload.data) {
@@ -622,22 +710,28 @@ async function importUserData(userId, payload) {
 
     if (Array.isArray(data.journal_entries)) {
       for (const entry of data.journal_entries) {
+        const direction = normalizeDirection(
+          entry.direction,
+          Number(entry.stop_price) > Number(entry.entry_price) ? 'short' : 'long'
+        );
+
         const inserted = await client.query(
           `
           INSERT INTO journal_entries (
-            user_id, ticker, entry_price, stop_price, target_price, original_stop, current_stop,
+            user_id, ticker, direction, entry_price, stop_price, target_price, original_stop, current_stop,
             shares, original_shares, remaining_shares, position_size, risk_dollars, risk_percent,
             stop_distance, status, exit_price, exit_date, pnl, total_realized_pnl, notes, thesis,
             wizard_complete, wizard_skipped, opened_at
           )
           VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25
           )
           RETURNING id
           `,
           [
             userId,
             entry.ticker,
+            direction,
             entry.entry_price,
             entry.stop_price,
             entry.target_price,
@@ -721,15 +815,24 @@ async function importUserData(userId, payload) {
         await client.query(
           `
           INSERT INTO user_scans (
-            user_id, title, scan_date, scan_data
+            user_id, scan_key, scan_date, name, title, tags, headers, rows,
+            source_file_name, sort_column, sort_order, published
           )
-          VALUES ($1,$2,$3,$4)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
           `,
           [
             userId,
+            scan.scan_key ?? `imported-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            scan.scan_date ?? new Date().toISOString().slice(0, 10),
+            scan.name ?? null,
             scan.title ?? 'Imported Scan',
-            scan.scan_date ?? new Date().toISOString(),
-            scan.scan_data ?? null,
+            JSON.stringify(scan.tags ?? []),
+            JSON.stringify(scan.headers ?? []),
+            JSON.stringify(scan.rows ?? []),
+            scan.source_file_name ?? null,
+            scan.sort_column ?? null,
+            scan.sort_order ?? 'desc',
+            scan.published ?? false,
           ]
         );
       }

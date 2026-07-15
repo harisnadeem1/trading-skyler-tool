@@ -6,6 +6,7 @@ import { state } from './state.js';
 import { formatCurrency, formatPercent } from './utils.js';
 import { trimModal } from './trimModal.js';
 import { viewManager } from './viewManager.js';
+import { wizard } from './wizard.js';
 
 class PositionsView {
   constructor() {
@@ -47,25 +48,112 @@ class PositionsView {
       goToDashboard: document.getElementById('positionsGoToDashboard'),
 
       // Filter buttons
-      filterButtons: document.querySelectorAll('.positions-view .filter-btn')
+      filterButtons: document.querySelectorAll('.positions-view .filter-btn'),
+      addTradeBtn: document.getElementById('positionsAddTradeBtn'),
+      emptyAddTradeBtn: document.getElementById('positionsEmptyAddTradeBtn'),
+      addModal: document.getElementById('positionsAddTradeModal'),
+      addOverlay: document.getElementById('positionsAddTradeOverlay'),
+      addClose: document.getElementById('positionsAddTradeClose'),
+      addCancel: document.getElementById('positionsAddTradeCancel'),
+      addSave: document.getElementById('positionsAddTradeSave'),
+
+      addTicker: document.getElementById('positionsAddTicker'),
+      addEntry: document.getElementById('positionsAddEntry'),
+      addStop: document.getElementById('positionsAddStop'),
+      addTarget: document.getElementById('positionsAddTarget'),
+      addRisk: document.getElementById('positionsAddRisk'),
+
+      previewShares: document.getElementById('positionsAddPreviewShares'),
+      previewPosition: document.getElementById('positionsAddPreviewPosition'),
+      previewRisk: document.getElementById('positionsAddPreviewRisk'),
+      previewRiskPercent: document.getElementById('positionsAddPreviewRiskPercent'),
+      previewStopDistance: document.getElementById('positionsAddPreviewStopDistance'),
+      previewPerShare: document.getElementById('positionsAddPreviewPerShare')
     };
   }
 
   bindEvents() {
-    // Go to dashboard button
     if (this.elements.goToDashboard) {
       this.elements.goToDashboard.addEventListener('click', () => {
         viewManager.navigateTo('dashboard');
       });
     }
 
-    // Filter buttons
-    this.elements.filterButtons.forEach(btn => {
+    this.elements.filterButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        this.setFilter(e.target.dataset.filter);
+        this.setFilter(e.currentTarget.dataset.filter);
       });
     });
+
+    if (this.elements.addTradeBtn) {
+      this.elements.addTradeBtn.addEventListener('click', () => {
+        this.openAddTradeModal();
+      });
+    }
+
+    if (this.elements.emptyAddTradeBtn) {
+      this.elements.emptyAddTradeBtn.addEventListener('click', () => {
+        this.openAddTradeModal();
+      });
+    }
+
+    if (this.elements.addClose) {
+      this.elements.addClose.addEventListener('click', () => {
+        this.closeAddTradeModal();
+      });
+    }
+
+    if (this.elements.addCancel) {
+      this.elements.addCancel.addEventListener('click', () => {
+        this.closeAddTradeModal();
+      });
+    }
+
+    if (this.elements.addOverlay) {
+      this.elements.addOverlay.addEventListener('click', () => {
+        this.closeAddTradeModal();
+      });
+    }
+
+    
+
+    const numericInputs = [
+      this.elements.addEntry,
+      this.elements.addStop,
+      this.elements.addTarget,
+      this.elements.addRisk
+    ];
+
+    numericInputs.forEach((el) => {
+      if (!el) return;
+
+      el.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+        this.updateAddTradePreview();
+      });
+    });
+
+    if (this.elements.addTicker) {
+      this.elements.addTicker.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      });
+    }
+
+    if (this.elements.addSave) {
+      this.elements.addSave.addEventListener('click', () => {
+        this.startWizardFromPositions();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!this.elements.addModal?.classList.contains('open')) return;
+
+      if (e.key === 'Escape') {
+        this.closeAddTradeModal();
+      }
+    });
   }
+
 
   setFilter(filter) {
     this.currentFilter = filter;
@@ -77,6 +165,203 @@ class PositionsView {
 
     this.render();
   }
+
+
+
+openAddTradeModal() {
+  if (!this.elements.addModal) return;
+
+  if (this.elements.addTicker) this.elements.addTicker.value = '';
+  if (this.elements.addEntry) this.elements.addEntry.value = '';
+  if (this.elements.addStop) this.elements.addStop.value = '';
+  if (this.elements.addTarget) this.elements.addTarget.value = '';
+  if (this.elements.addRisk) {
+    this.elements.addRisk.value = String(state.account.riskPercent ?? 1);
+  }
+
+  
+
+  this.updateAddTradePreview();
+
+  this.elements.addModal.classList.add('open');
+  this.elements.addModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  requestAnimationFrame(() => {
+    this.elements.addEntry?.focus();
+  });
+}
+
+closeAddTradeModal() {
+  if (!this.elements.addModal) return;
+
+  this.elements.addModal.classList.remove('open');
+  this.elements.addModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+getAddTradeFormData() {
+  const entry = Number(this.elements.addEntry?.value || 0);
+  const stop = Number(this.elements.addStop?.value || 0);
+
+  let direction = 'long';
+  if (entry > 0 && stop > 0) {
+    direction = stop > entry ? 'short' : 'long';
+  }
+
+  return {
+    ticker: this.elements.addTicker?.value.trim().toUpperCase() || '',
+    direction,
+    entry,
+    stop,
+    target: this.elements.addTarget?.value ? Number(this.elements.addTarget.value) : null,
+    riskPercent: Number(this.elements.addRisk?.value || 0)
+  };
+}
+
+updateAddTradePreview() {
+  const { direction, entry, stop, riskPercent } = this.getAddTradeFormData();
+  const accountSize = Number(state.account.currentSize || 0);
+  
+
+  let stopPerShare = 0;
+
+  if (direction === 'short') {
+    stopPerShare = stop > entry ? stop - entry : 0;
+  } else {
+    stopPerShare = entry > stop ? entry - stop : 0;
+  }
+
+  const riskDollars = accountSize > 0 && riskPercent > 0
+    ? (accountSize * riskPercent) / 100
+    : 0;
+
+  const shares = stopPerShare > 0
+    ? Math.floor(riskDollars / stopPerShare)
+    : 0;
+
+    const actualRiskDollars = shares * stopPerShare;
+const actualRiskPercent = accountSize > 0
+  ? (actualRiskDollars / accountSize) * 100
+  : 0;
+
+  const positionSize = shares * entry;
+  const stopDistancePercent = entry > 0 && stopPerShare > 0
+    ? (stopPerShare / entry) * 100
+    : 0;
+
+  if (this.elements.previewShares) {
+    this.elements.previewShares.textContent = String(shares);
+  }
+
+  if (this.elements.previewPosition) {
+    this.elements.previewPosition.textContent = formatCurrency(positionSize);
+  }
+
+  if (this.elements.previewRisk) {
+  this.elements.previewRisk.textContent = formatCurrency(actualRiskDollars);
+}
+
+if (this.elements.previewRiskPercent) {
+  this.elements.previewRiskPercent.textContent = `${formatPercent(actualRiskPercent)} of account`;
+}
+
+  if (this.elements.previewStopDistance) {
+    this.elements.previewStopDistance.textContent = formatPercent(stopDistancePercent);
+  }
+
+  if (this.elements.previewPerShare) {
+    this.elements.previewPerShare.textContent = `${formatCurrency(stopPerShare)}/share`;
+  }
+}
+
+startWizardFromPositions() {
+  const { ticker, direction, entry, stop, target, riskPercent } = this.getAddTradeFormData();
+  const accountSize = Number(state.account.currentSize || 0);
+
+  if (!(entry > 0)) {
+    alert('Enter a valid entry price');
+    return;
+  }
+
+  if (!(stop > 0)) {
+    alert('Enter a valid stop loss');
+    return;
+  }
+
+  if (!(riskPercent > 0)) {
+    alert('Enter a valid risk %');
+    return;
+  }
+
+  if (stop === entry) {
+    alert('Stop loss must be different from entry');
+    return;
+  }
+
+  if (direction === 'long' && stop >= entry) {
+    alert('For a long trade, stop must be below entry');
+    return;
+  }
+
+  if (direction === 'short' && stop <= entry) {
+    alert('For a short trade, stop must be above entry');
+    return;
+  }
+
+  if (target !== null) {
+    if (direction === 'long' && target <= entry) {
+      alert('For a long trade, target should be above entry');
+      return;
+    }
+    if (direction === 'short' && target >= entry) {
+      alert('For a short trade, target should be below entry');
+      return;
+    }
+  }
+
+  const stopPerShare = Math.abs(entry - stop);
+  const riskDollars = (accountSize * riskPercent) / 100;
+  const shares = stopPerShare > 0 ? Math.floor(riskDollars / stopPerShare) : 0;
+  const positionSize = shares * entry;
+  const stopDistance = entry > 0 ? (stopPerShare / entry) * 100 : 0;
+  const actualRiskDollars = shares * stopPerShare;
+const actualRiskPercent = accountSize > 0 ? (actualRiskDollars / accountSize) * 100 : 0;
+
+  state.updateTrade({
+    ticker,
+    direction,
+    entry,
+    stop,
+    target,
+    notes: ''
+  });
+
+  state.updateResults({
+    shares,
+  positionSize,
+  riskDollars,
+  actualRiskDollars,
+  stopDistance,
+  stopPerShare,
+  target,
+  direction,
+  actualRiskPercent
+  });
+
+  state.updateAccount({
+    riskPercent
+  });
+
+  this.closeAddTradeModal();
+  wizard.open();
+}
+
+
+  
+
+
+
 
   getFilteredPositions() {
     const activeTrades = state.journal.entries.filter(
@@ -92,6 +377,12 @@ class PositionsView {
         return activeTrades;
     }
   }
+
+  
+
+  
+
+  
 
   render() {
     const positions = this.getFilteredPositions();
@@ -136,21 +427,27 @@ class PositionsView {
 
     // Calculate NET risk (remaining risk minus realized profit for trimmed trades)
     const totalRisk = activeTrades.reduce((sum, t) => {
-      const shares = Number(t.remainingShares ?? t.shares ?? 0);
-const activeStop = Number(t.currentStop ?? t.stop ?? 0);
-const entry = Number(t.entry ?? 0);
-const riskPerShare = Math.max(0, entry - activeStop);
-const grossRisk = shares * riskPerShare;
+      const shares = Number(t.remainingShares ?? t.remaining_shares ?? t.shares ?? 0);
+      const activeStop = Number(t.currentStop ?? t.current_stop ?? t.stop ?? t.stop_price ?? 0);
+      const entry = Number(t.entry ?? t.entry_price ?? 0);
+      const direction = t.direction ?? (activeStop > entry ? 'short' : 'long');
 
-      // For trimmed trades, subtract realized profit (net risk can't go below 0)
-      const realizedPnL = t.totalRealizedPnL || 0;
+      const riskPerShare =
+        direction === 'short'
+          ? Math.max(0, activeStop - entry)
+          : Math.max(0, entry - activeStop);
+
+      const grossRisk = shares * riskPerShare;
+
+      const realizedPnL = Number(t.totalRealizedPnL ?? t.total_realized_pnl ?? 0);
       const isTrimmed = t.status === 'trimmed';
       const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
 
       return sum + netRisk;
     }, 0);
 
-    const riskPercent = (totalRisk / state.account.currentSize) * 100;
+    const accountSize = Number(state.account.currentSize ?? 0);
+    const riskPercent = accountSize > 0 ? (totalRisk / accountSize) * 100 : 0;
 
     // Determine risk level
     let level = 'LOW';
@@ -162,7 +459,6 @@ const grossRisk = shares * riskPerShare;
       level = 'MEDIUM';
       levelClass = 'risk-medium';
     }
-    console.log(level,riskPercent);
 
     if (this.elements.openRisk) {
       this.elements.openRisk.textContent = `${formatCurrency(totalRisk)} (${formatPercent(riskPercent)})`;
@@ -178,13 +474,20 @@ const grossRisk = shares * riskPerShare;
     if (!this.elements.grid) return;
 
     this.elements.grid.innerHTML = positions.map(trade => {
-      const shares = Number(trade.remainingShares ?? trade.shares ?? 0);
-const originalShares = Number(trade.originalShares ?? trade.shares ?? 0);
-const entry = Number(trade.entry ?? 0);
-const activeStop = Number(trade.currentStop ?? trade.stop ?? 0);
-const grossRisk = shares * Math.max(0, entry - activeStop);
-const isTrimmed = trade.status === 'trimmed';
-const realizedPnL = Number(trade.totalRealizedPnL ?? 0);
+      const shares = Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0);
+      const originalShares = Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0);
+      const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+      const activeStop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+      const direction = trade.direction ?? (activeStop > entry ? 'short' : 'long');
+
+      const riskPerShare =
+        direction === 'short'
+          ? Math.max(0, activeStop - entry)
+          : Math.max(0, entry - activeStop);
+
+      const grossRisk = shares * riskPerShare;
+      const isTrimmed = trade.status === 'trimmed';
+      const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0);
 
       // For trimmed trades, calculate NET risk (remaining risk - realized profit)
       const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
@@ -213,6 +516,10 @@ const realizedPnL = Number(trade.totalRealizedPnL ?? 0);
           </div>
 
           <div class="position-card__details">
+          <div class="position-card__detail">
+    <span class="position-card__detail-label">Direction</span>
+    <span class="position-card__detail-value">${direction.toUpperCase()}</span>
+  </div>
             <div class="position-card__detail">
               <span class="position-card__detail-label">Shares</span>
               <span class="position-card__detail-value">${shares}${isTrimmed ? ` / ${originalShares}` : ''}</span>
@@ -263,22 +570,22 @@ const realizedPnL = Number(trade.totalRealizedPnL ?? 0);
   }
 
   bindCardActions() {
-  this.elements.grid.querySelectorAll('[data-action="close"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = e.currentTarget.dataset.id;
-      trimModal.open(id);
+    this.elements.grid.querySelectorAll('[data-action="close"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        trimModal.open(id);
+      });
     });
-  });
 
-  this.elements.grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = e.currentTarget.dataset.id;
-      if (confirm('Delete this trade?')) {
-        state.deleteJournalEntry(id);
-      }
+    this.elements.grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (confirm('Delete this trade?')) {
+          state.deleteJournalEntry(id);
+        }
+      });
     });
-  });
-}
+  }
 
   showEmptyState() {
     if (this.elements.grid) {

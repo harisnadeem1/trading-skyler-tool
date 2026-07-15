@@ -25,9 +25,9 @@ class Journal {
     state.on('journalEntryDeleted', () => this.render());
     state.on('journalHydrated', () => this.render());
     state.on('accountChanged', () => {
-  this.renderActiveTrades();
-  this.renderRiskSummary();
-});
+      this.renderActiveTrades();
+      this.renderRiskSummary();
+    });
     state.on('settingsChanged', () => this.updateWizardHint());
 
     state.on('resultsRendered', (results) => {
@@ -38,39 +38,39 @@ class Journal {
     this.updateWizardHint();
   }
 
- cacheElements() {
-  this.elements = {
-    tradeNotes: document.getElementById('tradeNotes'),
-    logTradeBtn: document.getElementById('logTradeBtn'),
-    wizardHint: document.getElementById('wizardHint'),
+  cacheElements() {
+    this.elements = {
+      tradeNotes: document.getElementById('tradeNotes'),
+      logTradeBtn: document.getElementById('logTradeBtn'),
+      wizardHint: document.getElementById('wizardHint'),
 
-    activeTrades: document.getElementById('activeTrades'),
-    activeTradeCount: document.getElementById('activeTradeCount'),
-    riskSummary: document.getElementById('riskSummary'),
-    viewPositionsBtn: document.getElementById('viewPositionsBtn'),
+      activeTrades: document.getElementById('activeTrades'),
+      activeTradeCount: document.getElementById('activeTradeCount'),
+      riskSummary: document.getElementById('riskSummary'),
+      viewPositionsBtn: document.getElementById('viewPositionsBtn'),
 
-    journalModal: document.getElementById('journalModal'),
-    journalModalOverlay: document.getElementById('journalModalOverlay'),
-    closeJournalBtn: document.getElementById('closeJournalBtn'),
-    viewJournalBtn: document.getElementById('viewJournalBtn'),
-    journalTableBody: document.getElementById('journalTableBody'),
+      journalModal: document.getElementById('journalModal'),
+      journalModalOverlay: document.getElementById('journalModalOverlay'),
+      closeJournalBtn: document.getElementById('closeJournalBtn'),
+      viewJournalBtn: document.getElementById('viewJournalBtn'),
+      journalTableBody: document.getElementById('journalTableBody'),
 
-    journalCount: document.getElementById('journalCount'),
-    journalTotalPnL: document.getElementById('journalTotalPnL'),
-    journalWinRate: document.getElementById('journalWinRate'),
-    journalWins: document.getElementById('journalWins'),
-    journalLosses: document.getElementById('journalLosses'),
-    journalAvgWin: document.getElementById('journalAvgWin'),
-    journalAvgLoss: document.getElementById('journalAvgLoss'),
+      journalCount: document.getElementById('journalCount'),
+      journalTotalPnL: document.getElementById('journalTotalPnL'),
+      journalWinRate: document.getElementById('journalWinRate'),
+      journalWins: document.getElementById('journalWins'),
+      journalLosses: document.getElementById('journalLosses'),
+      journalAvgWin: document.getElementById('journalAvgWin'),
+      journalAvgLoss: document.getElementById('journalAvgLoss'),
 
-    exportCSVBtn: document.getElementById('journalExportCSV'),
-    exportTSVBtn: document.getElementById('journalExportTSV'),
-    exportPDFBtn: document.getElementById('journalExportPDF'),
+      exportCSVBtn: document.getElementById('journalExportCSV'),
+      exportTSVBtn: document.getElementById('journalExportTSV'),
+      exportPDFBtn: document.getElementById('journalExportPDF'),
 
-    journalCopyCSV: document.getElementById('journalCopyCSV'),
-    journalCopyTSV: document.getElementById('journalCopyTSV')
-  };
-}
+      journalCopyCSV: document.getElementById('journalCopyCSV'),
+      journalCopyTSV: document.getElementById('journalCopyTSV')
+    };
+  }
 
   bindEvents() {
     if (this.elements.logTradeBtn) {
@@ -93,12 +93,15 @@ class Journal {
     }
 
     document.querySelectorAll('.filter-btn[data-filter]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
-        e.target.classList.add('active');
-        this.renderTable(e.target.dataset.filter);
-      });
-    });
+  btn.addEventListener('click', (e) => {
+    document
+      .querySelectorAll('.filter-btn[data-filter]')
+      .forEach((b) => b.classList.remove('filter-btn--active'));
+
+    e.currentTarget.classList.add('filter-btn--active');
+    this.renderTable(e.currentTarget.dataset.filter);
+  });
+});
 
     if (this.elements.exportCSVBtn) {
       this.elements.exportCSVBtn.addEventListener('click', () => dataManager.exportCSV());
@@ -122,7 +125,7 @@ class Journal {
       this.elements.journalCopyTSV.addEventListener('click', () => dataManager.copyTSV());
     }
 
-  
+
 
     window.closeTrade = (id) => this.closeTrade(id);
     window.deleteTrade = (id) => this.deleteTrade(id);
@@ -146,6 +149,7 @@ class Journal {
 
     const entry = {
       ticker: trade.ticker || 'UNKNOWN',
+      direction: trade.direction ?? 'long',
       entry: trade.entry,
       stop: trade.stop,
       originalStop: trade.stop,
@@ -185,6 +189,7 @@ class Journal {
         entry: newEntry,
         wizardComplete: false,
         thesis: null,
+        direction: newEntry.direction ?? trade.direction ?? 'long',
       });
 
       if (state.settings.celebrationsEnabled) {
@@ -195,7 +200,7 @@ class Journal {
         this.elements.tradeNotes.value = '';
       }
 
-      showToast(`✅ ${entry.ticker} trade logged!`, 'success');
+      showToast(`✅ ${entry.ticker} ${entry.direction?.toUpperCase() || 'LONG'} trade logged!`, 'success');
       this.updateLogButtonState({ shares: 0 });
     } catch (error) {
       console.error('Failed to log trade:', error);
@@ -273,15 +278,27 @@ class Journal {
         const originalShares = Number(
           trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0
         );
+       
         const entryPrice = Number(trade.entry ?? trade.entry_price ?? 0);
         const stopPrice = Number(
           trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0
         );
-        const riskPerShare = entryPrice - stopPrice;
+        const direction = trade.direction ?? (stopPrice > entryPrice ? 'short' : 'long');
+
+        const riskPerShare =
+          direction === 'short'
+            ? Math.max(0, stopPrice - entryPrice)
+            : Math.max(0, entryPrice - stopPrice);
+
         const currentRisk = shares * riskPerShare;
         const isTrimmed = trade.status === 'trimmed';
         const realizedPnL = Number(trade.totalRealizedPnL ?? trade.total_realized_pnl ?? 0);
-        const target5R = entryPrice + (5 * riskPerShare);
+
+        const target5R =
+          direction === 'short'
+            ? entryPrice - (5 * riskPerShare)
+            : entryPrice + (5 * riskPerShare);
+
         const isFreeRoll = isTrimmed && realizedPnL >= currentRisk - 0.01;
         const netRisk = isTrimmed ? Math.max(0, currentRisk - realizedPnL) : currentRisk;
 
@@ -314,6 +331,7 @@ class Journal {
             <div class="trade-card__header">
               <div class="trade-card__header-left">
                 <span class="trade-card__ticker">${trade.ticker}</span>
+<span class="trade-card__meta">${(direction || 'long').toUpperCase()}</span>
                 <span class="trade-card__shares">${shares} shares${isTrimmed ? ` (${originalShares} orig)` : ''}</span>
               </div>
               <span class="status-badge status-badge--${statusClass}">${statusText}</span>
@@ -415,7 +433,7 @@ class Journal {
     if (trades.length === 0) {
       this.elements.journalTableBody.innerHTML = `
         <tr class="journal-empty">
-          <td colspan="9">No trades ${filter !== 'all' ? 'with status "' + filter + '"' : 'logged yet'}</td>
+          <td colspan="11">No trades ${filter !== 'all' ? 'with status "' + filter + '"' : 'logged yet'}</td>
         </tr>
       `;
       if (this.elements.journalSummaryText) {
@@ -439,21 +457,23 @@ class Journal {
           ? `${trade.remainingShares ?? trade.remaining_shares ?? trade.shares}/${trade.originalShares ?? trade.original_shares ?? trade.shares}`
           : trade.shares;
 
-        return `
-          <tr data-id="${trade.id}">
-            <td>${date}</td>
-            <td>${trade.ticker}</td>
-            <td>${formatCurrency(trade.entry ?? trade.entry_price)}</td>
-            <td>${formatCurrency(trade.stop ?? trade.stop_price)}</td>
-            <td>${sharesDisplay}</td>
-            <td>${formatCurrency(trade.riskDollars ?? trade.risk_dollars ?? 0)}</td>
-            <td><span class="status-badge status-badge--${trade.status}">${trade.status}</span></td>
-            <td>${pnlDisplay}</td>
-            <td>
-              <button class="btn btn--ghost btn--sm" onclick="deleteTrade('${trade.id}')">×</button>
-            </td>
-          </tr>
-        `;
+       return `
+  <tr data-id="${trade.id}">
+    <td>${date}</td>
+    <td>${trade.ticker}</td>
+    <td>${(trade.direction ?? 'long').toUpperCase()}</td>
+    <td>${formatCurrency(trade.entry ?? trade.entry_price ?? 0)}</td>
+    <td>${trade.exitPrice ?? trade.exit_price ? formatCurrency(trade.exitPrice ?? trade.exit_price) : '—'}</td>
+    <td>${sharesDisplay}</td>
+    <td>${pnlDisplay}</td>
+    <td>—</td>
+    <td>—</td>
+    <td><span class="status-badge status-badge--${trade.status}">${trade.status}</span></td>
+    <td>
+      <button class="btn btn--ghost btn--sm" onclick="deleteTrade('${trade.id}')">×</button>
+    </td>
+  </tr>
+`;
       })
       .join('');
 
