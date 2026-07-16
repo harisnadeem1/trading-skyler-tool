@@ -266,9 +266,13 @@ this.connectLiveStream();
 connectLiveStream() {
   if (this.liveEventSource) return;
 
-  const apiBase =
-    window.API_BASE_URL ||
-    `${window.location.protocol}//${window.location.hostname}:3000`;
+  const isLocal =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+
+  const apiBase = isLocal
+    ? 'http://localhost:3000'
+    : window.location.origin;
 
   const streamUrl = `${apiBase}/api/market/stream`;
   const eventSource = new EventSource(streamUrl, { withCredentials: true });
