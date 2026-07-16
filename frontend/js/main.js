@@ -270,20 +270,29 @@ connectLiveStream() {
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
 
-  const apiBase = isLocal
-    ? 'http://localhost:3000'
-    : window.location.origin;
+  const streamUrl = isLocal
+    ? 'http://localhost:3000/api/market/stream'
+    : '/api/market/stream';
 
-  const streamUrl = `${apiBase}/api/market/stream`;
+  console.log('[liveStream] connecting to:', streamUrl);
+
   const eventSource = new EventSource(streamUrl, { withCredentials: true });
 
   eventSource.addEventListener('open', () => {
-    console.log('[liveStream] connected');
+    console.log('[liveStream] connected', {
+      url: streamUrl,
+      readyState: eventSource.readyState,
+    });
+  });
+
+  eventSource.addEventListener('connected', (event) => {
+    console.log('[liveStream] connected event payload:', event.data);
   });
 
   eventSource.addEventListener('trade-alert', (event) => {
     try {
       const payload = JSON.parse(event.data);
+      console.log('[liveStream] trade-alert:', payload);
       this.handleTradeAlert(payload);
     } catch (error) {
       console.error('Failed to parse trade-alert event:', error);
@@ -293,6 +302,7 @@ connectLiveStream() {
   eventSource.addEventListener('trade-closed', (event) => {
     try {
       const payload = JSON.parse(event.data);
+      console.log('[liveStream] trade-closed:', payload);
       this.handleTradeClosed(payload);
     } catch (error) {
       console.error('Failed to parse trade-closed event:', error);
@@ -300,7 +310,11 @@ connectLiveStream() {
   });
 
   eventSource.onerror = (error) => {
-    console.error('[liveStream] connection error:', error);
+    console.error('[liveStream] connection error:', {
+      error,
+      url: streamUrl,
+      readyState: eventSource.readyState,
+    });
   };
 
   this.liveEventSource = eventSource;
