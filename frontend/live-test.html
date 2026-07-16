@@ -54,8 +54,14 @@
   </main>
 
   <script>
-    const BACKEND_BASE_URL = 'http://localhost:3000';
-    const STREAM_URL = `${BACKEND_BASE_URL}/api/market/stream`;
+    const isLocal =
+  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const BACKEND_BASE_URL = isLocal
+  ? 'http://localhost:3000'
+  : window.location.origin;
+
+const STREAM_URL = `${BACKEND_BASE_URL}/api/market/stream`;
 
     const connectionStatus = document.getElementById('connectionStatus');
     const tradeGrid = document.getElementById('tradeGrid');
