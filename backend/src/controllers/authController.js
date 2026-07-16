@@ -2,6 +2,18 @@ const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const generateToken = require('../utils/generateToken');
 
+function getAuthCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+}
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -33,12 +45,7 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('token', token, getAuthCookieOptions());
 
     return res.json({
       message: 'Login successful',
@@ -59,11 +66,10 @@ exports.me = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-  res.clearCookie('token');
+  const { maxAge, ...clearOptions } = getAuthCookieOptions();
+  res.clearCookie('token', clearOptions);
   return res.json({ message: 'Logged out successfully' });
 };
-
-
 
 exports.getInviteByToken = async (req, res) => {
   try {
@@ -177,12 +183,7 @@ exports.signupWithInvite = async (req, res) => {
     const user = userResult.rows[0];
     const authToken = generateToken(user);
 
-    res.cookie('token', authToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('token', authToken, getAuthCookieOptions());
 
     return res.status(201).json({
       message: 'Signup completed successfully',

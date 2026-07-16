@@ -10,6 +10,7 @@ const protectedRoutes = require('./routes/protectedRoutes');
 const userRoutes = require('./routes/userRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(cookieParser());
