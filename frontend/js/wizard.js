@@ -3,6 +3,7 @@
  */
 
 import { state } from './state.js';
+import { achievements } from './achievements.js';
 import { showToast } from './ui.js';
 import { formatCurrency, formatNumber, formatPercent } from './utils.js';
 
@@ -258,9 +259,9 @@ class TradeWizard {
         `${directionLabel} · ${formatNumber(results.shares || 0)} shares @ ${formatCurrency(trade.entry || 0)}`;
     }
     if (this.elements.wizardDirection) {
-  this.elements.wizardDirection.textContent =
-    (trade.direction ?? 'long').toUpperCase();
-}
+      this.elements.wizardDirection.textContent =
+        (trade.direction ?? 'long').toUpperCase();
+    }
     if (this.elements.confirmRisk) {
       this.elements.confirmRisk.textContent =
         `${formatCurrency(results.riskDollars || 0)} (${formatPercent(account.riskPercent || 0)})`;
@@ -414,29 +415,19 @@ class TradeWizard {
     };
 
     try {
-      const newEntry = await state.addJournalEntry(entry);
+      const result = await state.addJournalEntry(entry);
 
-      const progress = state.journalMeta.achievements.progress;
-      progress.totalTrades += 1;
-
-      if (this.notes) {
-        progress.tradesWithNotes += 1;
+      if (result.newAchievements?.length) {
+        achievements.handleBackendUnlocks(result.newAchievements);
       }
-      if (this.hasThesisData()) {
-        progress.tradesWithThesis += 1;
-      }
-      if (wizardComplete && this.skippedSteps.length === 0) {
-        progress.completeWizardCount += 1;
-      }
-
-      state.updateStreak();
 
       state.emit('tradeLogged', {
-  entry: newEntry,
-  wizardComplete,
-  thesis: this.thesis,
-  direction: newEntry.direction ?? trade.direction ?? 'long'
-});
+        entry: result.entry,
+        wizardComplete,
+        thesis: this.thesis,
+        direction: result.entry.direction ?? trade.direction ?? 'long',
+        newAchievements: result.newAchievements || [],
+      });
 
       this.showSuccessToast();
 

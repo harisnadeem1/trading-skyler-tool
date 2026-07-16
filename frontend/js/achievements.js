@@ -1,150 +1,159 @@
 /**
- * Achievements - Track and unlock achievements for trade logging
- * MVP: 3 achievements (First Steps, Day One, Hot Streak)
+ * Achievements - display and notification manager
+ * Backend is the source of truth for unlocks and progress.
  */
 
 import { state } from './state.js';
-import { showToast } from './ui.js';
 import { confetti } from './confetti.js';
 import { soundFx } from './soundFx.js';
 
-// Achievement definitions
 const ACHIEVEMENTS = {
   first_steps: {
     id: 'first_steps',
     name: 'First Steps',
     description: 'Log your first trade',
     icon: '🎯',
-    check: (progress) => progress.totalTrades >= 1
   },
   day_one: {
     id: 'day_one',
     name: 'Day One',
     description: 'Log a trade today',
     icon: '📅',
-    check: (progress) => {
-      const today = new Date().toDateString();
-      const lastDate = progress.lastTradeDate ? new Date(progress.lastTradeDate).toDateString() : null;
-      return lastDate === today;
-    }
   },
   hot_streak: {
     id: 'hot_streak',
     name: 'Hot Streak',
     description: '3-day logging streak',
     icon: '🔥',
-    check: (progress) => progress.currentStreak >= 3
   }
 };
 
-// Future achievements (not yet active)
 const FUTURE_ACHIEVEMENTS = {
   getting_started: {
     id: 'getting_started',
     name: 'Getting Started',
     description: 'Log 5 trades',
     icon: '📈',
-    check: (progress) => progress.totalTrades >= 5
   },
   first_win: {
     id: 'first_win',
     name: 'First Win',
     description: 'Close a trade in profit',
     icon: '💰',
-    check: (progress) => false // Requires closed trade tracking
   },
   committed: {
     id: 'committed',
     name: 'Committed',
     description: 'Log 25 trades',
     icon: '🏆',
-    check: (progress) => progress.totalTrades >= 25
   },
   on_fire: {
     id: 'on_fire',
     name: 'On Fire',
     description: '7-day logging streak',
     icon: '🌟',
-    check: (progress) => progress.currentStreak >= 7
   }
 };
 
 class AchievementManager {
   constructor() {
     this.achievements = ACHIEVEMENTS;
-    this.queue = []; // Queue for showing achievements
+    this.queue = [];
+    this.isShowing = false;
   }
 
   init() {
-    // Listen for trade logged events
-    state.on('tradeLogged', () => this.checkAchievements());
-    state.on('streakUpdated', () => this.checkAchievements());
+    // No local unlock calculation anymore.
+    // Backend decides unlocks. Frontend only displays them.
   }
 
-  checkAchievements() {
-    const progress = state.journalMeta.achievements.progress;
+  getProgress() {
+    return state?.journalMeta?.achievements?.progress || {
+      totalTrades: 0,
+      lastTradeDate: null,
+      currentStreak: 0,
+      longestStreak: 0,
+      tradesWithNotes: 0,
+      tradesWithThesis: 0,
+      completeWizardCount: 0,
+    };
+  }
 
-    // Check each achievement
-    Object.values(this.achievements).forEach(achievement => {
-      // Skip if already unlocked
-      if (state.isAchievementUnlocked(achievement.id)) return;
+  getSettings() {
+    return state?.journalMeta?.settings || {};
+  }
 
-      // Check condition
-      if (achievement.check(progress)) {
-        this.unlock(achievement);
-      }
+  getUnlockedList() {
+    return state?.journalMeta?.achievements?.unlocked || [];
+  }
+
+  isUnlocked(id) {
+    return this.getUnlockedList().some((a) =>
+      a.id === id ||
+      a.achievementKey === id
+    );
+  }
+
+  handleBackendUnlocks(unlockedAchievements = []) {
+    if (!Array.isArray(unlockedAchievements) || unlockedAchievements.length === 0) {
+      return;
+    }
+
+    unlockedAchievements.forEach((item) => {
+      const achievementId = item?.achievementKey || item?.id;
+      if (!achievementId) return;
+
+      const achievement = this.achievements[achievementId] || FUTURE_ACHIEVEMENTS[achievementId];
+      if (!achievement) return;
+
+      this.enqueueUnlock(achievement);
     });
   }
 
-  unlock(achievement) {
-    // Add to unlocked list
-    const unlocked = state.unlockAchievement(achievement.id);
+  enqueueUnlock(achievement) {
+    this.queue.push(achievement);
 
-    if (unlocked) {
-      // Queue the achievement notification
-      this.queue.push(achievement);
+    const settings = this.getSettings();
 
-      // Show immediately if first in queue
-      if (this.queue.length === 1) {
-        this.showNext();
-      }
+    if (settings.celebrationsEnabled) {
+      confetti.rain(30);
+    }
 
-      // Trigger confetti and sound if celebrations enabled
-      if (state.journalMeta.settings.celebrationsEnabled) {
-        confetti.rain(30); // Achievement celebration
-      }
-
-      // Play achievement sound if sound enabled
-      if (state.journalMeta.settings.soundEnabled) {
+    if (settings.soundEnabled && typeof soundFx?.playAchievement === 'function') {
+      try {
         soundFx.playAchievement();
+      } catch (error) {
+        console.warn('Achievement sound failed:', error);
       }
+    }
+
+    if (!this.isShowing) {
+      this.showNext();
     }
   }
 
   showNext() {
-    if (this.queue.length === 0) return;
+    if (!this.queue.length) {
+      this.isShowing = false;
+      return;
+    }
 
+    this.isShowing = true;
     const achievement = this.queue[0];
 
-    // Show achievement toast
     this.showAchievementToast(achievement);
 
-    // Mark as notified
-    state.markAchievementNotified(achievement.id);
-
-    // Remove from queue and show next after delay
     setTimeout(() => {
       this.queue.shift();
-      if (this.queue.length > 0) {
-        this.showNext();
-      }
+      this.showNext();
     }, 3500);
   }
 
   showAchievementToast(achievement) {
-    // Create custom achievement toast
-    const container = document.getElementById('toastContainerTop') ||
-                      document.getElementById('toastContainer');
+    const container =
+      document.getElementById('toastContainerTop') ||
+      document.getElementById('toastContainer');
+
     if (!container) return;
 
     const toast = document.createElement('div');
@@ -158,39 +167,39 @@ class AchievementManager {
       <button class="toast__close" aria-label="Close">×</button>
     `;
 
-    // Close button
-    toast.querySelector('.toast__close')?.addEventListener('click', () => {
+    const removeToast = () => {
+      if (!toast.parentElement) return;
       toast.classList.add('toast--hiding');
       setTimeout(() => toast.remove(), 300);
-    });
+    };
+
+    toast.querySelector('.toast__close')?.addEventListener('click', removeToast, { once: true });
 
     container.appendChild(toast);
 
-    // Auto remove
-    setTimeout(() => {
-      if (toast.parentElement) {
-        toast.classList.add('toast--hiding');
-        setTimeout(() => toast.remove(), 300);
-      }
-    }, 3000);
+    setTimeout(removeToast, 3000);
   }
 
-  // Get all achievements with unlock status
   getAll() {
-    return Object.values(this.achievements).map(achievement => ({
-      ...achievement,
-      unlocked: state.isAchievementUnlocked(achievement.id),
-      unlockedAt: state.journalMeta.achievements.unlocked
-        .find(a => a.id === achievement.id)?.unlockedAt
-    }));
+    const unlockedList = this.getUnlockedList();
+
+    return Object.values(this.achievements).map((achievement) => {
+      const unlockedRow = unlockedList.find((a) =>
+        a.id === achievement.id || a.achievementKey === achievement.id
+      );
+
+      return {
+        ...achievement,
+        unlocked: Boolean(unlockedRow),
+        unlockedAt: unlockedRow?.unlockedAt || null,
+      };
+    });
   }
 
-  // Get unlocked count
   getUnlockedCount() {
-    return state.journalMeta.achievements.unlocked.length;
+    return this.getUnlockedList().length;
   }
 
-  // Get total count
   getTotalCount() {
     return Object.keys(this.achievements).length;
   }

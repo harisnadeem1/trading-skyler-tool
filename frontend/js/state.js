@@ -308,33 +308,109 @@ async addManualJournalEntry(input) {
 
   async addJournalEntry(entry) {
   const result = await api.post('/user/journal', entry);
+
   const newEntry = {
     ...result.entry,
     direction: result.entry.direction ?? 'long',
     entry: result.entry.entry ?? result.entry.entry_price,
     stop: result.entry.stop ?? result.entry.stop_price,
     target: result.entry.target ?? result.entry.target_price,
-    originalStop: result.entry.originalStop ?? result.entry.original_stop ?? result.entry.stop ?? result.entry.stop_price,
-    currentStop: result.entry.currentStop ?? result.entry.current_stop ?? result.entry.stop ?? result.entry.stop_price,
-    originalShares: result.entry.originalShares ?? result.entry.original_shares ?? result.entry.shares ?? 0,
-    remainingShares: result.entry.remainingShares ?? result.entry.remaining_shares ?? result.entry.shares ?? 0,
+    originalStop:
+      result.entry.originalStop ??
+      result.entry.original_stop ??
+      result.entry.stop ??
+      result.entry.stop_price,
+    currentStop:
+      result.entry.currentStop ??
+      result.entry.current_stop ??
+      result.entry.stop ??
+      result.entry.stop_price,
+    originalShares:
+      result.entry.originalShares ??
+      result.entry.original_shares ??
+      result.entry.shares ??
+      0,
+    remainingShares:
+      result.entry.remainingShares ??
+      result.entry.remaining_shares ??
+      result.entry.shares ??
+      0,
     exitPrice: result.entry.exitPrice ?? result.entry.exit_price,
     exitDate: result.entry.exitDate ?? result.entry.exit_date,
     positionSize: result.entry.positionSize ?? result.entry.position_size,
     riskDollars: result.entry.riskDollars ?? result.entry.risk_dollars,
     riskPercent: result.entry.riskPercent ?? result.entry.risk_percent,
     stopDistance: result.entry.stopDistance ?? result.entry.stop_distance,
-    totalRealizedPnL: result.entry.totalRealizedPnL ?? result.entry.total_realized_pnl ?? 0,
-    wizardComplete: result.entry.wizardComplete ?? result.entry.wizard_complete ?? false,
-    wizardSkipped: result.entry.wizardSkipped ?? result.entry.wizard_skipped ?? [],
-    trimHistory: result.entry.trimHistory ?? result.entry.trim_history ?? [],
-    timestamp: result.entry.timestamp ?? result.entry.opened_at ?? result.entry.created_at,
+    totalRealizedPnL:
+      result.entry.totalRealizedPnL ??
+      result.entry.total_realized_pnl ??
+      0,
+    wizardComplete:
+      result.entry.wizardComplete ??
+      result.entry.wizard_complete ??
+      false,
+    wizardSkipped:
+      result.entry.wizardSkipped ??
+      result.entry.wizard_skipped ??
+      [],
+    trimHistory:
+      result.entry.trimHistory ??
+      result.entry.trim_history ??
+      [],
+    timestamp:
+      result.entry.timestamp ??
+      result.entry.opened_at ??
+      result.entry.created_at,
   };
 
   this.state.journal.entries.unshift(newEntry);
+
+  if (result.achievement_progress) {
+    this.state.journalMeta.achievements.progress = {
+      totalTrades: Number(result.achievement_progress.totalTrades ?? 0),
+      currentStreak: Number(result.achievement_progress.currentStreak ?? 0),
+      longestStreak: Number(result.achievement_progress.longestStreak ?? 0),
+      lastTradeDate: result.achievement_progress.lastTradeDate ?? null,
+      tradesWithNotes: Number(result.achievement_progress.tradesWithNotes ?? 0),
+      tradesWithThesis: Number(result.achievement_progress.tradesWithThesis ?? 0),
+      completeWizardCount: Number(result.achievement_progress.completeWizardCount ?? 0),
+      schemaVersion: Number(result.achievement_progress.schemaVersion ?? 1),
+      updatedAt: result.achievement_progress.updatedAt ?? null,
+    };
+  }
+
+  if (Array.isArray(result.new_achievements) && result.new_achievements.length) {
+    const existing = new Set(
+      (this.state.journalMeta.achievements.unlocked || []).map(
+        (a) => a.achievementKey || a.id
+      )
+    );
+
+    result.new_achievements.forEach((achievement) => {
+      const normalized = {
+        id: achievement.id || achievement.achievementKey,
+        achievementKey: achievement.achievementKey || achievement.id,
+        unlockedAt: achievement.unlockedAt || new Date().toISOString(),
+        notified: !!achievement.notified,
+      };
+
+      const key = normalized.achievementKey || normalized.id;
+      if (!existing.has(key)) {
+        this.state.journalMeta.achievements.unlocked.push(normalized);
+        existing.add(key);
+      }
+    });
+  }
+
   this.recalculateAccountFromJournal();
   this.emit('journalEntryAdded', newEntry);
-  return newEntry;
+  this.emit('journalMetaChanged', this.state.journalMeta);
+
+  return {
+    entry: newEntry,
+    newAchievements: result.new_achievements || [],
+    achievementProgress: this.state.journalMeta.achievements.progress,
+  };
 }
 
 async updateJournalEntry(id, updates) {
@@ -540,56 +616,76 @@ async addJournalExit(id, payload) {
   }
 
   updateProgress(key, value) {
-    this.state.journalMeta.achievements.progress[key] = value;
-    this.emit('journalMetaChanged', this.state.journalMeta);
-  }
+  this.state.journalMeta.achievements.progress[key] = value;
+  this.emit('journalMetaChanged', this.state.journalMeta);
+}
 
-  updateStreak() {
-    const progress = this.state.journalMeta.achievements.progress;
-    const today = new Date().toDateString();
-    const lastDate = progress.lastTradeDate ? new Date(progress.lastTradeDate).toDateString() : null;
+  // updateStreak() {
+  //   const progress = this.state.journalMeta.achievements.progress;
+  //   const today = new Date().toDateString();
+  //   const lastDate = progress.lastTradeDate ? new Date(progress.lastTradeDate).toDateString() : null;
 
-    if (lastDate === today) {
-      return progress.currentStreak;
-    }
+  //   if (lastDate === today) {
+  //     return progress.currentStreak;
+  //   }
 
-    if (lastDate) {
-      const daysDiff = Math.floor(
-        (new Date(today) - new Date(lastDate)) / (1000 * 60 * 60 * 24)
-      );
+  //   if (lastDate) {
+  //     const daysDiff = Math.floor(
+  //       (new Date(today) - new Date(lastDate)) / (1000 * 60 * 60 * 24)
+  //     );
 
-      if (daysDiff === 1) {
-        progress.currentStreak += 1;
-      } else {
-        progress.currentStreak = 1;
-      }
-    } else {
-      progress.currentStreak = 1;
-    }
+  //     if (daysDiff === 1) {
+  //       progress.currentStreak += 1;
+  //     } else {
+  //       progress.currentStreak = 1;
+  //     }
+  //   } else {
+  //     progress.currentStreak = 1;
+  //   }
 
-    if (progress.currentStreak > progress.longestStreak) {
-      progress.longestStreak = progress.currentStreak;
-    }
+  //   if (progress.currentStreak > progress.longestStreak) {
+  //     progress.longestStreak = progress.currentStreak;
+  //   }
 
-    progress.lastTradeDate = new Date().toISOString();
-    this.emit('streakUpdated', progress.currentStreak);
-    return progress.currentStreak;
-  }
+  //   progress.lastTradeDate = new Date().toISOString();
+  //   this.emit('streakUpdated', progress.currentStreak);
+  //   return progress.currentStreak;
+  // }
 
-  unlockAchievement(id) {
+    unlockAchievement(achievementInput) {
+    const achievementId =
+      typeof achievementInput === 'string'
+        ? achievementInput
+        : achievementInput?.achievementKey || achievementInput?.id;
+
+    if (!achievementId) return null;
+
     const unlocked = this.state.journalMeta.achievements.unlocked;
-    if (!unlocked.find((a) => a.id === id || a.achievementKey === id)) {
-      const achievement = {
-        id,
-        achievementKey: id,
-        unlockedAt: new Date().toISOString(),
-        notified: false,
-      };
-      unlocked.push(achievement);
-      this.emit('achievementUnlocked', achievement);
-      return achievement;
+    const existing = unlocked.find(
+      (a) => a.id === achievementId || a.achievementKey === achievementId
+    );
+
+    if (existing) {
+      return existing;
     }
-    return null;
+
+    const achievement = {
+      id: achievementId,
+      achievementKey: achievementId,
+      unlockedAt:
+        (typeof achievementInput === 'object' &&
+          (achievementInput?.unlockedAt || achievementInput?.unlocked_at)) ||
+        new Date().toISOString(),
+      notified:
+        typeof achievementInput === 'object'
+          ? !!achievementInput?.notified
+          : false,
+    };
+
+    unlocked.push(achievement);
+    this.emit('achievementUnlocked', achievement);
+    this.emit('journalMetaChanged', this.state.journalMeta);
+    return achievement;
   }
 
   isAchievementUnlocked(id) {
@@ -602,8 +698,10 @@ async addJournalExit(id, payload) {
     const achievement = this.state.journalMeta.achievements.unlocked.find(
       (a) => a.id === id || a.achievementKey === id
     );
+
     if (achievement) {
       achievement.notified = true;
+      this.emit('journalMetaChanged', this.state.journalMeta);
     }
   }
 

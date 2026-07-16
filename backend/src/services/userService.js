@@ -540,13 +540,43 @@ async function getJournalMeta(userId) {
     [userId]
   );
 
+  const progressRow = progressResult.rows[0];
+
   return {
     achievements: {
-      unlocked: achievementsResult.rows,
-      progress: progressResult.rows[0] || null,
+      progress: progressRow
+        ? {
+            totalTrades: Number(progressRow.total_trades || 0),
+            currentStreak: Number(progressRow.current_streak || 0),
+            longestStreak: Number(progressRow.longest_streak || 0),
+            lastTradeDate: progressRow.last_trade_date,
+            tradesWithNotes: Number(progressRow.trades_with_notes || 0),
+            tradesWithThesis: Number(progressRow.trades_with_thesis || 0),
+            completeWizardCount: Number(progressRow.complete_wizard_count || 0),
+            schemaVersion: Number(progressRow.schema_version || 1),
+            updatedAt: progressRow.updated_at,
+          }
+        : {
+            totalTrades: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            lastTradeDate: null,
+            tradesWithNotes: 0,
+            tradesWithThesis: 0,
+            completeWizardCount: 0,
+            schemaVersion: 1,
+            updatedAt: null,
+          },
+
+      unlocked: achievementsResult.rows.map((row) => ({
+        id: row.achievement_key,
+        achievementKey: row.achievement_key,
+        unlockedAt: row.unlocked_at,
+        notified: row.notified,
+      })),
     },
     settings: {},
-    schemaVersion: progressResult.rows[0]?.schema_version ?? 1,
+    schemaVersion: progressRow?.schema_version ?? 1,
   };
 }
 
@@ -594,7 +624,35 @@ async function clearUserData(userId) {
     await client.query(`DELETE FROM user_achievements WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM user_scans WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM journal_entries WHERE user_id = $1`, [userId]);
-    await client.query(`DELETE FROM user_achievement_progress WHERE user_id = $1`, [userId]);
+
+    await client.query(
+      `
+      INSERT INTO user_achievement_progress (
+        user_id,
+        total_trades,
+        current_streak,
+        longest_streak,
+        last_trade_date,
+        trades_with_notes,
+        trades_with_thesis,
+        complete_wizard_count,
+        schema_version
+      )
+      VALUES ($1, 0, 0, 0, NULL, 0, 0, 0, 1)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        total_trades = 0,
+        current_streak = 0,
+        longest_streak = 0,
+        last_trade_date = NULL,
+        trades_with_notes = 0,
+        trades_with_thesis = 0,
+        complete_wizard_count = 0,
+        schema_version = 1,
+        updated_at = now()
+      `,
+      [userId]
+    );
 
     await client.query(
       `
@@ -703,6 +761,15 @@ async function importUserData(userId, payload) {
           data.achievement_progress.complete_wizard_count ?? 0,
           data.achievement_progress.schema_version ?? 1,
         ]
+      );
+    } else {
+      await client.query(
+        `
+        INSERT INTO user_achievement_progress (user_id)
+        VALUES ($1)
+        ON CONFLICT (user_id) DO NOTHING
+        `,
+        [userId]
       );
     }
 

@@ -1,4 +1,10 @@
 const userService = require('../services/userService');
+const { refreshSubscriptions } = require('../services/marketData/subscriptionManager');
+const { getPrice } = require('../services/marketData/priceCache');
+const { processLivePriceUpdate } = require('../services/marketData/tradeMonitorService');
+const { getTradesForSymbol } = require('../services/marketData/subscriptionManager');
+const { emitTradeUpdatesForSymbol } = require('../services/marketData/liveTradeEmitter');
+const { processTradeAchievements } = require('../services/achievementService');
 
 async function getSettings(req, res) {
   try {
@@ -33,7 +39,115 @@ async function getJournalEntries(req, res) {
 async function createJournalEntry(req, res) {
   try {
     const entry = await userService.createJournalEntry(req.user.id, req.body);
-    return res.status(201).json({ entry });
+    const achievementResult = await processTradeAchievements(req.user.id, entry);
+
+    await refreshSubscriptions();
+
+    const cachedPrice = getPrice(entry.ticker);
+    const tradesForSymbol = getTradesForSymbol(entry.ticker);
+
+    if (cachedPrice && Number.isFinite(Number(cachedPrice.price))) {
+      emitTradeUpdatesForSymbol(
+        entry.ticker,
+        Number(cachedPrice.price),
+        tradesForSymbol
+      );
+
+      try {
+        await processLivePriceUpdate({
+          symbol: entry.ticker,
+          price: Number(cachedPrice.price),
+          timestamp: cachedPrice.timestamp || new Date().toISOString(),
+          tick: cachedPrice,
+          trades: [
+            {
+              id: entry.id,
+              user_id: req.user.id,
+              ticker: entry.ticker,
+              direction: entry.direction,
+              entry_price: entry.entry_price,
+              stop_price: entry.stop_price,
+              target_price: entry.target_price,
+              original_stop: entry.original_stop,
+              current_stop: entry.current_stop,
+              shares: entry.shares,
+              original_shares: entry.original_shares,
+              remaining_shares: entry.remaining_shares,
+              position_size: entry.position_size,
+              risk_dollars: entry.risk_dollars,
+              risk_percent: entry.risk_percent,
+              stop_distance: entry.stop_distance,
+              status: entry.status,
+              opened_at: entry.opened_at,
+              updated_at: entry.updated_at,
+            },
+          ],
+        });
+      } catch (marketEvalError) {
+        console.error('Immediate market evaluation failed:', marketEvalError);
+      }
+    }
+
+    const normalizedProgress = achievementResult?.progress
+      ? {
+          totalTrades: Number(
+            achievementResult.progress.total_trades ??
+            achievementResult.progress.totalTrades ??
+            0
+          ),
+          currentStreak: Number(
+            achievementResult.progress.current_streak ??
+            achievementResult.progress.currentStreak ??
+            0
+          ),
+          longestStreak: Number(
+            achievementResult.progress.longest_streak ??
+            achievementResult.progress.longestStreak ??
+            0
+          ),
+          lastTradeDate:
+            achievementResult.progress.last_trade_date ??
+            achievementResult.progress.lastTradeDate ??
+            null,
+          tradesWithNotes: Number(
+            achievementResult.progress.trades_with_notes ??
+            achievementResult.progress.tradesWithNotes ??
+            0
+          ),
+          tradesWithThesis: Number(
+            achievementResult.progress.trades_with_thesis ??
+            achievementResult.progress.tradesWithThesis ??
+            0
+          ),
+          completeWizardCount: Number(
+            achievementResult.progress.complete_wizard_count ??
+            achievementResult.progress.completeWizardCount ??
+            0
+          ),
+          schemaVersion: Number(
+            achievementResult.progress.schema_version ??
+            achievementResult.progress.schemaVersion ??
+            1
+          ),
+          updatedAt:
+            achievementResult.progress.updated_at ??
+            achievementResult.progress.updatedAt ??
+            null,
+        }
+      : null;
+
+    const normalizedAchievements = (achievementResult?.newlyUnlocked || []).map((item) => ({
+      id: item.achievement_key ?? item.achievementKey ?? item.id ?? item,
+      achievementKey: item.achievement_key ?? item.achievementKey ?? item.id ?? item,
+      unlockedAt: item.unlocked_at ?? item.unlockedAt ?? new Date().toISOString(),
+      notified: item.notified ?? false,
+    }));
+
+    return res.status(201).json({
+      entry,
+      new_achievements: normalizedAchievements,
+      achievement_progress: normalizedProgress,
+    });
   } catch (error) {
     console.error('createJournalEntry error:', error);
 
@@ -55,6 +169,7 @@ async function updateJournalEntry(req, res) {
       return res.status(404).json({ message: 'Journal entry not found' });
     }
 
+    await refreshSubscriptions();
     return res.json({ entry });
   } catch (error) {
     console.error('updateJournalEntry error:', error);
@@ -72,9 +187,12 @@ async function updateJournalEntry(req, res) {
 async function deleteJournalEntry(req, res) {
   try {
     const deleted = await userService.deleteJournalEntry(req.user.id, req.params.id);
+
     if (!deleted) {
       return res.status(404).json({ message: 'Journal entry not found' });
     }
+
+    await refreshSubscriptions();
     return res.json({ message: 'Journal entry deleted successfully' });
   } catch (error) {
     console.error('deleteJournalEntry error:', error);
@@ -90,6 +208,7 @@ async function addJournalExit(req, res) {
       return res.status(404).json({ message: 'Journal entry not found' });
     }
 
+    await refreshSubscriptions();
     return res.status(201).json(result);
   } catch (error) {
     console.error('addJournalExit error:', error);
@@ -114,7 +233,6 @@ async function getJournalMeta(req, res) {
   }
 }
 
-
 async function exportUserData(req, res) {
   try {
     const data = await userService.exportUserData(req.user.id);
@@ -135,6 +253,7 @@ async function exportUserData(req, res) {
 async function importUserData(req, res) {
   try {
     const result = await userService.importUserData(req.user.id, req.body);
+    await refreshSubscriptions();
     return res.status(200).json(result);
   } catch (error) {
     console.error('importUserData error:', error);
@@ -150,6 +269,7 @@ async function importUserData(req, res) {
 async function clearUserData(req, res) {
   try {
     const result = await userService.clearUserData(req.user.id);
+    await refreshSubscriptions();
     return res.status(200).json(result);
   } catch (error) {
     console.error('clearUserData error:', error);
@@ -166,7 +286,7 @@ module.exports = {
   deleteJournalEntry,
   addJournalExit,
   getJournalMeta,
-    exportUserData,
+  exportUserData,
   importUserData,
   clearUserData,
 };

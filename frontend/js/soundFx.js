@@ -12,12 +12,15 @@ class SoundFX {
   }
 
   init() {
-    this.enabled = state.journalMeta.settings.soundEnabled || false;
+   this.enabled = !!state.settings?.soundEnabled;
 
-    // Listen for settings changes
-    document.addEventListener('journalMetaSettingsChanged', () => {
-      this.enabled = state.journalMeta.settings.soundEnabled || false;
-    });
+state.on('settingsChanged', (updatedSettings) => {
+  if (typeof updatedSettings?.soundEnabled !== 'undefined') {
+    this.enabled = !!updatedSettings.soundEnabled;
+  } else {
+    this.enabled = !!state.settings?.soundEnabled;
+  }
+});
 
     // Warm up audio context on first user interaction
     const warmup = () => {
@@ -62,8 +65,10 @@ class SoundFX {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+  this.ctx.resume().catch((error) => {
+    console.warn('Audio context resume failed:', error);
+  });
+}
     return this.ctx;
   }
 
@@ -126,6 +131,10 @@ class SoundFX {
       shimmer.stop(startTime + 0.5);
     });
   }
+
+  playNotification() {
+  this.playSuccess();
+}
 
   // Achievement unlock - triumphant fanfare with rich harmonics
   playAchievement() {

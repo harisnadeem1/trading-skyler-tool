@@ -35,9 +35,11 @@ let appInstance = null;
 
 class App {
   constructor() {
-    this.dashboardEls = {};
-    this.init();
-  }
+  this.dashboardEls = {};
+  this.liveEventSource = null;
+  this.toastContainer = null;
+  this.init();
+}
 
   init() {
     console.log('Initializing TradeDeck...');
@@ -80,6 +82,9 @@ class App {
       state.account.currentSize,
       state.account.maxPositionPercent
     );
+
+    this.ensureToastContainer();
+this.connectLiveStream();
 
     console.log('TradeDeck initialized successfully');
   }
@@ -244,6 +249,168 @@ class App {
     window.copyCSV = () => dataManager.copyCSV();
     window.copyTSV = () => dataManager.copyTSV();
   }
+
+  ensureToastContainer() {
+  let container = document.getElementById('toast-container');
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  this.toastContainer = container;
+}
+
+connectLiveStream() {
+  if (this.liveEventSource) return;
+
+  const apiBase =
+    window.API_BASE_URL ||
+    `${window.location.protocol}//${window.location.hostname}:3000`;
+
+  const streamUrl = `${apiBase}/api/market/stream`;
+  const eventSource = new EventSource(streamUrl, { withCredentials: true });
+
+  eventSource.addEventListener('open', () => {
+    console.log('[liveStream] connected');
+  });
+
+  eventSource.addEventListener('trade-alert', (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      this.handleTradeAlert(payload);
+    } catch (error) {
+      console.error('Failed to parse trade-alert event:', error);
+    }
+  });
+
+  eventSource.addEventListener('trade-closed', (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      this.handleTradeClosed(payload);
+    } catch (error) {
+      console.error('Failed to parse trade-closed event:', error);
+    }
+  });
+
+  eventSource.onerror = (error) => {
+    console.error('[liveStream] connection error:', error);
+  };
+
+  this.liveEventSource = eventSource;
+}
+
+disconnectLiveStream() {
+  if (this.liveEventSource) {
+    this.liveEventSource.close();
+    this.liveEventSource = null;
+  }
+}
+
+handleTradeAlert(payload) {
+  if (!payload || payload.type !== 'five_r_hit') return;
+
+  const title = '5R Hit';
+  const message = payload.message || `${payload.symbol} reached 5R`;
+
+  this.showToast({
+    type: 'success',
+    title,
+    message,
+    duration: 5000,
+    persistent: true,
+    position: 'top-right',
+  });
+
+  if (state.settings?.soundEnabled) {
+    try {
+      if (typeof soundFx.playNotification === 'function') {
+        soundFx.playNotification();
+      } else if (typeof soundFx.play === 'function') {
+        soundFx.play('notification');
+      }
+    } catch (error) {
+      console.error('Notification sound failed:', error);
+    }
+  }
+}
+handleTradeClosed(payload) {
+  if (!payload) return;
+
+  const reasonText =
+    payload.reason === 'stop_hit'
+      ? 'Stop loss hit'
+      : payload.reason === 'target_hit'
+        ? 'Target hit'
+        : 'Trade closed';
+
+  this.showToast({
+    type: payload.reason === 'stop_hit' ? 'warning' : 'success',
+    title: reasonText,
+    message: `${payload.symbol} closed at ${Number(payload.exitPrice || 0).toFixed(2)}`,
+    duration: 5000,
+  });
+}
+
+showToast({
+  type = 'info',
+  title = '',
+  message = '',
+  duration = 4000,
+  persistent = false,
+  position = 'default',
+}) {
+  let container = null;
+
+  if (position === 'top-right') {
+  container = document.getElementById('toastContainerTopRight');
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainerTopRight';
+    document.body.appendChild(container);
+  }
+}  else {
+    if (!this.toastContainer) {
+      this.ensureToastContainer();
+    }
+    container = this.toastContainer;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+
+  toast.innerHTML = `
+    <div class="toast__content">
+      <div class="toast__title">${title}</div>
+      <div class="toast__message">${message}</div>
+    </div>
+    <button class="toast__close" aria-label="Close notification">×</button>
+  `;
+
+  let isClosed = false;
+
+  const close = () => {
+    if (isClosed || !toast.parentNode) return;
+    isClosed = true;
+    toast.classList.add('toast--exit');
+    setTimeout(() => toast.remove(), 220);
+  };
+
+  toast.querySelector('.toast__close')?.addEventListener('click', close);
+
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.add('toast--visible');
+  });
+
+  if (!persistent) {
+    window.setTimeout(close, duration);
+  }
+}
 }
 
 function showAuthScreen() {
@@ -346,18 +513,21 @@ function setupAuthUI() {
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      try {
-        await authManager.logout();
-      } finally {
-        if (state && typeof state.reset === 'function') {
-          state.reset();
-        }
-        appInstance = null;
-        window.location.reload();
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await authManager.logout();
+    } finally {
+      if (appInstance && typeof appInstance.disconnectLiveStream === 'function') {
+        appInstance.disconnectLiveStream();
       }
-    });
-  }
+      if (state && typeof state.reset === 'function') {
+        state.reset();
+      }
+      appInstance = null;
+      window.location.reload();
+    }
+  });
+}
 
   if (togglePasswordBtn && passwordInput) {
     togglePasswordBtn.addEventListener('click', () => {

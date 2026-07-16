@@ -4,19 +4,36 @@
 
 import { state } from './state.js';
 
-// Toast container reference
-let toastContainer = null;
+// Toast container references
+let defaultToastContainer = null;
+let topLeftToastContainer = null;
 
 /**
  * Show a toast notification
  */
-export function showToast(message, type = 'success') {
-  if (!toastContainer) {
-    toastContainer = document.getElementById('toastContainer');
+export function showToast(message, type = 'success', options = {}) {
+  const {
+    persistent = false,
+    position = 'default',
+    duration = 3000,
+  } = options;
+
+  let container = null;
+
+  if (position === 'top-left') {
+    if (!topLeftToastContainer) {
+      topLeftToastContainer = document.getElementById('toastContainerTop');
+    }
+    container = topLeftToastContainer;
+  } else {
+    if (!defaultToastContainer) {
+      defaultToastContainer = document.getElementById('toastContainer');
+    }
+    container = defaultToastContainer;
   }
 
-  if (!toastContainer) {
-    console.warn('Toast container not found');
+  if (!container) {
+    console.warn(`Toast container not found for position: ${position}`);
     return;
   }
 
@@ -31,17 +48,18 @@ export function showToast(message, type = 'success') {
     </button>
   `;
 
-  // Close button handler
-  toast.querySelector('.toast__close').addEventListener('click', () => {
+  toast.querySelector('.toast__close')?.addEventListener('click', () => {
     removeToast(toast);
   });
 
-  toastContainer.appendChild(toast);
+  container.appendChild(toast);
 
-  // Auto-remove after 3 seconds
-  setTimeout(() => removeToast(toast), 3000);
+  if (!persistent) {
+    setTimeout(() => removeToast(toast), duration);
+  }
+
+  return toast;
 }
-
 function removeToast(toast) {
   if (!toast || !toast.parentNode) return;
   toast.classList.add('removing');

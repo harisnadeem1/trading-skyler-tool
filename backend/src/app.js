@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
 const userRoutes = require('./routes/userRoutes');
-
+const marketRoutes = require('./routes/marketRoutes');
 const app = express();
 
 app.use(express.json());
@@ -28,5 +28,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/market', marketRoutes);
 
 module.exports = app;

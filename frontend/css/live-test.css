@@ -1,0 +1,205 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1d2230;
+  --border: #2a3142;
+  --text: #eef2ff;
+  --muted: #99a3b8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #38bdf8;
+  --yellow: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header,
+.panel-header,
+.trade-card__top,
+.price-line,
+.progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1,
+.panel-header h2,
+.trade-card h3 {
+  margin: 0;
+}
+
+.page-header p,
+.trade-card p,
+.metric span,
+.progress-label span,
+.empty-state,
+.log-item {
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.trade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.trade-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.metric span {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.metric strong,
+.price-line strong {
+  font-size: 18px;
+}
+
+.progress {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress__bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+}
+
+.status,
+.pill,
+.btn {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.status--waiting {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--yellow);
+}
+
+.status--ok,
+.pill--green {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+}
+
+.status--error,
+.pill--red {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+}
+
+.pill--blue {
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--blue);
+}
+
+.btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.event-log {
+  max-height: 300px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.log-item {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pos {
+  color: var(--green);
+}
+
+.neg {
+  color: var(--red);
+}
+
+.neu {
+  color: var(--text);
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+@media (max-width: 700px) {
+  .page-header,
+  .panel-header,
+  .trade-card__top,
+  .price-line,
+  .progress-label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
