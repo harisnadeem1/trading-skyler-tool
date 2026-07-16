@@ -12,6 +12,8 @@ class PositionsView {
   constructor() {
     this.elements = {};
     this.currentFilter = 'all';
+    this.chart = null;
+this.chartSeries = null;
   }
 
   init() {
@@ -68,7 +70,14 @@ class PositionsView {
       previewRisk: document.getElementById('positionsAddPreviewRisk'),
       previewRiskPercent: document.getElementById('positionsAddPreviewRiskPercent'),
       previewStopDistance: document.getElementById('positionsAddPreviewStopDistance'),
-      previewPerShare: document.getElementById('positionsAddPreviewPerShare')
+      previewPerShare: document.getElementById('positionsAddPreviewPerShare'),
+      chartModal: document.getElementById('positionChartModal'),
+      chartOverlay: document.getElementById('positionChartOverlay'),
+      chartClose: document.getElementById('positionChartClose'),
+      chartTitle: document.getElementById('positionChartTitle'),
+      chartSubtitle: document.getElementById('positionChartSubtitle'),
+      chartLegend: document.getElementById('positionChartLegend'),
+      chartCanvas: document.getElementById('positionChartCanvas')
     };
   }
 
@@ -115,7 +124,7 @@ class PositionsView {
       });
     }
 
-    
+
 
     const numericInputs = [
       this.elements.addEntry,
@@ -145,14 +154,28 @@ class PositionsView {
       });
     }
 
-    document.addEventListener('keydown', (e) => {
-      if (!this.elements.addModal?.classList.contains('open')) return;
+    if (this.elements.chartClose) {
+      this.elements.chartClose.addEventListener('click', () => this.closeChartModal());
+    }
 
-      if (e.key === 'Escape') {
-        this.closeAddTradeModal();
-      }
-    });
+    if (this.elements.chartOverlay) {
+      this.elements.chartOverlay.addEventListener('click', () => this.closeChartModal());
+    }
+
+    document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+
+  if (this.elements.addModal?.classList.contains('open')) {
+    this.closeAddTradeModal();
   }
+
+  if (this.elements.chartModal?.classList.contains('open')) {
+    this.closeChartModal();
+  }
+});
+  }
+
+
 
 
   setFilter(filter) {
@@ -168,183 +191,419 @@ class PositionsView {
 
 
 
-openAddTradeModal() {
-  if (!this.elements.addModal) return;
+  openAddTradeModal() {
+    if (!this.elements.addModal) return;
 
-  if (this.elements.addTicker) this.elements.addTicker.value = '';
-  if (this.elements.addEntry) this.elements.addEntry.value = '';
-  if (this.elements.addStop) this.elements.addStop.value = '';
-  if (this.elements.addTarget) this.elements.addTarget.value = '';
-  if (this.elements.addShares) this.elements.addShares.value = '';
+    if (this.elements.addTicker) this.elements.addTicker.value = '';
+    if (this.elements.addEntry) this.elements.addEntry.value = '';
+    if (this.elements.addStop) this.elements.addStop.value = '';
+    if (this.elements.addTarget) this.elements.addTarget.value = '';
+    if (this.elements.addShares) this.elements.addShares.value = '';
 
-  
 
-  this.updateAddTradePreview();
 
-  this.elements.addModal.classList.add('open');
-  this.elements.addModal.setAttribute('aria-hidden', 'false');
+    this.updateAddTradePreview();
+
+    this.elements.addModal.classList.add('open');
+    this.elements.addModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+      this.elements.addEntry?.focus();
+    });
+  }
+
+  closeAddTradeModal() {
+    if (!this.elements.addModal) return;
+
+    this.elements.addModal.classList.remove('open');
+    this.elements.addModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  getAddTradeFormData() {
+    const entry = Number(this.elements.addEntry?.value || 0);
+    const stop = Number(this.elements.addStop?.value || 0);
+
+    let direction = 'long';
+    if (entry > 0 && stop > 0) {
+      direction = stop > entry ? 'short' : 'long';
+    }
+
+    return {
+      ticker: this.elements.addTicker?.value.trim().toUpperCase() || '',
+      direction,
+      entry,
+      stop,
+      target: this.elements.addTarget?.value ? Number(this.elements.addTarget.value) : null,
+      shares: Number(this.elements.addShares?.value || 0)
+    };
+  }
+
+
+
+  openChartModal(tradeId) {
+  const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+  if (!trade || !this.elements.chartModal) return;
+
+  this.renderChartModal(trade);
+
+  this.elements.chartModal.classList.add('open');
+  this.elements.chartModal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
-
-  requestAnimationFrame(() => {
-    this.elements.addEntry?.focus();
-  });
 }
 
-closeAddTradeModal() {
-  if (!this.elements.addModal) return;
+closeChartModal() {
+  if (!this.elements.chartModal) return;
 
-  this.elements.addModal.classList.remove('open');
-  this.elements.addModal.setAttribute('aria-hidden', 'true');
+  this.elements.chartModal.classList.remove('open');
+  this.elements.chartModal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
 }
 
-getAddTradeFormData() {
-  const entry = Number(this.elements.addEntry?.value || 0);
-  const stop = Number(this.elements.addStop?.value || 0);
 
-  let direction = 'long';
-  if (entry > 0 && stop > 0) {
-    direction = stop > entry ? 'short' : 'long';
-  }
+getTradeChartLevels(trade) {
+  const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+  const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+  const target = trade.target != null ? Number(trade.target) : null;
+  const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
 
- return {
-  ticker: this.elements.addTicker?.value.trim().toUpperCase() || '',
-  direction,
-  entry,
-  stop,
-  target: this.elements.addTarget?.value ? Number(this.elements.addTarget.value) : null,
-  shares: Number(this.elements.addShares?.value || 0)
-};
-}
+  const riskPerShare = Math.abs(entry - stop);
+  const fiveR = direction === 'short'
+    ? entry - (riskPerShare * 5)
+    : entry + (riskPerShare * 5);
 
-updateAddTradePreview() {
-  const { direction, entry, stop, shares } = this.getAddTradeFormData();
-  const accountSize = Number(state.account.currentSize || 0);
+  const values = [entry, stop, fiveR];
+  if (target != null) values.push(target);
 
-  let stopPerShare = 0;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = (max - min) * 0.12 || 1;
 
-  if (direction === 'short') {
-    stopPerShare = stop > entry ? stop - entry : 0;
-  } else {
-    stopPerShare = entry > stop ? entry - stop : 0;
-  }
+  const chartMin = min - padding;
+  const chartMax = max + padding;
+  const chartRange = Math.max(chartMax - chartMin, 0.0001);
 
-  const actualRiskDollars = shares > 0 ? shares * stopPerShare : 0;
-  const actualRiskPercent = accountSize > 0
-    ? (actualRiskDollars / accountSize) * 100
-    : 0;
+  const toPercent = (value) => ((value - chartMin) / chartRange) * 100;
 
-  const positionSize = shares > 0 ? shares * entry : 0;
-  const stopDistancePercent = entry > 0 && stopPerShare > 0
-    ? (stopPerShare / entry) * 100
-    : 0;
-
-  if (this.elements.previewShares) {
-    this.elements.previewShares.textContent = String(shares || 0);
-  }
-
-  if (this.elements.previewPosition) {
-    this.elements.previewPosition.textContent = formatCurrency(positionSize);
-  }
-
-  if (this.elements.previewRisk) {
-    this.elements.previewRisk.textContent = formatCurrency(actualRiskDollars);
-  }
-
-  if (this.elements.previewRiskPercent) {
-    this.elements.previewRiskPercent.textContent = `${formatPercent(actualRiskPercent)} of account`;
-  }
-
-  if (this.elements.previewStopDistance) {
-    this.elements.previewStopDistance.textContent = formatPercent(stopDistancePercent);
-  }
-
-  if (this.elements.previewPerShare) {
-    this.elements.previewPerShare.textContent = `${formatCurrency(stopPerShare)}/share`;
-  }
-}
-startWizardFromPositions() {
-  const { ticker, direction, entry, stop, target, shares } = this.getAddTradeFormData();
-  const accountSize = Number(state.account.currentSize || 0);
-
-  if (!(entry > 0)) {
-    alert('Enter a valid entry price');
-    return;
-  }
-
-  if (!(stop > 0)) {
-    alert('Enter a valid stop loss');
-    return;
-  }
-
-  if (!(shares > 0)) {
-  alert('Enter a valid number of shares');
-  return;
-}
-
-  if (stop === entry) {
-    alert('Stop loss must be different from entry');
-    return;
-  }
-
-  if (direction === 'long' && stop >= entry) {
-    alert('For a long trade, stop must be below entry');
-    return;
-  }
-
-  if (direction === 'short' && stop <= entry) {
-    alert('For a short trade, stop must be above entry');
-    return;
-  }
-
-  if (target !== null) {
-    if (direction === 'long' && target <= entry) {
-      alert('For a long trade, target should be above entry');
-      return;
-    }
-    if (direction === 'short' && target >= entry) {
-      alert('For a short trade, target should be below entry');
-      return;
-    }
-  }
-
-  const stopPerShare = Math.abs(entry - stop);
-const positionSize = shares * entry;
-const stopDistance = entry > 0 ? (stopPerShare / entry) * 100 : 0;
-const actualRiskDollars = shares * stopPerShare;
-const actualRiskPercent = accountSize > 0
-  ? (actualRiskDollars / accountSize) * 100
-  : 0;
-
-  state.updateTrade({
-    ticker,
+  return {
     direction,
     entry,
     stop,
     target,
-    notes: ''
-  });
-
-  state.updateResults({
-  shares,
-  positionSize,
-  riskDollars: actualRiskDollars,
-  actualRiskDollars,
-  stopDistance,
-  stopPerShare,
-  target,
-  direction,
-  actualRiskPercent
-});
-
- 
-
-  this.closeAddTradeModal();
-  wizard.open();
+    fiveR,
+    chartMin,
+    chartMax,
+    entryPos: toPercent(entry),
+    stopPos: toPercent(stop),
+    targetPos: target != null ? toPercent(target) : null,
+    fiveRPos: toPercent(fiveR),
+  };
 }
 
+renderChartModal(trade) {
+  const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+  const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
 
-  
+  const rawTarget = trade.target ?? trade.target_price ?? null;
+  const target =
+    rawTarget === null || rawTarget === undefined || rawTarget === ''
+      ? null
+      : Number(rawTarget);
+
+  const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
+  const riskPerShare = Math.abs(entry - stop);
+  const fiveR = direction === 'short'
+    ? entry - (riskPerShare * 5)
+    : entry + (riskPerShare * 5);
+
+  const levelValues = [entry, stop, fiveR];
+  if (target !== null && Number.isFinite(target)) {
+    levelValues.push(target);
+  }
+
+  const minLevel = Math.min(...levelValues);
+  const maxLevel = Math.max(...levelValues);
+  const padding = Math.max((maxLevel - minLevel) * 0.2, entry * 0.01, 1);
+
+  const visibleMin = minLevel - padding;
+  const visibleMax = maxLevel + padding;
+
+  if (this.elements.chartTitle) {
+    this.elements.chartTitle.textContent = `${trade.ticker} Chart`;
+  }
+
+  if (this.elements.chartSubtitle) {
+    this.elements.chartSubtitle.textContent = `${direction.toUpperCase()} position`;
+  }
+
+  if (this.elements.chartLegend) {
+    this.elements.chartLegend.innerHTML = `
+      <div class="position-chart-legend__item">
+        <span class="position-chart-legend__dot position-chart-legend__dot--entry"></span>
+        <span>Entry: ${formatCurrency(entry)}</span>
+      </div>
+      <div class="position-chart-legend__item">
+        <span class="position-chart-legend__dot position-chart-legend__dot--stop"></span>
+        <span>Stop: ${formatCurrency(stop)}</span>
+      </div>
+      ${target !== null && Number.isFinite(target) ? `
+      <div class="position-chart-legend__item">
+        <span class="position-chart-legend__dot position-chart-legend__dot--target"></span>
+        <span>Target: ${formatCurrency(target)}</span>
+      </div>
+      ` : ''}
+      <div class="position-chart-legend__item">
+        <span class="position-chart-legend__dot position-chart-legend__dot--five-r"></span>
+        <span>5R: ${formatCurrency(fiveR)}</span>
+      </div>
+    `;
+  }
+
+  if (!this.elements.chartCanvas || !window.LightweightCharts) return;
+
+  if (this.chart) {
+    this.chart.remove();
+    this.chart = null;
+    this.chartSeries = null;
+  }
+
+  this.elements.chartCanvas.innerHTML = '';
+
+  const chart = window.LightweightCharts.createChart(this.elements.chartCanvas, {
+    width: this.elements.chartCanvas.clientWidth || 700,
+    height: 360,
+    layout: {
+      background: { color: '#121722' },
+      textColor: 'rgba(255,255,255,0.82)',
+    },
+    grid: {
+      vertLines: { color: 'rgba(255,255,255,0.05)' },
+      horzLines: { color: 'rgba(255,255,255,0.05)' },
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255,255,255,0.08)',
+      autoScale: false,
+      scaleMargins: {
+        top: 0.15,
+        bottom: 0.15,
+      },
+    },
+    timeScale: {
+      borderColor: 'rgba(255,255,255,0.08)',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    crosshair: {
+      vertLine: { color: 'rgba(255,255,255,0.15)' },
+      horzLine: { color: 'rgba(255,255,255,0.15)' },
+    },
+    localization: {
+      priceFormatter: (price) => Number(price).toFixed(2),
+    },
+  });
+
+  const { LineSeries } = window.LightweightCharts;
+
+const series = chart.addSeries(LineSeries, {
+  color: 'rgba(0,0,0,0)',
+  lineWidth: 1,
+  lineVisible: false,
+  pointMarkersVisible: false,
+  crosshairMarkerVisible: false,
+  priceLineVisible: false,
+  lastValueVisible: false,
+});
+
+const now = Math.floor(Date.now() / 1000);
+
+const anchorPoints = [
+  { time: now - 300, value: visibleMin },
+  { time: now - 1, value: visibleMax },
+];
+
+series.setData(anchorPoints);
+
+  series.createPriceLine({
+    price: entry,
+    color: '#60a5fa',
+    lineWidth: 2,
+    lineStyle: 0,
+    axisLabelVisible: true,
+    title: 'Entry',
+  });
+
+  series.createPriceLine({
+    price: stop,
+    color: '#f87171',
+    lineWidth: 2,
+    lineStyle: 2,
+    axisLabelVisible: true,
+    title: 'Stop',
+  });
+
+  if (target !== null && Number.isFinite(target)) {
+    series.createPriceLine({
+      price: target,
+      color: '#34d399',
+      lineWidth: 2,
+      lineStyle: 2,
+      axisLabelVisible: true,
+      title: 'Target',
+    });
+  }
+
+  series.createPriceLine({
+    price: fiveR,
+    color: '#fbbf24',
+    lineWidth: 2,
+    lineStyle: 1,
+    axisLabelVisible: true,
+    title: '5R',
+  });
+
+  chart.timeScale().fitContent();
+
+  this.chart = chart;
+  this.chartSeries = series;
+
+  requestAnimationFrame(() => {
+    if (!this.chart || !this.elements.chartCanvas) return;
+
+    this.chart.applyOptions({
+      width: this.elements.chartCanvas.clientWidth || 700,
+    });
+  });
+}
+
+  updateAddTradePreview() {
+    const { direction, entry, stop, shares } = this.getAddTradeFormData();
+    const accountSize = Number(state.account.currentSize || 0);
+
+    let stopPerShare = 0;
+
+    if (direction === 'short') {
+      stopPerShare = stop > entry ? stop - entry : 0;
+    } else {
+      stopPerShare = entry > stop ? entry - stop : 0;
+    }
+
+    const actualRiskDollars = shares > 0 ? shares * stopPerShare : 0;
+    const actualRiskPercent = accountSize > 0
+      ? (actualRiskDollars / accountSize) * 100
+      : 0;
+
+    const positionSize = shares > 0 ? shares * entry : 0;
+    const stopDistancePercent = entry > 0 && stopPerShare > 0
+      ? (stopPerShare / entry) * 100
+      : 0;
+
+    if (this.elements.previewShares) {
+      this.elements.previewShares.textContent = String(shares || 0);
+    }
+
+    if (this.elements.previewPosition) {
+      this.elements.previewPosition.textContent = formatCurrency(positionSize);
+    }
+
+    if (this.elements.previewRisk) {
+      this.elements.previewRisk.textContent = formatCurrency(actualRiskDollars);
+    }
+
+    if (this.elements.previewRiskPercent) {
+      this.elements.previewRiskPercent.textContent = `${formatPercent(actualRiskPercent)} of account`;
+    }
+
+    if (this.elements.previewStopDistance) {
+      this.elements.previewStopDistance.textContent = formatPercent(stopDistancePercent);
+    }
+
+    if (this.elements.previewPerShare) {
+      this.elements.previewPerShare.textContent = `${formatCurrency(stopPerShare)}/share`;
+    }
+  }
+  startWizardFromPositions() {
+    const { ticker, direction, entry, stop, target, shares } = this.getAddTradeFormData();
+    const accountSize = Number(state.account.currentSize || 0);
+
+    if (!(entry > 0)) {
+      alert('Enter a valid entry price');
+      return;
+    }
+
+    if (!(stop > 0)) {
+      alert('Enter a valid stop loss');
+      return;
+    }
+
+    if (!(shares > 0)) {
+      alert('Enter a valid number of shares');
+      return;
+    }
+
+    if (stop === entry) {
+      alert('Stop loss must be different from entry');
+      return;
+    }
+
+    if (direction === 'long' && stop >= entry) {
+      alert('For a long trade, stop must be below entry');
+      return;
+    }
+
+    if (direction === 'short' && stop <= entry) {
+      alert('For a short trade, stop must be above entry');
+      return;
+    }
+
+    if (target !== null) {
+      if (direction === 'long' && target <= entry) {
+        alert('For a long trade, target should be above entry');
+        return;
+      }
+      if (direction === 'short' && target >= entry) {
+        alert('For a short trade, target should be below entry');
+        return;
+      }
+    }
+
+    const stopPerShare = Math.abs(entry - stop);
+    const positionSize = shares * entry;
+    const stopDistance = entry > 0 ? (stopPerShare / entry) * 100 : 0;
+    const actualRiskDollars = shares * stopPerShare;
+    const actualRiskPercent = accountSize > 0
+      ? (actualRiskDollars / accountSize) * 100
+      : 0;
+
+    state.updateTrade({
+      ticker,
+      direction,
+      entry,
+      stop,
+      target,
+      notes: ''
+    });
+
+    state.updateResults({
+      shares,
+      positionSize,
+      riskDollars: actualRiskDollars,
+      actualRiskDollars,
+      stopDistance,
+      stopPerShare,
+      target,
+      direction,
+      actualRiskPercent
+    });
+
+
+
+    this.closeAddTradeModal();
+    wizard.open();
+  }
+
+
+
 
 
 
@@ -364,11 +623,11 @@ const actualRiskPercent = accountSize > 0
     }
   }
 
-  
 
-  
 
-  
+
+
+
 
   render() {
     const positions = this.getFilteredPositions();
@@ -478,7 +737,7 @@ const actualRiskPercent = accountSize > 0
       // For trimmed trades, calculate NET risk (remaining risk - realized profit)
       const netRisk = isTrimmed ? Math.max(0, grossRisk - realizedPnL) : grossRisk;
       const accountSize = Number(state.account.currentSize || 0);
-const riskPercent = accountSize > 0 ? (netRisk / accountSize) * 100 : 0;
+      const riskPercent = accountSize > 0 ? (netRisk / accountSize) * 100 : 0;
 
       // Check if trade is "free rolled" - realized profit covers remaining risk
       const isFreeRoll = isTrimmed && realizedPnL >= (grossRisk - 0.01);
@@ -541,13 +800,16 @@ const riskPercent = accountSize > 0 ? (netRisk / accountSize) * 100 : 0;
           </div>
 
           <div class="position-card__actions">
-            <button class="position-card__btn position-card__btn--primary" data-action="close" data-id="${trade.id}">
-              ${isTrimmed ? 'Trim More' : 'Close / Trim'}
-            </button>
-            <button class="position-card__btn position-card__btn--danger" data-action="delete" data-id="${trade.id}">
-              Delete
-            </button>
-          </div>
+  <button class="position-card__btn position-card__btn--primary" data-action="close" data-id="${trade.id}">
+    ${isTrimmed ? 'Trim More' : 'Close / Trim'}
+  </button>
+  <button class="position-card__btn position-card__btn--secondary" data-action="chart" data-id="${trade.id}">
+    View Chart
+  </button>
+  <button class="position-card__btn position-card__btn--danger" data-action="delete" data-id="${trade.id}">
+    Delete
+  </button>
+</div>
         </div>
       `;
     }).join('');
@@ -570,6 +832,13 @@ const riskPercent = accountSize > 0 ? (netRisk / accountSize) * 100 : 0;
         if (confirm('Delete this trade?')) {
           state.deleteJournalEntry(id);
         }
+      });
+    });
+
+    this.elements.grid.querySelectorAll('[data-action="chart"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        this.openChartModal(id);
       });
     });
   }

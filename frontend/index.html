@@ -799,6 +799,27 @@
           <!-- Position cards will be rendered here -->
         </div>
 
+        <!-- Position Chart Modal -->
+<div class="position-chart-modal" id="positionChartModal" aria-hidden="true">
+  <div class="position-chart-modal__overlay" id="positionChartOverlay"></div>
+
+  <div class="position-chart-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="positionChartTitle">
+    <div class="position-chart-modal__header">
+      <div>
+        <h2 class="position-chart-modal__title" id="positionChartTitle">Trade Chart</h2>
+        <p class="position-chart-modal__subtitle" id="positionChartSubtitle">-</p>
+      </div>
+
+      <button class="position-chart-modal__close" id="positionChartClose" aria-label="Close chart">×</button>
+    </div>
+
+    <div class="position-chart-modal__body">
+      <div class="position-chart-legend" id="positionChartLegend"></div>
+      <div class="position-chart-canvas" id="positionChartCanvas"></div>
+    </div>
+  </div>
+</div>
+
         <!-- Empty State -->
         <div class="positions-empty" id="positionsEmpty">
           <span class="positions-empty__icon">🧘</span>
@@ -2041,6 +2062,7 @@
 
   <!-- Scripts -->
   <script type="module" src="js/main.js"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
 </body>
 
