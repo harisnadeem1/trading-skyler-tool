@@ -1,6 +1,6 @@
 const pool = require('../../config/db');
 const { closeTradeFromMarketEvent } = require('./tradeExecutionService');
-const { broadcast } = require('./liveStream');
+const { broadcastToUser } = require('./liveStream');
 
 function toNumber(value, fallback = 0) {
   const num = Number(value);
@@ -11,6 +11,17 @@ function normalizeDirection(direction) {
   return String(direction || 'long').trim().toLowerCase() === 'short'
     ? 'short'
     : 'long';
+}
+
+function normalizeUserId(userId) {
+  if (userId === null || userId === undefined || userId === '') {
+    return null;
+  }
+  return String(userId);
+}
+
+function hasLiveSymbol(trade) {
+  return String(trade?.ticker || '').trim().length > 0;
 }
 
 function calculateUnrealizedPnL(trade, currentPrice) {
@@ -135,7 +146,11 @@ async function processLivePriceUpdate({
   const triggered = [];
 
   for (const trade of trades) {
-    
+    const userId = normalizeUserId(trade.user_id);
+
+    if (!userId || !hasLiveSymbol(trade)) {
+      continue;
+    }
 
     const unrealizedPnL = calculateUnrealizedPnL(trade, currentPrice);
     const currentR = calculateCurrentR(trade, unrealizedPnL);
@@ -157,6 +172,7 @@ async function processLivePriceUpdate({
           type: 'trade_closed',
           reason: 'stop_hit',
           tradeId: trade.id,
+          userId,
           symbol: normalizedSymbol,
           timestamp,
           currentPrice,
@@ -181,6 +197,7 @@ async function processLivePriceUpdate({
           type: 'trade_closed',
           reason: 'target_hit',
           tradeId: trade.id,
+          userId,
           symbol: normalizedSymbol,
           timestamp,
           currentPrice,
@@ -206,10 +223,10 @@ async function processLivePriceUpdate({
         });
 
         if (alert) {
-          broadcast('trade-alert', {
+          broadcastToUser(userId, 'trade-alert', {
             type: 'five_r_hit',
             tradeId: trade.id,
-            userId: trade.user_id,
+            userId,
             symbol: normalizedSymbol,
             direction,
             currentPrice,
@@ -224,6 +241,7 @@ async function processLivePriceUpdate({
             type: 'alert',
             reason: 'five_r_hit',
             tradeId: trade.id,
+            userId,
             symbol: normalizedSymbol,
             timestamp,
             currentPrice,

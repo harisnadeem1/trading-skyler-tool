@@ -1,4 +1,4 @@
-const { broadcast } = require('./liveStream');
+const { broadcastToUser } = require('./liveStream');
 const {
   calculateUnrealizedPnL,
   calculateCurrentR,
@@ -18,6 +18,73 @@ function normalizeDirection(direction) {
     : 'long';
 }
 
+function normalizeUserId(userId) {
+  if (userId === null || userId === undefined || userId === '') {
+    return null;
+  }
+  return String(userId);
+}
+
+function buildTradeUpdate(trade, normalizedSymbol, numericPrice) {
+  const userId = normalizeUserId(trade.user_id);
+  if (!userId) return null;
+
+  const direction = normalizeDirection(trade.direction);
+  const entryPrice = toNumber(trade.entry_price);
+  const stopPrice = toNumber(trade.current_stop ?? trade.stop_price);
+
+  const targetPrice =
+    trade.target_price == null || trade.target_price === ''
+      ? null
+      : Number(trade.target_price);
+
+  const shares = toNumber(trade.shares);
+  const remainingShares = toNumber(trade.remaining_shares ?? trade.shares);
+  const riskDollars = toNumber(trade.risk_dollars);
+  const positionSize = toNumber(trade.position_size);
+
+  const unrealizedPnL = calculateUnrealizedPnL(trade, numericPrice);
+  const currentR = calculateCurrentR(trade, unrealizedPnL);
+  const unrealizedPnLPercent = calculateUnrealizedPnLPercent(trade, unrealizedPnL);
+
+  const riskPerShare = Math.abs(entryPrice - stopPrice);
+
+  let fiveRPrice = null;
+  if (riskPerShare > 0) {
+    fiveRPrice =
+      direction === 'short'
+        ? entryPrice - riskPerShare * 5
+        : entryPrice + riskPerShare * 5;
+  }
+
+  const stopHit = isStopHit(trade, numericPrice);
+  const targetHit = targetPrice != null && isTargetHit(trade, numericPrice);
+
+  return {
+    tradeId: trade.id,
+    userId,
+    symbol: String(trade.ticker || normalizedSymbol).toUpperCase(),
+    direction,
+    status: trade.status || 'open',
+    currentPrice: numericPrice,
+    entryPrice,
+    stopPrice,
+    targetPrice,
+    shares,
+    remainingShares,
+    riskDollars,
+    positionSize,
+    unrealizedPnL,
+    unrealizedPnLPercent,
+    currentR,
+    riskPerShare,
+    fiveRPrice,
+    stopHit,
+    targetHit,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
   const normalizedSymbol = String(symbol || '').trim().toUpperCase();
   const numericPrice = Number(currentPrice);
@@ -35,73 +102,36 @@ function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
     `[liveTradeEmitter] tick ${normalizedSymbol} @ ${numericPrice} | matched trades: ${trades.length}`
   );
 
-  const updates = trades.map((trade) => {
-    const direction = normalizeDirection(trade.direction);
-    const entryPrice = toNumber(trade.entry_price);
-    const stopPrice = toNumber(trade.current_stop ?? trade.stop_price);
+  const updatesByUser = new Map();
 
-    const targetPrice =
-      trade.target_price == null || trade.target_price === ''
-        ? null
-        : Number(trade.target_price);
+  for (const trade of trades) {
+    const update = buildTradeUpdate(trade, normalizedSymbol, numericPrice);
+    if (!update) continue;
 
-    const shares = toNumber(trade.shares);
-    const remainingShares = toNumber(trade.remaining_shares ?? trade.shares);
-    const riskDollars = toNumber(trade.risk_dollars);
-    const positionSize = toNumber(trade.position_size);
-
-    const unrealizedPnL = calculateUnrealizedPnL(trade, numericPrice);
-    const currentR = calculateCurrentR(trade, unrealizedPnL);
-    const unrealizedPnLPercent = calculateUnrealizedPnLPercent(trade, unrealizedPnL);
-
-    const riskPerShare = Math.abs(entryPrice - stopPrice);
-
-    let fiveRPrice = null;
-    if (riskPerShare > 0) {
-      fiveRPrice =
-        direction === 'short'
-          ? entryPrice - riskPerShare * 5
-          : entryPrice + riskPerShare * 5;
+    if (!updatesByUser.has(update.userId)) {
+      updatesByUser.set(update.userId, []);
     }
 
-    const stopHit = isStopHit(trade, numericPrice);
-    const targetHit = targetPrice != null && isTargetHit(trade, numericPrice);
+    updatesByUser.get(update.userId).push(update);
+  }
 
-    return {
-      tradeId: trade.id,
-      userId: trade.user_id,
-      symbol: String(trade.ticker || normalizedSymbol).toUpperCase(),
-      direction,
-      status: trade.status || 'open',
+  const emittedUserCount = updatesByUser.size;
+  let emittedTradeCount = 0;
+
+  for (const [userId, userTrades] of updatesByUser.entries()) {
+    emittedTradeCount += userTrades.length;
+
+    broadcastToUser(userId, 'trade-update', {
+      symbol: normalizedSymbol,
       currentPrice: numericPrice,
-      entryPrice,
-      stopPrice,
-      targetPrice,
-      shares,
-      remainingShares,
-      riskDollars,
-      positionSize,
-      unrealizedPnL,
-      unrealizedPnLPercent,
-      currentR,
-      riskPerShare,
-      fiveRPrice,
-      stopHit,
-      targetHit,
       updatedAt: new Date().toISOString(),
-    };
-  });
+      trades: userTrades,
+    });
+  }
 
   console.log(
-    `[liveTradeEmitter] broadcasting trade-update for ${normalizedSymbol} with ${updates.length} trade(s)`
+    `[liveTradeEmitter] broadcasted trade-update for ${normalizedSymbol} to ${emittedUserCount} user(s), ${emittedTradeCount} trade(s)`
   );
-
-  broadcast('trade-update', {
-    symbol: normalizedSymbol,
-    currentPrice: numericPrice,
-    updatedAt: new Date().toISOString(),
-    trades: updates,
-  });
 }
 
 module.exports = {

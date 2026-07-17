@@ -11,18 +11,74 @@ const FINNHUB_QUOTE_URL = 'https://finnhub.io/api/v1/quote';
 
 const BASE_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 60000;
+const STALE_PRICE_SECONDS = 3;
+const STALE_CHECK_INTERVAL_MS = 3000;
+const MAX_WS_SYMBOLS = Number(process.env.FINNHUB_MAX_WS_SYMBOLS || 50);
+const MAX_INVALID_QUOTE_RETRIES = Number(process.env.FINNHUB_MAX_INVALID_QUOTE_RETRIES || 3);
 
 let ws = null;
 let connected = false;
 const subscribedSymbols = new Set();
+const quoteRefreshInFlight = new Set();
+const invalidQuoteCounts = new Map();
+const blockedSymbols = new Set();
 let messageHandler = null;
 let reconnectTimeout = null;
 let staleCheckInterval = null;
 let reconnectAttempts = 0;
 let manuallyStopped = false;
 
+function normalizeSymbol(symbol) {
+  return String(symbol || '').trim().toUpperCase();
+}
+
+function clearSymbolFailureState(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) return;
+  invalidQuoteCounts.delete(normalized);
+  blockedSymbols.delete(normalized);
+}
+
+function incrementInvalidQuoteCount(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) return 0;
+
+  const nextCount = (invalidQuoteCounts.get(normalized) || 0) + 1;
+  invalidQuoteCounts.set(normalized, nextCount);
+  return nextCount;
+}
+
+function isInvalidFinnhubQuote(quote) {
+  if (!quote || typeof quote !== 'object') return true;
+
+  const current = Number(quote.c);
+  const high = Number(quote.h);
+  const low = Number(quote.l);
+  const open = Number(quote.o);
+  const previousClose = Number(quote.pc);
+  const timestamp = Number(quote.t);
+
+  if (!Number.isFinite(current) || current <= 0) {
+    return true;
+  }
+
+  if (
+    current === 0 &&
+    high === 0 &&
+    low === 0 &&
+    open === 0 &&
+    previousClose === 0 &&
+    timestamp === 0
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 async function fetchQuote(symbol) {
-  const url = `${FINNHUB_QUOTE_URL}?symbol=${encodeURIComponent(symbol)}&token=${FINNHUB_API_KEY}`;
+  const normalized = normalizeSymbol(symbol);
+  const url = `${FINNHUB_QUOTE_URL}?symbol=${encodeURIComponent(normalized)}&token=${FINNHUB_API_KEY}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -32,68 +88,139 @@ async function fetchQuote(symbol) {
   return response.json();
 }
 
-async function refreshSymbolFromQuote(symbol) {
-  try {
-    const quote = await fetchQuote(symbol);
-    const price = Number(quote.c);
-    const timestamp = new Date().toISOString();
+function supportsQuoteFallback(symbol) {
+  const normalized = normalizeSymbol(symbol);
 
-    if (!Number.isFinite(price) || price <= 0) {
-      console.warn(`[finnhubService] invalid REST quote for ${symbol}:`, quote);
+  if (!normalized) return false;
+
+  if (normalized.endsWith('USD') && !normalized.includes(':')) {
+    return false;
+  }
+
+  return true;
+}
+
+function canTrackMoreSymbols() {
+  return subscribedSymbols.size < MAX_WS_SYMBOLS;
+}
+
+async function refreshSymbolFromQuote(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) return;
+
+  if (!supportsQuoteFallback(normalized)) {
+    return;
+  }
+
+  if (!subscribedSymbols.has(normalized)) {
+    return;
+  }
+
+  if (blockedSymbols.has(normalized)) {
+    return;
+  }
+
+  if (quoteRefreshInFlight.has(normalized)) {
+    return;
+  }
+
+  quoteRefreshInFlight.add(normalized);
+
+  try {
+    const quote = await fetchQuote(normalized);
+
+    if (isInvalidFinnhubQuote(quote)) {
+      const invalidCount = incrementInvalidQuoteCount(normalized);
+
+      console.warn(
+        `[finnhubService] invalid REST quote for ${normalized} (${invalidCount}/${MAX_INVALID_QUOTE_RETRIES}):`,
+        quote
+      );
+
+      if (invalidCount >= MAX_INVALID_QUOTE_RETRIES) {
+        blockedSymbols.add(normalized);
+        console.warn(
+          `[finnhubService] giving up on ${normalized} after ${invalidCount} invalid quote attempt(s); unsubscribing`
+        );
+        unsubscribe(normalized);
+      }
+
       return;
     }
 
-    setPrice(symbol, price, timestamp);
+    clearSymbolFailureState(normalized);
 
-    const trades = getTradesForSymbol(symbol);
+    const price = Number(quote.c);
+    const timestamp = new Date().toISOString();
 
-    console.log(`[finnhubService] REST quote refresh ${symbol} @ ${price} | matched trades: ${trades.length}`);
+    const cached = getPrice(normalized);
+    const previousPrice = Number(cached?.price);
+    const priceChanged = !Number.isFinite(previousPrice) || previousPrice !== price;
 
-    emitTradeUpdatesForSymbol(symbol, price, trades);
+    setPrice(normalized, price, timestamp);
+
+    const trades = getTradesForSymbol(normalized);
+
+    if (!priceChanged) {
+      return;
+    }
+
+    console.log(`[finnhubService] REST quote refresh ${normalized} @ ${price} | matched trades: ${trades.length}`);
+
+    emitTradeUpdatesForSymbol(normalized, price, trades);
 
     try {
       await processLivePriceUpdate({
-        symbol,
+        symbol: normalized,
         price,
         timestamp,
-        tick: { s: symbol, p: price, t: Date.now(), source: 'rest-quote' },
+        tick: { s: normalized, p: price, t: Date.now(), source: 'rest-quote' },
         trades,
       });
     } catch (error) {
-      console.error(`Trade monitor failed for REST quote ${symbol}:`, error);
+      console.error(`Trade monitor failed for REST quote ${normalized}:`, error);
     }
 
     if (typeof messageHandler === 'function') {
       try {
         await messageHandler({
-          symbol,
+          symbol: normalized,
           price,
           timestamp,
-          tick: { s: symbol, p: price, t: Date.now(), source: 'rest-quote' },
+          tick: { s: normalized, p: price, t: Date.now(), source: 'rest-quote' },
           trades,
         });
       } catch (error) {
-        console.error(`Custom message handler failed for REST quote ${symbol}:`, error);
+        console.error(`Custom message handler failed for REST quote ${normalized}:`, error);
       }
     }
   } catch (error) {
-    console.error(`[finnhubService] REST quote refresh failed for ${symbol}:`, error.message);
+    console.error(`[finnhubService] REST quote refresh failed for ${normalized}:`, error.message);
+  } finally {
+    quoteRefreshInFlight.delete(normalized);
   }
 }
 
 function startStalePriceMonitor() {
   if (staleCheckInterval) return;
 
-  staleCheckInterval = setInterval(async () => {
+  staleCheckInterval = setInterval(() => {
     for (const symbol of subscribedSymbols) {
+      if (!supportsQuoteFallback(symbol)) {
+        continue;
+      }
+
+      if (blockedSymbols.has(symbol)) {
+        continue;
+      }
+
       const cached = getPrice(symbol);
 
-      if (!cached || !hasFreshPrice(symbol, 1)) {
-        console.warn(`[finnhubService] stale/missing price for ${symbol}, refreshing via REST quote`);
-        await refreshSymbolFromQuote(symbol);
+      if (!cached || !hasFreshPrice(symbol, STALE_PRICE_SECONDS)) {
+        refreshSymbolFromQuote(symbol);
       }
     }
-  }, 15000);
+  }, STALE_CHECK_INTERVAL_MS);
 }
 
 function stopStalePriceMonitor() {
@@ -163,6 +290,10 @@ function connect(onPrice) {
     console.log('Finnhub websocket connected');
 
     for (const symbol of subscribedSymbols) {
+      if (blockedSymbols.has(symbol)) {
+        continue;
+      }
+
       console.log(`[finnhubService] subscribing to ${symbol}`);
       ws.send(JSON.stringify({ type: 'subscribe', symbol }));
     }
@@ -183,7 +314,7 @@ function connect(onPrice) {
       }
 
       for (const tick of payload.data) {
-        const symbol = tick.s;
+        const symbol = normalizeSymbol(tick.s);
         const price = tick.p;
         const timestamp = tick.t
           ? new Date(tick.t).toISOString()
@@ -191,8 +322,7 @@ function connect(onPrice) {
 
         if (!symbol || typeof price !== 'number') continue;
 
-        console.log(`[finnhubService] WS tick ${symbol} @ ${price}`);
-
+        clearSymbolFailureState(symbol);
         setPrice(symbol, price, timestamp);
 
         const trades = getTradesForSymbol(symbol);
@@ -243,6 +373,54 @@ function connect(onPrice) {
   return ws;
 }
 
+function subscribe(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) return false;
+
+  if (blockedSymbols.has(normalized)) {
+    console.warn(`[finnhubService] refusing to subscribe blocked symbol ${normalized}`);
+    return false;
+  }
+
+  if (subscribedSymbols.has(normalized)) {
+    return true;
+  }
+
+  if (!canTrackMoreSymbols()) {
+    console.warn(
+      `[finnhubService] symbol limit reached (${MAX_WS_SYMBOLS}). Cannot subscribe to ${normalized}`
+    );
+    return false;
+  }
+
+  clearSymbolFailureState(normalized);
+  subscribedSymbols.add(normalized);
+
+  if (ws && connected && ws.readyState === WebSocket.OPEN) {
+    console.log(`[finnhubService] subscribing to ${normalized}`);
+    ws.send(JSON.stringify({ type: 'subscribe', symbol: normalized }));
+  }
+
+  return true;
+}
+
+function unsubscribe(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) return false;
+
+  const removed = subscribedSymbols.delete(normalized);
+  quoteRefreshInFlight.delete(normalized);
+  invalidQuoteCounts.delete(normalized);
+  blockedSymbols.delete(normalized);
+
+  if (removed && ws && connected && ws.readyState === WebSocket.OPEN) {
+    console.log(`[finnhubService] unsubscribing from ${normalized}`);
+    ws.send(JSON.stringify({ type: 'unsubscribe', symbol: normalized }));
+  }
+
+  return removed;
+}
+
 function disconnect() {
   manuallyStopped = true;
   connected = false;
@@ -263,35 +441,23 @@ function disconnect() {
     ws = null;
   }
 
+  quoteRefreshInFlight.clear();
+  invalidQuoteCounts.clear();
+  blockedSymbols.clear();
+
   console.log('[finnhubService] Finnhub websocket manually stopped');
-}
-
-function subscribe(symbol) {
-  const normalized = String(symbol || '').trim().toUpperCase();
-  if (!normalized) return;
-
-  subscribedSymbols.add(normalized);
-
-  if (ws && connected && ws.readyState === WebSocket.OPEN) {
-    console.log(`[finnhubService] subscribing to ${normalized}`);
-    ws.send(JSON.stringify({ type: 'subscribe', symbol: normalized }));
-  }
-}
-
-function unsubscribe(symbol) {
-  const normalized = String(symbol || '').trim().toUpperCase();
-  if (!normalized) return;
-
-  subscribedSymbols.delete(normalized);
-
-  if (ws && connected && ws.readyState === WebSocket.OPEN) {
-    console.log(`[finnhubService] unsubscribing from ${normalized}`);
-    ws.send(JSON.stringify({ type: 'unsubscribe', symbol: normalized }));
-  }
 }
 
 function getSubscribedSymbols() {
   return Array.from(subscribedSymbols);
+}
+
+function getSubscribedSymbolCount() {
+  return subscribedSymbols.size;
+}
+
+function isConnected() {
+  return connected;
 }
 
 module.exports = {
@@ -301,5 +467,8 @@ module.exports = {
   subscribe,
   unsubscribe,
   getSubscribedSymbols,
+  getSubscribedSymbolCount,
+  isConnected,
   refreshSymbolFromQuote,
+  supportsQuoteFallback,
 };

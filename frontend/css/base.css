@@ -1452,3 +1452,8 @@ main {
     font-size: 11px;
   }
 }
+
+
+.position-chart-legend__dot--live {
+  background: #22d3ee;
+}

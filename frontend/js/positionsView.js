@@ -7,13 +7,17 @@ import { formatCurrency, formatPercent } from './utils.js';
 import { trimModal } from './trimModal.js';
 import { viewManager } from './viewManager.js';
 import { wizard } from './wizard.js';
+import { subscribeToPrice, getLatestPrice } from './marketStream.js';
 
 class PositionsView {
   constructor() {
     this.elements = {};
     this.currentFilter = 'all';
     this.chart = null;
-this.chartSeries = null;
+    this.chartSeries = null;
+    this.chartLiveUnsubscribe = null;   // add
+    this.chartTicker = null;
+    this.chartDirection = null;
   }
 
   init() {
@@ -163,16 +167,16 @@ this.chartSeries = null;
     }
 
     document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape') return;
 
-  if (this.elements.addModal?.classList.contains('open')) {
-    this.closeAddTradeModal();
-  }
+      if (this.elements.addModal?.classList.contains('open')) {
+        this.closeAddTradeModal();
+      }
 
-  if (this.elements.chartModal?.classList.contains('open')) {
-    this.closeChartModal();
-  }
-});
+      if (this.elements.chartModal?.classList.contains('open')) {
+        this.closeChartModal();
+      }
+    });
   }
 
 
@@ -246,60 +250,75 @@ this.chartSeries = null;
   const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
   if (!trade || !this.elements.chartModal) return;
 
+  console.log('[positions] openChartModal', {
+    tradeId,
+    trade,
+  });
+
   this.renderChartModal(trade);
+
+  console.log('[positions] after renderChartModal', {
+    chartExists: !!this.chart,
+    chartSeriesExists: !!this.chartSeries,
+  });
+
+  this.startLiveChartFeed(trade);
 
   this.elements.chartModal.classList.add('open');
   this.elements.chartModal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 }
 
-closeChartModal() {
-  if (!this.elements.chartModal) return;
+  closeChartModal() {
+    if (!this.elements.chartModal) return;
 
-  this.elements.chartModal.classList.remove('open');
-  this.elements.chartModal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
+    // stop live price updates
+    this.stopLiveChartFeed();
+
+    this.elements.chartModal.classList.remove('open');
+    this.elements.chartModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
 
 
-getTradeChartLevels(trade) {
-  const entry = Number(trade.entry ?? trade.entry_price ?? 0);
-  const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
-  const target = trade.target != null ? Number(trade.target) : null;
-  const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
+  getTradeChartLevels(trade) {
+    const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+    const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+    const target = trade.target != null ? Number(trade.target) : null;
+    const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
 
-  const riskPerShare = Math.abs(entry - stop);
-  const fiveR = direction === 'short'
-    ? entry - (riskPerShare * 5)
-    : entry + (riskPerShare * 5);
+    const riskPerShare = Math.abs(entry - stop);
+    const fiveR = direction === 'short'
+      ? entry - (riskPerShare * 5)
+      : entry + (riskPerShare * 5);
 
-  const values = [entry, stop, fiveR];
-  if (target != null) values.push(target);
+    const values = [entry, stop, fiveR];
+    if (target != null) values.push(target);
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const padding = (max - min) * 0.12 || 1;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const padding = (max - min) * 0.12 || 1;
 
-  const chartMin = min - padding;
-  const chartMax = max + padding;
-  const chartRange = Math.max(chartMax - chartMin, 0.0001);
+    const chartMin = min - padding;
+    const chartMax = max + padding;
+    const chartRange = Math.max(chartMax - chartMin, 0.0001);
 
-  const toPercent = (value) => ((value - chartMin) / chartRange) * 100;
+    const toPercent = (value) => ((value - chartMin) / chartRange) * 100;
 
-  return {
-    direction,
-    entry,
-    stop,
-    target,
-    fiveR,
-    chartMin,
-    chartMax,
-    entryPos: toPercent(entry),
-    stopPos: toPercent(stop),
-    targetPos: target != null ? toPercent(target) : null,
-    fiveRPos: toPercent(fiveR),
-  };
-}
+    return {
+      direction,
+      entry,
+      stop,
+      target,
+      fiveR,
+      chartMin,
+      chartMax,
+      entryPos: toPercent(entry),
+      stopPos: toPercent(stop),
+      targetPos: target != null ? toPercent(target) : null,
+      fiveRPos: toPercent(fiveR),
+    };
+  }
 
 renderChartModal(trade) {
   const entry = Number(trade.entry ?? trade.entry_price ?? 0);
@@ -313,29 +332,30 @@ renderChartModal(trade) {
 
   const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
   const riskPerShare = Math.abs(entry - stop);
+  
   const fiveR = direction === 'short'
     ? entry - (riskPerShare * 5)
     : entry + (riskPerShare * 5);
-
-  const levelValues = [entry, stop, fiveR];
-  if (target !== null && Number.isFinite(target)) {
-    levelValues.push(target);
-  }
-
-  const minLevel = Math.min(...levelValues);
-  const maxLevel = Math.max(...levelValues);
-  const padding = Math.max((maxLevel - minLevel) * 0.2, entry * 0.01, 1);
-
-  const visibleMin = minLevel - padding;
-  const visibleMax = maxLevel + padding;
 
   if (this.elements.chartTitle) {
     this.elements.chartTitle.textContent = `${trade.ticker} Chart`;
   }
 
-  if (this.elements.chartSubtitle) {
-    this.elements.chartSubtitle.textContent = `${direction.toUpperCase()} position`;
-  }
+  this.chartDirection = direction.toUpperCase();
+
+const liveSnapshot = getLatestPrice(trade.ticker);
+const livePrice = Number(
+  liveSnapshot?.price ??
+  trade.currentPrice ??
+  trade.livePrice ??
+  NaN
+);
+
+if (this.elements.chartSubtitle) {
+  this.elements.chartSubtitle.textContent = Number.isFinite(livePrice)
+    ? `${this.chartDirection} position • Live ${formatCurrency(livePrice)}`
+    : `${this.chartDirection} position • Waiting for live price`;
+}
 
   if (this.elements.chartLegend) {
     this.elements.chartLegend.innerHTML = `
@@ -384,15 +404,14 @@ renderChartModal(trade) {
     rightPriceScale: {
       borderColor: 'rgba(255,255,255,0.08)',
       autoScale: false,
-      scaleMargins: {
-        top: 0.15,
-        bottom: 0.15,
-      },
+      scaleMargins: { top: 0.20, bottom: 0.20 },
     },
     timeScale: {
       borderColor: 'rgba(255,255,255,0.08)',
       timeVisible: true,
-      secondsVisible: false,
+      secondsVisible: true,
+      rightOffset: 8,
+      barSpacing: 14,
     },
     crosshair: {
       vertLine: { color: 'rgba(255,255,255,0.15)' },
@@ -405,25 +424,64 @@ renderChartModal(trade) {
 
   const { LineSeries } = window.LightweightCharts;
 
-const series = chart.addSeries(LineSeries, {
-  color: 'rgba(0,0,0,0)',
-  lineWidth: 1,
-  lineVisible: false,
-  pointMarkersVisible: false,
-  crosshairMarkerVisible: false,
-  priceLineVisible: false,
-  lastValueVisible: false,
-});
+  const series = chart.addSeries(LineSeries, {
+    color: '#22d3ee',
+    lineWidth: 2,
+    lineVisible: true,
+    pointMarkersVisible: false,
+    crosshairMarkerVisible: true,
+    priceLineVisible: false,
+    lastValueVisible: true,
+  });
 
-const now = Math.floor(Date.now() / 1000);
+ const seedPrice = Number(
+  livePrice ??
+  trade.currentPrice ??
+  trade.livePrice ??
+  trade.entry ??
+  trade.entry_price ??
+  0
+);
 
-const anchorPoints = [
-  { time: now - 300, value: visibleMin },
-  { time: now - 1, value: visibleMax },
-];
+  const now = Math.floor(Date.now() / 1000);
+  const initialPrice = seedPrice > 0 ? seedPrice : entry;
 
-series.setData(anchorPoints);
+  const levelValues = [initialPrice, entry, stop, fiveR];
+  if (target !== null && Number.isFinite(target)) {
+    levelValues.push(target);
+  }
 
+  const minLevel = Math.min(...levelValues);
+  const maxLevel = Math.max(...levelValues);
+  const rangePadding = Math.max(
+    (maxLevel - minLevel) * 0.15,
+    Math.abs(initialPrice || 1) * 0.002,
+    0.5
+  );
+
+  const visibleMin = minLevel - rangePadding;
+  const visibleMax = maxLevel + rangePadding;
+
+  // ONE honest starting point, no fake history
+  series.setData([
+    { time: now, value: initialPrice },
+  ]);
+
+  chart.priceScale('right').applyOptions({
+    autoScale: false,
+    scaleMargins: { top: 0.20, bottom: 0.20 },
+  });
+
+  series.applyOptions({
+    autoscaleInfoProvider: () => ({
+      priceRange: {
+        minValue: visibleMin,
+        maxValue: visibleMax,
+      },
+    }),
+  });
+
+  // Horizontal price lines for levels
   series.createPriceLine({
     price: entry,
     color: '#60a5fa',
@@ -466,6 +524,9 @@ series.setData(anchorPoints);
 
   this.chart = chart;
   this.chartSeries = series;
+  this.chartLastTime = now;
+  this.chartMinVisiblePrice = visibleMin;
+  this.chartMaxVisiblePrice = visibleMax;
 
   requestAnimationFrame(() => {
     if (!this.chart || !this.elements.chartCanvas) return;
@@ -474,6 +535,85 @@ series.setData(anchorPoints);
       width: this.elements.chartCanvas.clientWidth || 700,
     });
   });
+}
+
+
+  startLiveChartFeed(trade) {
+  this.stopLiveChartFeed();
+
+  const ticker = String(trade.ticker || '').toUpperCase();
+  if (!ticker || !this.chart || !this.chartSeries) return;
+
+  this.chartTicker = ticker;
+
+  this.chartLiveUnsubscribe = subscribeToPrice(ticker, (payload) => {
+    this.handleLiveChartPrice(payload);
+  });
+
+  console.log('[positions] subscribed chart feed for', ticker);
+}
+
+  stopLiveChartFeed() {
+    if (typeof this.chartLiveUnsubscribe === 'function') {
+      this.chartLiveUnsubscribe();
+    }
+    this.chartLiveUnsubscribe = null;
+this.chartTicker = null;
+this.chartDirection = null;
+  }
+
+
+handleLiveChartPrice(payload) {
+  if (!this.chart || !this.chartSeries) return;
+
+  const symbol = String(payload.symbol || '').toUpperCase();
+  if (!symbol || symbol !== this.chartTicker) return;
+
+  const price = Number(payload.price);
+if (!(price > 0)) return;
+
+if (this.elements.chartSubtitle) {
+  this.elements.chartSubtitle.textContent =
+    `${this.chartDirection || 'LONG'} position • Live ${formatCurrency(price)}`;
+}
+
+const now = Math.floor(Date.now() / 1000);
+  const nextTime = Math.max(now, (this.chartLastTime || now - 1) + 1);
+
+  this.chartSeries.update({
+    time: nextTime,
+    value: price,
+  });
+
+  this.chartLastTime = nextTime;
+
+  if (
+    Number.isFinite(this.chartMinVisiblePrice) &&
+    Number.isFinite(this.chartMaxVisiblePrice)
+  ) {
+    const nextMin = Math.min(this.chartMinVisiblePrice, price);
+    const nextMax = Math.max(this.chartMaxVisiblePrice, price);
+
+    if (nextMin !== this.chartMinVisiblePrice || nextMax !== this.chartMaxVisiblePrice) {
+      const pad = Math.max((nextMax - nextMin) * 0.12, price * 0.002, 0.5);
+      this.chartMinVisiblePrice = nextMin;
+      this.chartMaxVisiblePrice = nextMax;
+
+      this.chart.priceScale('right').applyOptions({
+        autoScale: false,
+        scaleMargins: { top: 0.20, bottom: 0.20 },
+      });
+
+      this.chartSeries.applyOptions({
+        autoscaleInfoProvider: () => ({
+          priceRange: {
+            minValue: nextMin - pad,
+            maxValue: nextMax + pad,
+          },
+        }),
+      });
+    }
+  }
 }
 
   updateAddTradePreview() {

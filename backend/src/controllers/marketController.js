@@ -2,8 +2,7 @@ const { getAllPrices } = require('../services/marketData/priceCache');
 const { getTrackedSymbols, reloadOpenTrades } = require('../services/marketData/subscriptionManager');
 const { runSnapshotCycle } = require('../services/marketData/snapshotService');
 const finnhubService = require('../services/marketData/finnhubService');
-const { addClient, removeClient } = require('../services/marketData/liveStream');
-
+const { addClient, removeClient, getClientCount } = require('../services/marketData/liveStream');
 
 async function testQuote(req, res) {
   try {
@@ -56,28 +55,48 @@ async function runSnapshots(req, res) {
   }
 }
 
-
 async function streamMarket(req, res) {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('Connection', 'keep-alive');
+  const userId = req.user?.id ?? req.user?.userId ?? null;
 
-  if (res.flushHeaders) {
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  if (typeof res.flushHeaders === 'function') {
     res.flushHeaders();
   }
 
-  res.write(`event: connected\ndata: ${JSON.stringify({ ok: true, message: 'Live stream connected' })}\n\n`);
+  addClient(res, { userId });
 
-  addClient(res);
+  res.write(
+    `event: connected\ndata: ${JSON.stringify({
+      ok: true,
+      message: 'Live stream connected',
+      userId: String(userId),
+      clients: getClientCount(),
+    })}\n\n`
+  );
 
   const heartbeat = setInterval(() => {
-    res.write(`event: ping\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
-  }, 20000);
+    if (!res.writableEnded) {
+      res.write(`event: ping\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
+    }
+  }, 15000);
 
   req.on('close', () => {
     clearInterval(heartbeat);
     removeClient(res);
-    res.end();
+
+    if (!res.writableEnded) {
+      res.end();
+    }
   });
 }
 
@@ -87,9 +106,4 @@ module.exports = {
   getCache,
   runSnapshots,
   streamMarket,
-
 };
-
-
-
-
