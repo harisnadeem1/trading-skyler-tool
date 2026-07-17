@@ -8,6 +8,8 @@ const { reloadOpenTrades } = require('./services/marketData/subscriptionManager'
 const { startTradeSnapshotJob } = require('./jobs/tradeSnapshotJob');
 
 const PORT = process.env.PORT || 3000;
+const ENABLE_FINNHUB_WS = process.env.ENABLE_FINNHUB_WS === 'true';
+const ENABLE_TRADE_SNAPSHOT_JOB = process.env.ENABLE_TRADE_SNAPSHOT_JOB === 'true';
 
 async function startServer() {
   try {
@@ -17,15 +19,23 @@ async function startServer() {
     const openTrades = await reloadOpenTrades();
     console.log(`Loaded ${openTrades.length} open/trimmed trade(s) for live monitoring`);
 
-    finnhubService.connect();
-    console.log('Finnhub live market data service started');
+    if (ENABLE_FINNHUB_WS) {
+      finnhubService.connect();
+      console.log('Finnhub live market data service started');
+    } else {
+      console.log('Finnhub live market data service disabled by environment');
+    }
 
-    startTradeSnapshotJob();
-    console.log(
-      `Trade snapshot job started on schedule: ${
-        process.env.MARKET_SNAPSHOT_CRON || '*/30 * * * *'
-      }`
-    );
+    if (ENABLE_TRADE_SNAPSHOT_JOB) {
+      startTradeSnapshotJob();
+      console.log(
+        `Trade snapshot job started on schedule: ${
+          process.env.MARKET_SNAPSHOT_CRON || '*/30 * * * *'
+        }`
+      );
+    } else {
+      console.log('Trade snapshot job disabled by environment');
+    }
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
