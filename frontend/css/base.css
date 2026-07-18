@@ -1,15 +1,21 @@
 /* ========================================
    Base Styles - Reset & Typography
-   ======================================== */
+   ========================================= */
 
 /* === Reset === */
-
 *,
 *::before,
 *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    fill 0.35s ease,
+    stroke 0.35s ease !important;
 }
 
 html {
@@ -30,23 +36,6 @@ body {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-}
-
-
-
-
-
-/* Smooth theme transitions - wildcard for buttery theme switching */
-*,
-*::before,
-*::after {
-  transition:
-    background-color 0.35s ease,
-    color 0.35s ease,
-    border-color 0.35s ease,
-    box-shadow 0.35s ease,
-    fill 0.35s ease,
-    stroke 0.35s ease !important;
 }
 
 /* Override for interactive elements - keep snappy hover/transform feel */
@@ -75,6 +64,12 @@ body {
   transition: background-color 0.35s ease !important;
 }
 
+.toggle-switch__slider::after {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.35s ease !important;
+}
+
 /* Settings panel & overlay - custom slide animation */
 .settings-panel,
 .settings-overlay {
@@ -82,12 +77,6 @@ body {
     transform 0.35s cubic-bezier(0.32, 0.72, 0, 1),
     opacity 0.3s ease-out,
     visibility 0.35s ease,
-    background-color 0.35s ease !important;
-}
-
-.toggle-switch__slider::after {
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.35s ease !important;
 }
 
@@ -110,12 +99,19 @@ body {
 
 /* Settings card has custom fade animation */
 .card--settings .card__body--collapsible {
-  transition: opacity 0.25s ease-out, border-color 0.25s ease-out, box-shadow 0.25s ease-out !important;
+  transition:
+    opacity 0.25s ease-out,
+    border-color 0.25s ease-out,
+    box-shadow 0.25s ease-out !important;
 }
 
 /* === Typography === */
-
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: var(--font-semibold);
   line-height: var(--leading-tight);
   color: var(--text-primary);
@@ -147,11 +143,7 @@ kbd {
 }
 
 /* === Focus States === */
-
-:focus {
-  outline: none;
-}
-
+:focus,
 :focus-visible {
   outline: none;
 }
@@ -163,14 +155,12 @@ a:focus-visible {
 }
 
 /* === Selection === */
-
 ::selection {
   background: var(--primary);
   color: var(--text-inverse);
 }
 
 /* === Scrollbar === */
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -196,7 +186,6 @@ a:focus-visible {
 }
 
 /* === Utility Classes === */
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -222,7 +211,7 @@ a:focus-visible {
 }
 
 .text-success {
-  color: var(--success);
+  color: #22c55e !important;
 }
 
 .text-warning {
@@ -230,8 +219,10 @@ a:focus-visible {
 }
 
 .text-danger {
-  color: var(--danger);
+  color: #ef4444 !important;
 }
+
+/* === Auth === */
 .auth-screen {
   min-height: 100vh;
   display: flex;
@@ -274,8 +265,7 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: var(--border-radius-lg);
-  background:
-    linear-gradient(135deg, var(--primary), var(--primary-hover));
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: var(--text-primary);
   font-family: var(--font-display);
   font-size: var(--text-xl);
@@ -475,8 +465,6 @@ a:focus-visible {
   }
 }
 
-
-
 #app-root {
   min-height: 100dvh;
   display: flex !important;
@@ -484,13 +472,15 @@ a:focus-visible {
 }
 
 main {
-  flex: 1; /* This is the key — makes main grow to fill remaining space */
+  flex: 1;
 }
 
+/* === Journal Modal === */
 .journal-modal {
   width: min(920px, calc(100vw - 32px));
   max-height: 88vh;
   padding: 0;
+  margin: auto;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   background: var(--color-surface, #16181d);
@@ -543,7 +533,6 @@ main {
   overflow-y: auto;
 }
 
-/* Content cards inside modal */
 .journal-row-details {
   display: grid;
   gap: 14px;
@@ -698,34 +687,14 @@ main {
   }
 }
 
-.journal-modal {
-  width: min(920px, calc(100vw - 32px));
-  max-height: 88vh;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: var(--color-surface, #16181d);
-  color: var(--color-text, #f5f7fa);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-  overflow: hidden;
-
-  /* important for centering */
-  margin: auto;
-}
-
-.journal-modal::backdrop {
-  background: rgba(7, 10, 18, 0.6);
-  backdrop-filter: blur(4px);
-}
-
-
+/* === Position / Trade UI === */
 .trade-direction {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   margin-bottom: 16px;
-  background: var(--color-surface-2, rgba(255,255,255,0.04));
-  border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+  background: var(--color-surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
 }
 
@@ -750,11 +719,9 @@ main {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
 }
 
-
-.checkbox-label{
-  display:none !important;
+.checkbox-label {
+  display: none !important;
 }
-
 
 .positions-header {
   display: flex;
@@ -816,12 +783,12 @@ main {
   box-shadow: var(--shadow-sm);
 }
 
+/* === Trade Create Modal === */
 .trade-create-modal {
   position: fixed;
   inset: 0;
-  z-index: 2000;
-  display: grid;
-  place-items: center;
+  z-index: 1000;
+  display: none;
   padding: var(--space-4);
   opacity: 0;
   visibility: hidden;
@@ -830,6 +797,8 @@ main {
 }
 
 .trade-create-modal.open {
+  display: grid;
+  place-items: center;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -838,22 +807,28 @@ main {
 .trade-create-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: color-mix(in oklab, black 55%, transparent);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
 }
 
 .trade-create-modal__dialog {
   position: relative;
-  width: min(720px, calc(100vw - 2rem));
-  max-height: min(88vh, 900px);
-  overflow: auto;
+  z-index: 1;
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(90vh, 100dvh - 24px);
+  margin: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: 16px;
   background: var(--color-surface);
   box-shadow: var(--shadow-lg);
   transform: translateY(16px) scale(0.985);
   opacity: 0;
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms ease;
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease;
 }
 
 .trade-create-modal.open .trade-create-modal__dialog {
@@ -867,8 +842,9 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-5) var(--space-5);
+  padding: var(--space-5);
   background: var(--color-surface);
+  flex: 0 0 auto;
 }
 
 .trade-create-modal__header {
@@ -915,6 +891,10 @@ main {
 }
 
 .trade-create-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: var(--space-5);
   display: grid;
   gap: var(--space-5);
@@ -923,16 +903,16 @@ main {
 .trade-create-modal__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: 16px;
 }
 
 .trade-create-modal__direction {
   display: inline-flex;
   width: 100%;
   padding: 4px;
+  gap: 4px;
   border-radius: var(--radius-full);
   background: var(--color-surface-offset);
-  gap: 4px;
 }
 
 .trade-create-modal__direction-btn {
@@ -954,6 +934,7 @@ main {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
+  margin-top: 16px;
 }
 
 .trade-create-modal__summary-card {
@@ -1017,59 +998,6 @@ main {
   }
 }
 
-
-.trade-create-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: none;
-}
-
-.trade-create-modal.open {
-  display: grid;
-  place-items: center;
-}
-
-.trade-create-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-}
-
-.trade-create-modal__dialog {
-  position: relative;
-  z-index: 1;
-  width: min(720px, calc(100vw - 24px));
-  max-height: min(90vh, 100dvh - 24px);
-  margin: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: 16px;
-}
-
-.trade-create-modal__header,
-.trade-create-modal__footer {
-  flex: 0 0 auto;
-}
-
-.trade-create-modal__body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
-}
-
-.trade-create-modal__grid {
-  display: grid;
-  gap: 16px;
-}
-
-.trade-create-modal__summary {
-  margin-top: 16px;
-}
-
-/* Mobile */
 @media (max-width: 640px) {
   .trade-create-modal {
     display: none;
@@ -1119,6 +1047,7 @@ main {
   }
 }
 
+/* === Toasts === */
 .toast-container {
   position: fixed;
   top: 20px;
@@ -1200,7 +1129,6 @@ main {
   color: rgba(255, 255, 255, 1);
 }
 
-/* Persistent 5R notifications */
 #toastContainerTopRight {
   position: fixed;
   top: 16px;
@@ -1224,7 +1152,6 @@ main {
   pointer-events: auto;
 }
 
-/* Small screens */
 @media (max-width: 480px) {
   .toast-container {
     top: 12px;
@@ -1254,8 +1181,7 @@ main {
   }
 }
 
-
-
+/* === Position Card / Chart Modal === */
 .position-card__btn--secondary {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.92);
@@ -1367,6 +1293,10 @@ main {
   background: #fbbf24;
 }
 
+.position-chart-legend__dot--live {
+  background: #22d3ee;
+}
+
 .position-chart {
   position: relative;
   min-height: 220px;
@@ -1380,7 +1310,12 @@ main {
   top: 120px;
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(248, 113, 113, 0.18), rgba(96, 165, 250, 0.18), rgba(251, 191, 36, 0.18));
+  background: linear-gradient(
+    90deg,
+    rgba(248, 113, 113, 0.18),
+    rgba(96, 165, 250, 0.18),
+    rgba(251, 191, 36, 0.18)
+  );
 }
 
 .position-chart__marker {
@@ -1451,9 +1386,4 @@ main {
   .position-chart__price {
     font-size: 11px;
   }
-}
-
-
-.position-chart-legend__dot--live {
-  background: #22d3ee;
 }

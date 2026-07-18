@@ -7,7 +7,7 @@ import { formatCurrency, formatPercent } from './utils.js';
 import { trimModal } from './trimModal.js';
 import { viewManager } from './viewManager.js';
 import { wizard } from './wizard.js';
-import { subscribeToPrice, getLatestPrice } from './marketStream.js';
+import { subscribeToPrice, getLatestPrice, subscribeToTradeUpdates } from './marketStream.js';
 
 class PositionsView {
   constructor() {
@@ -18,12 +18,15 @@ class PositionsView {
     this.chartLiveUnsubscribe = null;   // add
     this.chartTicker = null;
     this.chartDirection = null;
+    this.liveTradeMap = new Map();
+    this.tradeUpdatesUnsubscribe = null;
   }
 
   init() {
     this.cacheElements();
     this.bindEvents();
     this.render();
+    this.bindLiveTradeUpdates();
 
     // Listen for journal changes
     state.on('journalEntryAdded', () => this.render());
@@ -147,10 +150,10 @@ class PositionsView {
     });
 
     if (this.elements.addTicker) {
-      this.elements.addTicker.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-      });
-    }
+  this.elements.addTicker.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^A-Z0-9:.-]/gi, '').toUpperCase();
+  });
+}
 
     if (this.elements.addSave) {
       this.elements.addSave.addEventListener('click', () => {
@@ -164,6 +167,32 @@ class PositionsView {
 
     if (this.elements.chartOverlay) {
       this.elements.chartOverlay.addEventListener('click', () => this.closeChartModal());
+    }
+
+        if (this.elements.grid) {
+      this.elements.grid.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const { action, id } = btn.dataset;
+        if (!id) return;
+
+        if (action === 'close') {
+          trimModal.open(id);
+          return;
+        }
+
+        if (action === 'delete') {
+          if (confirm('Delete this trade?')) {
+            state.deleteJournalEntry(id);
+          }
+          return;
+        }
+
+        if (action === 'chart') {
+          this.openChartModal(id);
+        }
+      });
     }
 
     document.addEventListener('keydown', (e) => {
@@ -192,6 +221,90 @@ class PositionsView {
 
     this.render();
   }
+
+
+ bindLiveTradeUpdates() {
+  if (typeof this.tradeUpdatesUnsubscribe === 'function') {
+    this.tradeUpdatesUnsubscribe();
+  }
+
+  this.tradeUpdatesUnsubscribe = subscribeToTradeUpdates((payload) => {
+    const trades = Array.isArray(payload?.trades) ? payload.trades : [];
+
+    trades.forEach((liveTrade) => {
+      const id = String(liveTrade.id ?? liveTrade.tradeId ?? '');
+      if (!id) return;
+
+      this.liveTradeMap.set(id, liveTrade);
+      this.patchLiveTradeCard(id, liveTrade);
+    });
+  });
+}
+
+
+patchLiveTradeCard(tradeId, liveTrade) {
+  const card = this.elements.grid?.querySelector(`.position-card[data-id="${tradeId}"]`);
+  if (!card) return;
+
+  const currentPrice = Number(
+    liveTrade?.currentPrice ??
+    liveTrade?.current_price ??
+    liveTrade?.livePrice ??
+    liveTrade?.price ??
+    NaN
+  );
+
+  const unrealizedPnL = Number(
+    liveTrade?.unrealizedPnL ??
+    liveTrade?.unrealized_pnl ??
+    liveTrade?.pnl ??
+    NaN
+  );
+
+  const unrealizedPnLPercent = Number(
+    liveTrade?.unrealizedPnLPercent ??
+    liveTrade?.unrealized_pnl_percent ??
+    liveTrade?.pnlPercent ??
+    liveTrade?.pnl_percent ??
+    NaN
+  );
+
+  const livePriceText = Number.isFinite(currentPrice)
+    ? formatCurrency(currentPrice)
+    : 'Waiting...';
+
+  const livePnLText = Number.isFinite(unrealizedPnL)
+    ? `${unrealizedPnL >= 0 ? '+' : ''}${formatCurrency(unrealizedPnL)}`
+    : '—';
+
+  const livePnLPercentText = Number.isFinite(unrealizedPnLPercent)
+    ? `${unrealizedPnLPercent >= 0 ? '+' : ''}${formatPercent(unrealizedPnLPercent)}`
+    : '—';
+
+  const pnlClass = Number.isFinite(unrealizedPnL)
+    ? (unrealizedPnL >= 0 ? 'text-success' : 'text-danger')
+    : '';
+
+  const liveValueEl = card.querySelector('[data-role="live-price"]');
+  const livePnlEl = card.querySelector('[data-role="live-pnl"]');
+  const livePnlPercentEl = card.querySelector('[data-role="live-pnl-percent"]');
+
+  if (liveValueEl) {
+    liveValueEl.textContent = livePriceText;
+  }
+
+  if (livePnlEl) {
+    livePnlEl.textContent = livePnLText;
+    livePnlEl.classList.remove('text-success', 'text-danger');
+    if (pnlClass) livePnlEl.classList.add(pnlClass);
+  }
+
+  if (livePnlPercentEl) {
+    livePnlPercentEl.textContent = livePnLPercentText;
+    livePnlPercentEl.classList.remove('text-success', 'text-danger');
+    if (pnlClass) livePnlPercentEl.classList.add(pnlClass);
+  }
+}
 
 
 
@@ -247,27 +360,21 @@ class PositionsView {
 
 
   openChartModal(tradeId) {
-  const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
-  if (!trade || !this.elements.chartModal) return;
+    const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+    if (!trade || !this.elements.chartModal) return;
 
-  console.log('[positions] openChartModal', {
-    tradeId,
-    trade,
-  });
+    
 
-  this.renderChartModal(trade);
+    this.renderChartModal(trade);
 
-  console.log('[positions] after renderChartModal', {
-    chartExists: !!this.chart,
-    chartSeriesExists: !!this.chartSeries,
-  });
+    
 
-  this.startLiveChartFeed(trade);
+    this.startLiveChartFeed(trade);
 
-  this.elements.chartModal.classList.add('open');
-  this.elements.chartModal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
+    this.elements.chartModal.classList.add('open');
+    this.elements.chartModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
 
   closeChartModal() {
     if (!this.elements.chartModal) return;
@@ -320,45 +427,45 @@ class PositionsView {
     };
   }
 
-renderChartModal(trade) {
-  const entry = Number(trade.entry ?? trade.entry_price ?? 0);
-  const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
+  renderChartModal(trade) {
+    const entry = Number(trade.entry ?? trade.entry_price ?? 0);
+    const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
 
-  const rawTarget = trade.target ?? trade.target_price ?? null;
-  const target =
-    rawTarget === null || rawTarget === undefined || rawTarget === ''
-      ? null
-      : Number(rawTarget);
+    const rawTarget = trade.target ?? trade.target_price ?? null;
+    const target =
+      rawTarget === null || rawTarget === undefined || rawTarget === ''
+        ? null
+        : Number(rawTarget);
 
-  const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
-  const riskPerShare = Math.abs(entry - stop);
-  
-  const fiveR = direction === 'short'
-    ? entry - (riskPerShare * 5)
-    : entry + (riskPerShare * 5);
+    const direction = trade.direction ?? (stop > entry ? 'short' : 'long');
+    const riskPerShare = Math.abs(entry - stop);
 
-  if (this.elements.chartTitle) {
-    this.elements.chartTitle.textContent = `${trade.ticker} Chart`;
-  }
+    const fiveR = direction === 'short'
+      ? entry - (riskPerShare * 5)
+      : entry + (riskPerShare * 5);
 
-  this.chartDirection = direction.toUpperCase();
+    if (this.elements.chartTitle) {
+      this.elements.chartTitle.textContent = `${trade.ticker} Chart`;
+    }
 
-const liveSnapshot = getLatestPrice(trade.ticker);
-const livePrice = Number(
-  liveSnapshot?.price ??
-  trade.currentPrice ??
-  trade.livePrice ??
-  NaN
-);
+    this.chartDirection = direction.toUpperCase();
 
-if (this.elements.chartSubtitle) {
-  this.elements.chartSubtitle.textContent = Number.isFinite(livePrice)
-    ? `${this.chartDirection} position • Live ${formatCurrency(livePrice)}`
-    : `${this.chartDirection} position • Waiting for live price`;
-}
+    const liveSnapshot = getLatestPrice(trade.ticker);
+    const livePrice = Number(
+      liveSnapshot?.price ??
+      trade.currentPrice ??
+      trade.livePrice ??
+      NaN
+    );
 
-  if (this.elements.chartLegend) {
-    this.elements.chartLegend.innerHTML = `
+    if (this.elements.chartSubtitle) {
+      this.elements.chartSubtitle.textContent = Number.isFinite(livePrice)
+        ? `${this.chartDirection} position • Live ${formatCurrency(livePrice)}`
+        : `${this.chartDirection} position • Waiting for live price`;
+    }
+
+    if (this.elements.chartLegend) {
+      this.elements.chartLegend.innerHTML = `
       <div class="position-chart-legend__item">
         <span class="position-chart-legend__dot position-chart-legend__dot--entry"></span>
         <span>Entry: ${formatCurrency(entry)}</span>
@@ -378,243 +485,242 @@ if (this.elements.chartSubtitle) {
         <span>5R: ${formatCurrency(fiveR)}</span>
       </div>
     `;
-  }
+    }
 
-  if (!this.elements.chartCanvas || !window.LightweightCharts) return;
+    if (!this.elements.chartCanvas || !window.LightweightCharts) return;
 
-  if (this.chart) {
-    this.chart.remove();
-    this.chart = null;
-    this.chartSeries = null;
-  }
+    if (this.chart) {
+      this.chart.remove();
+      this.chart = null;
+      this.chartSeries = null;
+    }
 
-  this.elements.chartCanvas.innerHTML = '';
+    this.elements.chartCanvas.innerHTML = '';
 
-  const chart = window.LightweightCharts.createChart(this.elements.chartCanvas, {
-    width: this.elements.chartCanvas.clientWidth || 700,
-    height: 360,
-    layout: {
-      background: { color: '#121722' },
-      textColor: 'rgba(255,255,255,0.82)',
-    },
-    grid: {
-      vertLines: { color: 'rgba(255,255,255,0.05)' },
-      horzLines: { color: 'rgba(255,255,255,0.05)' },
-    },
-    rightPriceScale: {
-      borderColor: 'rgba(255,255,255,0.08)',
+    const chart = window.LightweightCharts.createChart(this.elements.chartCanvas, {
+      width: this.elements.chartCanvas.clientWidth || 700,
+      height: 360,
+      layout: {
+        background: { color: '#121722' },
+        textColor: 'rgba(255,255,255,0.82)',
+      },
+      grid: {
+        vertLines: { color: 'rgba(255,255,255,0.05)' },
+        horzLines: { color: 'rgba(255,255,255,0.05)' },
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(255,255,255,0.08)',
+        autoScale: false,
+        scaleMargins: { top: 0.20, bottom: 0.20 },
+      },
+      timeScale: {
+        borderColor: 'rgba(255,255,255,0.08)',
+        timeVisible: true,
+        secondsVisible: true,
+        rightOffset: 8,
+        barSpacing: 14,
+      },
+      crosshair: {
+        vertLine: { color: 'rgba(255,255,255,0.15)' },
+        horzLine: { color: 'rgba(255,255,255,0.15)' },
+      },
+      localization: {
+        priceFormatter: (price) => Number(price).toFixed(2),
+      },
+    });
+
+    const { LineSeries } = window.LightweightCharts;
+
+    const series = chart.addSeries(LineSeries, {
+      color: '#22d3ee',
+      lineWidth: 2,
+      lineVisible: true,
+      pointMarkersVisible: false,
+      crosshairMarkerVisible: true,
+      priceLineVisible: false,
+      lastValueVisible: true,
+    });
+
+    const seedPrice = Number(
+      livePrice ??
+      trade.currentPrice ??
+      trade.livePrice ??
+      trade.entry ??
+      trade.entry_price ??
+      0
+    );
+
+    const now = Math.floor(Date.now() / 1000);
+    const initialPrice = seedPrice > 0 ? seedPrice : entry;
+
+    const levelValues = [initialPrice, entry, stop, fiveR];
+    if (target !== null && Number.isFinite(target)) {
+      levelValues.push(target);
+    }
+
+    const minLevel = Math.min(...levelValues);
+    const maxLevel = Math.max(...levelValues);
+    const rangePadding = Math.max(
+      (maxLevel - minLevel) * 0.15,
+      Math.abs(initialPrice || 1) * 0.002,
+      0.5
+    );
+
+    const visibleMin = minLevel - rangePadding;
+    const visibleMax = maxLevel + rangePadding;
+
+    // ONE honest starting point, no fake history
+    series.setData([
+      { time: now, value: initialPrice },
+    ]);
+
+    chart.priceScale('right').applyOptions({
       autoScale: false,
       scaleMargins: { top: 0.20, bottom: 0.20 },
-    },
-    timeScale: {
-      borderColor: 'rgba(255,255,255,0.08)',
-      timeVisible: true,
-      secondsVisible: true,
-      rightOffset: 8,
-      barSpacing: 14,
-    },
-    crosshair: {
-      vertLine: { color: 'rgba(255,255,255,0.15)' },
-      horzLine: { color: 'rgba(255,255,255,0.15)' },
-    },
-    localization: {
-      priceFormatter: (price) => Number(price).toFixed(2),
-    },
-  });
+    });
 
-  const { LineSeries } = window.LightweightCharts;
+    series.applyOptions({
+      autoscaleInfoProvider: () => ({
+        priceRange: {
+          minValue: visibleMin,
+          maxValue: visibleMax,
+        },
+      }),
+    });
 
-  const series = chart.addSeries(LineSeries, {
-    color: '#22d3ee',
-    lineWidth: 2,
-    lineVisible: true,
-    pointMarkersVisible: false,
-    crosshairMarkerVisible: true,
-    priceLineVisible: false,
-    lastValueVisible: true,
-  });
-
- const seedPrice = Number(
-  livePrice ??
-  trade.currentPrice ??
-  trade.livePrice ??
-  trade.entry ??
-  trade.entry_price ??
-  0
-);
-
-  const now = Math.floor(Date.now() / 1000);
-  const initialPrice = seedPrice > 0 ? seedPrice : entry;
-
-  const levelValues = [initialPrice, entry, stop, fiveR];
-  if (target !== null && Number.isFinite(target)) {
-    levelValues.push(target);
-  }
-
-  const minLevel = Math.min(...levelValues);
-  const maxLevel = Math.max(...levelValues);
-  const rangePadding = Math.max(
-    (maxLevel - minLevel) * 0.15,
-    Math.abs(initialPrice || 1) * 0.002,
-    0.5
-  );
-
-  const visibleMin = minLevel - rangePadding;
-  const visibleMax = maxLevel + rangePadding;
-
-  // ONE honest starting point, no fake history
-  series.setData([
-    { time: now, value: initialPrice },
-  ]);
-
-  chart.priceScale('right').applyOptions({
-    autoScale: false,
-    scaleMargins: { top: 0.20, bottom: 0.20 },
-  });
-
-  series.applyOptions({
-    autoscaleInfoProvider: () => ({
-      priceRange: {
-        minValue: visibleMin,
-        maxValue: visibleMax,
-      },
-    }),
-  });
-
-  // Horizontal price lines for levels
-  series.createPriceLine({
-    price: entry,
-    color: '#60a5fa',
-    lineWidth: 2,
-    lineStyle: 0,
-    axisLabelVisible: true,
-    title: 'Entry',
-  });
-
-  series.createPriceLine({
-    price: stop,
-    color: '#f87171',
-    lineWidth: 2,
-    lineStyle: 2,
-    axisLabelVisible: true,
-    title: 'Stop',
-  });
-
-  if (target !== null && Number.isFinite(target)) {
+    // Horizontal price lines for levels
     series.createPriceLine({
-      price: target,
-      color: '#34d399',
+      price: entry,
+      color: '#60a5fa',
+      lineWidth: 2,
+      lineStyle: 0,
+      axisLabelVisible: true,
+      title: 'Entry',
+    });
+
+    series.createPriceLine({
+      price: stop,
+      color: '#f87171',
       lineWidth: 2,
       lineStyle: 2,
       axisLabelVisible: true,
-      title: 'Target',
+      title: 'Stop',
+    });
+
+    if (target !== null && Number.isFinite(target)) {
+      series.createPriceLine({
+        price: target,
+        color: '#34d399',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: 'Target',
+      });
+    }
+
+    series.createPriceLine({
+      price: fiveR,
+      color: '#fbbf24',
+      lineWidth: 2,
+      lineStyle: 1,
+      axisLabelVisible: true,
+      title: '5R',
+    });
+
+    chart.timeScale().fitContent();
+
+    this.chart = chart;
+    this.chartSeries = series;
+    this.chartLastTime = now;
+    this.chartMinVisiblePrice = visibleMin;
+    this.chartMaxVisiblePrice = visibleMax;
+
+    requestAnimationFrame(() => {
+      if (!this.chart || !this.elements.chartCanvas) return;
+
+      this.chart.applyOptions({
+        width: this.elements.chartCanvas.clientWidth || 700,
+      });
     });
   }
 
-  series.createPriceLine({
-    price: fiveR,
-    color: '#fbbf24',
-    lineWidth: 2,
-    lineStyle: 1,
-    axisLabelVisible: true,
-    title: '5R',
-  });
-
-  chart.timeScale().fitContent();
-
-  this.chart = chart;
-  this.chartSeries = series;
-  this.chartLastTime = now;
-  this.chartMinVisiblePrice = visibleMin;
-  this.chartMaxVisiblePrice = visibleMax;
-
-  requestAnimationFrame(() => {
-    if (!this.chart || !this.elements.chartCanvas) return;
-
-    this.chart.applyOptions({
-      width: this.elements.chartCanvas.clientWidth || 700,
-    });
-  });
-}
-
 
   startLiveChartFeed(trade) {
-  this.stopLiveChartFeed();
+    this.stopLiveChartFeed();
 
-  const ticker = String(trade.ticker || '').toUpperCase();
-  if (!ticker || !this.chart || !this.chartSeries) return;
+    const ticker = String(trade.ticker || '').toUpperCase();
+    if (!ticker || !this.chart || !this.chartSeries) return;
 
-  this.chartTicker = ticker;
+    this.chartTicker = ticker;
 
-  this.chartLiveUnsubscribe = subscribeToPrice(ticker, (payload) => {
-    this.handleLiveChartPrice(payload);
-  });
+    this.chartLiveUnsubscribe = subscribeToPrice(ticker, (payload) => {
+      this.handleLiveChartPrice(payload);
+    });
 
-  console.log('[positions] subscribed chart feed for', ticker);
-}
+  }
 
   stopLiveChartFeed() {
     if (typeof this.chartLiveUnsubscribe === 'function') {
       this.chartLiveUnsubscribe();
     }
     this.chartLiveUnsubscribe = null;
-this.chartTicker = null;
-this.chartDirection = null;
+    this.chartTicker = null;
+    this.chartDirection = null;
   }
 
 
-handleLiveChartPrice(payload) {
-  if (!this.chart || !this.chartSeries) return;
+  handleLiveChartPrice(payload) {
+    if (!this.chart || !this.chartSeries) return;
 
-  const symbol = String(payload.symbol || '').toUpperCase();
-  if (!symbol || symbol !== this.chartTicker) return;
+    const symbol = String(payload.symbol || '').toUpperCase();
+    if (!symbol || symbol !== this.chartTicker) return;
 
-  const price = Number(payload.price);
-if (!(price > 0)) return;
+    const price = Number(payload.price);
+    if (!(price > 0)) return;
 
-if (this.elements.chartSubtitle) {
-  this.elements.chartSubtitle.textContent =
-    `${this.chartDirection || 'LONG'} position • Live ${formatCurrency(price)}`;
-}
+    if (this.elements.chartSubtitle) {
+      this.elements.chartSubtitle.textContent =
+        `${this.chartDirection || 'LONG'} position • Live ${formatCurrency(price)}`;
+    }
 
-const now = Math.floor(Date.now() / 1000);
-  const nextTime = Math.max(now, (this.chartLastTime || now - 1) + 1);
+    const now = Math.floor(Date.now() / 1000);
+    const nextTime = Math.max(now, (this.chartLastTime || now - 1) + 1);
 
-  this.chartSeries.update({
-    time: nextTime,
-    value: price,
-  });
+    this.chartSeries.update({
+      time: nextTime,
+      value: price,
+    });
 
-  this.chartLastTime = nextTime;
+    this.chartLastTime = nextTime;
 
-  if (
-    Number.isFinite(this.chartMinVisiblePrice) &&
-    Number.isFinite(this.chartMaxVisiblePrice)
-  ) {
-    const nextMin = Math.min(this.chartMinVisiblePrice, price);
-    const nextMax = Math.max(this.chartMaxVisiblePrice, price);
+    if (
+      Number.isFinite(this.chartMinVisiblePrice) &&
+      Number.isFinite(this.chartMaxVisiblePrice)
+    ) {
+      const nextMin = Math.min(this.chartMinVisiblePrice, price);
+      const nextMax = Math.max(this.chartMaxVisiblePrice, price);
 
-    if (nextMin !== this.chartMinVisiblePrice || nextMax !== this.chartMaxVisiblePrice) {
-      const pad = Math.max((nextMax - nextMin) * 0.12, price * 0.002, 0.5);
-      this.chartMinVisiblePrice = nextMin;
-      this.chartMaxVisiblePrice = nextMax;
+      if (nextMin !== this.chartMinVisiblePrice || nextMax !== this.chartMaxVisiblePrice) {
+        const pad = Math.max((nextMax - nextMin) * 0.12, price * 0.002, 0.5);
+        this.chartMinVisiblePrice = nextMin;
+        this.chartMaxVisiblePrice = nextMax;
 
-      this.chart.priceScale('right').applyOptions({
-        autoScale: false,
-        scaleMargins: { top: 0.20, bottom: 0.20 },
-      });
+        this.chart.priceScale('right').applyOptions({
+          autoScale: false,
+          scaleMargins: { top: 0.20, bottom: 0.20 },
+        });
 
-      this.chartSeries.applyOptions({
-        autoscaleInfoProvider: () => ({
-          priceRange: {
-            minValue: nextMin - pad,
-            maxValue: nextMax + pad,
-          },
-        }),
-      });
+        this.chartSeries.applyOptions({
+          autoscaleInfoProvider: () => ({
+            priceRange: {
+              minValue: nextMin - pad,
+              maxValue: nextMax + pad,
+            },
+          }),
+        });
+      }
     }
   }
-}
 
   updateAddTradePreview() {
     const { direction, entry, stop, shares } = this.getAddTradeFormData();
@@ -859,6 +965,32 @@ const now = Math.floor(Date.now() / 1000);
     if (!this.elements.grid) return;
 
     this.elements.grid.innerHTML = positions.map(trade => {
+      const liveTrade = this.liveTradeMap.get(String(trade.id)) || null;
+
+      const currentPrice = Number(
+        liveTrade?.currentPrice ??
+        liveTrade?.current_price ??
+        liveTrade?.livePrice ??
+        liveTrade?.price ??
+        trade.currentPrice ??
+        trade.livePrice ??
+        NaN
+      );
+
+      const unrealizedPnL = Number(
+        liveTrade?.unrealizedPnL ??
+        liveTrade?.unrealized_pnl ??
+        liveTrade?.pnl ??
+        NaN
+      );
+
+      const unrealizedPnLPercent = Number(
+        liveTrade?.unrealizedPnLPercent ??
+        liveTrade?.unrealized_pnl_percent ??
+        liveTrade?.pnlPercent ??
+        liveTrade?.pnl_percent ??
+        NaN
+      );
       const shares = Number(trade.remainingShares ?? trade.remaining_shares ?? trade.shares ?? 0);
       const originalShares = Number(trade.originalShares ?? trade.original_shares ?? trade.shares ?? 0);
       const entry = Number(trade.entry ?? trade.entry_price ?? 0);
@@ -891,6 +1023,22 @@ const now = Math.floor(Date.now() / 1000);
       } else if (isTrimmed) {
         statusText = 'Trimmed';
       }
+      const livePnLClass =
+        Number.isFinite(unrealizedPnL)
+          ? (unrealizedPnL >= 0 ? 'text-success' : 'text-danger')
+          : '';
+
+      const livePnLText = Number.isFinite(unrealizedPnL)
+        ? `${unrealizedPnL >= 0 ? '+' : ''}${formatCurrency(unrealizedPnL)}`
+        : '—';
+
+      const livePnLPercentText = Number.isFinite(unrealizedPnLPercent)
+        ? `${unrealizedPnLPercent >= 0 ? '+' : ''}${formatPercent(unrealizedPnLPercent)}`
+        : '—';
+
+      const livePriceText = Number.isFinite(currentPrice)
+        ? formatCurrency(currentPrice)
+        : 'Waiting...';
 
       return `
         <div class="position-card ${isTrimmed ? 'position-card--trimmed' : ''}" data-id="${trade.id}">
@@ -912,18 +1060,22 @@ const now = Math.floor(Date.now() / 1000);
             </div>
             <div class="position-card__detail">
               <span class="position-card__detail-label">Entry</span>
-              <span class="position-card__detail-value">${formatCurrency(trade.entry)}</span>
+              <span class="position-card__detail-value">${formatCurrency(entry)}</span>
             </div>
             <div class="position-card__detail">
               <span class="position-card__detail-label">Stop</span>
               <span class="position-card__detail-value">${formatCurrency(activeStop)}</span>
             </div>
-            ${trade.target ? `
             <div class="position-card__detail">
-              <span class="position-card__detail-label">Target</span>
-              <span class="position-card__detail-value">${formatCurrency(trade.target)}</span>
-            </div>
-            ` : ''}
+  <span class="position-card__detail-label">Live</span>
+  <span class="position-card__detail-value" data-role="live-price">${livePriceText}</span>
+</div>
+            ${trade.target != null || trade.target_price != null ? `
+<div class="position-card__detail">
+  <span class="position-card__detail-label">Target</span>
+  <span class="position-card__detail-value">${formatCurrency(Number(trade.target ?? trade.target_price ?? 0))}</span>
+</div>
+` : ''}
           </div>
 
           <div class="position-card__risk">
@@ -931,6 +1083,14 @@ const now = Math.floor(Date.now() / 1000);
               <span class="position-card__risk-label">Open Risk</span>
               <span class="position-card__risk-value">${formatCurrency(netRisk)} (${formatPercent(riskPercent)})</span>
             </div>
+            <div class="position-card__risk-row">
+  <span class="position-card__risk-label">Live P&L</span>
+  <span class="position-card__risk-value ${livePnLClass}" data-role="live-pnl">${livePnLText}</span>
+</div>
+<div class="position-card__risk-row">
+  <span class="position-card__risk-label">P&L %</span>
+  <span class="position-card__risk-value ${livePnLClass}" data-role="live-pnl-percent">${livePnLPercentText}</span>
+</div>
             ${isTrimmed ? `
             <div class="position-card__risk-row position-card__realized">
               <span class="position-card__risk-label">Realized P&L</span>
@@ -955,7 +1115,6 @@ const now = Math.floor(Date.now() / 1000);
     }).join('');
 
     // Bind action buttons
-    this.bindCardActions();
   }
 
   bindCardActions() {
@@ -1000,6 +1159,13 @@ const now = Math.floor(Date.now() / 1000);
       this.elements.empty.classList.remove('positions-empty--visible');
     }
   }
+  destroy() {
+  if (typeof this.tradeUpdatesUnsubscribe === 'function') {
+    this.tradeUpdatesUnsubscribe();
+  }
+  this.tradeUpdatesUnsubscribe = null;
+  this.stopLiveChartFeed();
+}
 }
 
 export const positionsView = new PositionsView();

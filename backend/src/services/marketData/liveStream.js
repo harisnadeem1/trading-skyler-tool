@@ -97,6 +97,7 @@ function getConnectedUserIds() {
 module.exports = {
   addClient,
   removeClient,
+  sendToClient,
   broadcast,
   broadcastToUser,
   broadcastToUsers,

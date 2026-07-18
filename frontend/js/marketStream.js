@@ -77,10 +77,17 @@ function ensureStream() {
     if (!payload) return;
 
     const trades = Array.isArray(payload.trades) ? payload.trades : [];
+    const receivedAt = Date.now();
+    const updatedAt = payload.updatedAt || new Date().toISOString();
 
     trades.forEach((trade) => {
       const symbol = normalizeSymbol(trade.symbol || trade.ticker);
-      const price = Number(trade.currentPrice ?? trade.price);
+      const price = Number(
+        trade.currentPrice ??
+        trade.current_price ??
+        trade.livePrice ??
+        trade.price
+      );
 
       if (!symbol) return;
       if (!(price > 0)) return;
@@ -89,8 +96,8 @@ function ensureStream() {
         symbol,
         price,
         raw: trade,
-        updatedAt: trade.updatedAt || payload.updatedAt || new Date().toISOString(),
-        receivedAt: Date.now(),
+        updatedAt: trade.updatedAt || trade.updated_at || updatedAt,
+        receivedAt,
       };
 
       latestPriceBySymbol.set(symbol, update);
@@ -110,8 +117,8 @@ function ensureStream() {
     notifyTradeUpdates({
       trades,
       raw: payload,
-      updatedAt: payload.updatedAt || new Date().toISOString(),
-      receivedAt: Date.now(),
+      updatedAt,
+      receivedAt,
     });
   });
 

@@ -136,4 +136,5 @@ function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
 
 module.exports = {
   emitTradeUpdatesForSymbol,
+  buildTradeUpdate,
 };

@@ -1,8 +1,19 @@
-const { getAllPrices } = require('../services/marketData/priceCache');
-const { getTrackedSymbols, reloadOpenTrades } = require('../services/marketData/subscriptionManager');
+const { getAllPrices, getPrice } = require('../services/marketData/priceCache');
+const {
+  getTrackedSymbols,
+  reloadOpenTrades,
+  getAllTrackedTrades,
+  normalizeSymbol,
+} = require('../services/marketData/subscriptionManager');
 const { runSnapshotCycle } = require('../services/marketData/snapshotService');
 const finnhubService = require('../services/marketData/finnhubService');
-const { addClient, removeClient, getClientCount } = require('../services/marketData/liveStream');
+const {
+  addClient,
+  removeClient,
+  getClientCount,
+  sendToClient,
+} = require('../services/marketData/liveStream');
+const { buildTradeUpdate } = require('../services/marketData/liveTradeEmitter');
 
 async function testQuote(req, res) {
   try {
@@ -55,6 +66,63 @@ async function runSnapshots(req, res) {
   }
 }
 
+function getCachedPriceForSymbol(symbol) {
+  const normalized = normalizeSymbol(symbol);
+  const entry = getPrice(normalized);
+
+  if (!entry) return null;
+
+  const price = Number(entry.price);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function buildInitialTradesForUser(userId) {
+  const normalizedUserId = String(userId);
+  const trackedTrades = getAllTrackedTrades();
+
+  const updates = [];
+
+  for (const trade of trackedTrades) {
+    if (String(trade.user_id) !== normalizedUserId) continue;
+
+    const symbol = normalizeSymbol(trade.ticker);
+    const currentPrice = getCachedPriceForSymbol(symbol);
+    if (!(currentPrice > 0)) continue;
+
+    const update = buildTradeUpdate(trade, symbol, currentPrice);
+    if (update) {
+      updates.push(update);
+    }
+  }
+
+  return updates;
+}
+
+function sendInitialTradeSnapshot(res, userId) {
+  const trades = buildInitialTradesForUser(userId);
+
+//   console.log(
+//   '[marketController] initial snapshot payload',
+//   trades.map((trade) => ({
+//     tradeId: trade.tradeId,
+//     symbol: trade.symbol,
+//     currentPrice: trade.currentPrice,
+//   }))
+// );
+
+  sendToClient(res, 'trade-update', {
+    symbol: null,
+    currentPrice: null,
+    updatedAt: new Date().toISOString(),
+    snapshot: true,
+    trades,
+  });
+
+  console.log(
+    `[marketController] sent initial trade snapshot to user ${userId}: ${trades.length} trade(s)`
+  );
+}
+
 async function streamMarket(req, res) {
   const userId = req.user?.id ?? req.user?.userId ?? null;
 
@@ -65,7 +133,7 @@ async function streamMarket(req, res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'X-Accel-Buffering': 'no',
   });
 
@@ -75,18 +143,18 @@ async function streamMarket(req, res) {
 
   addClient(res, { userId });
 
-  res.write(
-    `event: connected\ndata: ${JSON.stringify({
-      ok: true,
-      message: 'Live stream connected',
-      userId: String(userId),
-      clients: getClientCount(),
-    })}\n\n`
-  );
+  sendToClient(res, 'connected', {
+    ok: true,
+    message: 'Live stream connected',
+    userId: String(userId),
+    clients: getClientCount(),
+  });
+
+  sendInitialTradeSnapshot(res, userId);
 
   const heartbeat = setInterval(() => {
     if (!res.writableEnded) {
-      res.write(`event: ping\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
+      sendToClient(res, 'ping', { ts: Date.now() });
     }
   }, 15000);
 

@@ -30,16 +30,22 @@ import { journalView } from './journalView.js';
 import { compoundView } from './compoundView.js';
 import { scansView } from './scansView.js';
 import { authManager } from './auth.js';
+import {
+  subscribeToTradeAlerts,
+  subscribeToMarketConnection,
+  closeMarketStream,
+} from './marketStream.js';
 
 let appInstance = null;
 
 class App {
   constructor() {
-  this.dashboardEls = {};
-  this.liveEventSource = null;
-  this.toastContainer = null;
-  this.init();
-}
+    this.dashboardEls = {};
+    this.toastContainer = null;
+    this.unsubscribeTradeAlerts = null;
+    this.unsubscribeMarketConnection = null;
+    this.init();
+  }
 
   init() {
     console.log('Initializing TradeDeck...');
@@ -83,8 +89,8 @@ class App {
       state.account.maxPositionPercent
     );
 
-    this.ensureToastContainer();
-this.connectLiveStream();
+        this.ensureToastContainer();
+    this.setupLiveNotifications();
 
     console.log('TradeDeck initialized successfully');
   }
@@ -263,68 +269,37 @@ this.connectLiveStream();
   this.toastContainer = container;
 }
 
-connectLiveStream() {
-  if (this.liveEventSource) return;
+setupLiveNotifications() {
+  if (typeof this.unsubscribeTradeAlerts === 'function') {
+    this.unsubscribeTradeAlerts();
+  }
 
-  const isLocal =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+  if (typeof this.unsubscribeMarketConnection === 'function') {
+    this.unsubscribeMarketConnection();
+  }
 
-  const streamUrl = isLocal
-    ? 'http://localhost:3000/api/market/stream'
-    : '/api/market/stream';
-
-  console.log('[liveStream] connecting to:', streamUrl);
-
-  const eventSource = new EventSource(streamUrl, { withCredentials: true });
-
-  eventSource.addEventListener('open', () => {
-    console.log('[liveStream] connected', {
-      url: streamUrl,
-      readyState: eventSource.readyState,
-    });
+  this.unsubscribeTradeAlerts = subscribeToTradeAlerts((payload) => {
+    this.handleTradeAlert(payload);
   });
 
-  eventSource.addEventListener('connected', (event) => {
-    console.log('[liveStream] connected event payload:', event.data);
-  });
-
-  eventSource.addEventListener('trade-alert', (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      console.log('[liveStream] trade-alert:', payload);
-      this.handleTradeAlert(payload);
-    } catch (error) {
-      console.error('Failed to parse trade-alert event:', error);
+  this.unsubscribeMarketConnection = subscribeToMarketConnection((payload) => {
+    if (payload?.type === 'error') {
+      console.error('[marketStream] connection error', payload.error);
     }
   });
-
-  eventSource.addEventListener('trade-closed', (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      console.log('[liveStream] trade-closed:', payload);
-      this.handleTradeClosed(payload);
-    } catch (error) {
-      console.error('Failed to parse trade-closed event:', error);
-    }
-  });
-
-  eventSource.onerror = (error) => {
-    console.error('[liveStream] connection error:', {
-      error,
-      url: streamUrl,
-      readyState: eventSource.readyState,
-    });
-  };
-
-  this.liveEventSource = eventSource;
 }
 
-disconnectLiveStream() {
-  if (this.liveEventSource) {
-    this.liveEventSource.close();
-    this.liveEventSource = null;
+teardownLiveNotifications() {
+  if (typeof this.unsubscribeTradeAlerts === 'function') {
+    this.unsubscribeTradeAlerts();
   }
+
+  if (typeof this.unsubscribeMarketConnection === 'function') {
+    this.unsubscribeMarketConnection();
+  }
+
+  this.unsubscribeTradeAlerts = null;
+  this.unsubscribeMarketConnection = null;
 }
 
 handleTradeAlert(payload) {
@@ -354,23 +329,7 @@ handleTradeAlert(payload) {
     }
   }
 }
-handleTradeClosed(payload) {
-  if (!payload) return;
 
-  const reasonText =
-    payload.reason === 'stop_hit'
-      ? 'Stop loss hit'
-      : payload.reason === 'target_hit'
-        ? 'Target hit'
-        : 'Trade closed';
-
-  this.showToast({
-    type: payload.reason === 'stop_hit' ? 'warning' : 'success',
-    title: reasonText,
-    message: `${payload.symbol} closed at ${Number(payload.exitPrice || 0).toFixed(2)}`,
-    duration: 5000,
-  });
-}
 
 showToast({
   type = 'info',
@@ -535,9 +494,10 @@ function setupAuthUI() {
     try {
       await authManager.logout();
     } finally {
-      if (appInstance && typeof appInstance.disconnectLiveStream === 'function') {
-        appInstance.disconnectLiveStream();
+        if (appInstance && typeof appInstance.teardownLiveNotifications === 'function') {
+        appInstance.teardownLiveNotifications();
       }
+      closeMarketStream();
       if (state && typeof state.reset === 'function') {
         state.reset();
       }
