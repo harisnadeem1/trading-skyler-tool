@@ -74,6 +74,7 @@ out/
 backend/uploads/
 backend/storage/
 backend/.cache/
+backend/src/config/ibkr-keys/
 
 # =========================
 # Database / local dev artifacts

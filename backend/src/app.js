@@ -31,4 +31,6 @@ app.use('/api/protected', protectedRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/market', marketRoutes);
 
+
+
 module.exports = app;

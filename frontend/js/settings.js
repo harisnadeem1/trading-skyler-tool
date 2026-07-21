@@ -7,16 +7,19 @@ import { parseNumber, formatCurrency, formatWithCommas } from './utils.js';
 import { showToast } from './ui.js';
 import { dataManager } from './dataManager.js';
 import { clearDataModal } from './clearDataModal.js';
+// import { initBrokerUI } from './broker.js';
 
 class Settings {
   constructor() {
     this.elements = {};
+
   }
 
   init() {
     this.cacheElements();
     this.bindEvents();
     this.loadAndApply();
+    // initBrokerUI();
 
     state.on('settingsChanged', () => {
       this.loadAndApply();

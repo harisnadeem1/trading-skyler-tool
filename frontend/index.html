@@ -1347,15 +1347,80 @@
         </div>
 
         <!-- Data Management -->
-        <div class="settings-section">
-          <h3 class="settings-section__title">Data Management</h3>
+       <div class="settings-section" >
+  <h3 class="settings-section__title">Data Management</h3>
 
-          <div class="btn-group btn-group--vertical">
-            <button class="btn btn--secondary" id="exportDataBtn">Export All Data</button>
-            <button class="btn btn--secondary" id="importDataBtn">Import Data</button>
-            <button class="btn btn--ghost text-danger" id="clearDataBtn">Clear All Data</button>
-          </div>
-        </div>
+  <div class="btn-group btn-group--vertical">
+    <button class="btn btn--secondary" id="exportDataBtn">Export All Data</button>
+    <button class="btn btn--secondary" id="importDataBtn">Import Data</button>
+    <button class="btn btn--ghost text-danger" id="clearDataBtn">Clear All Data</button>
+  </div>
+</div>
+
+<!-- <div class="settings-section" id="ibkrSection">
+  <h3 class="settings-section__title">IBKR Integration</h3>
+
+  <div class="btn-group btn-group--vertical">
+    <button class="btn btn--secondary" id="connectIbkrBtn" type="button">
+      Connect IBKR
+    </button>
+
+    <button
+      class="btn btn--secondary"
+      id="reconnectIbkrBtn"
+      type="button"
+      style="display: none;"
+    >
+      Reconnect IBKR
+    </button>
+
+    <button
+      class="btn btn--secondary"
+      id="syncIbkrBtn"
+      type="button"
+      style="display: none;"
+    >
+      Sync IBKR Trades
+    </button>
+  </div>
+
+  <div
+    class="input-group"
+    id="ibkrAccountSelectWrap"
+    style="display: none; margin-top: var(--space-4);"
+  >
+    <label class="input-label" for="ibkrAccountSelect">Select IBKR Account</label>
+
+    <select class="input input--mono" id="ibkrAccountSelect">
+      <option value="">Select IBKR account</option>
+    </select>
+
+    <span class="input-hint">
+      Login happens in localhost gateway first, then choose the IBKR account here.
+    </span>
+
+    <button
+      class="btn btn--secondary btn--full"
+      id="confirmIbkrAccountBtn"
+      type="button"
+      style="margin-top: var(--space-3);"
+    >
+      Confirm Account
+    </button>
+  </div>
+
+  <div class="account-summary" style="margin-top: var(--space-4);">
+    <div class="account-summary__row">
+      <span class="account-summary__label">Status</span>
+      <span class="account-summary__value" id="ibkrStatusText">IBKR not connected</span>
+    </div>
+
+    <div class="account-summary__row">
+      <span class="account-summary__label">Imported Trades</span>
+      <span class="account-summary__value" id="ibkrTradesCount">0</span>
+    </div>
+  </div>
+</div> -->
       </div>
 
       <div class="settings-panel__footer">

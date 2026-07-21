@@ -51,4 +51,12 @@ export const api = {
     apiRequest(path, {
       method: 'DELETE',
     }),
+
+  // connectIbkr: () => api.get('/broker/connect/ibkr'),
+  // getBrokerStatus: () => api.get('/broker/status'),
+  // getBrokerAccounts: () => api.get('/broker/accounts'),
+  // selectBrokerAccount: (body) => api.post('/broker/account/select', body),
+  // syncBrokerTrades: () => api.post('/broker/sync', {}),
+  // disconnectBroker: () => api.post('/broker/disconnect', {}),
+  // getBrokerTrades: () => api.get('/broker/trades'),
 };
