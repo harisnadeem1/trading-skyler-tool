@@ -108,6 +108,35 @@ async function openOrders(req, res) {
   }
 }
 
+
+async function accountSummary(req, res) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ message: 'Missing bridge token' });
+
+    const client = await bridgeService.getBridgeClientFromToken(token);
+    if (!client) return res.status(401).json({ message: 'Invalid bridge token' });
+
+    await bridgeService.touchHeartbeat(client.id);
+
+    const summary = req.body || {};
+    console.log('[BridgeController] /account-summary received:', summary);
+
+    if (summary?.netLiquidation) {
+      console.log(
+        `[BridgeController] Account total for user ${client.userid}: ${summary.netLiquidation.value} ${summary.netLiquidation.currency}`
+      );
+    }
+
+    const result = await bridgeService.ingestAccountSummary(client.userid, summary);
+
+    res.json({ ok: true, received: true, result });
+  } catch (error) {
+    console.error('accountSummary error:', error);
+    res.status(500).json({ message: 'Account summary ingest failed' });
+  }
+}
+
 module.exports = {
   registerBridge,
   bridgeStatus,
@@ -115,4 +144,5 @@ module.exports = {
   executions,
   positions,
   openOrders,
+  accountSummary,
 };

@@ -736,6 +736,99 @@ async function ingestPositions(userid, positions) {
   return { received: positions.length };
 }
 
+
+async function syncJournalFromOpenOrder(userid, order) {
+  const parentOrderId =
+    order?.parentId !== undefined && order?.parentId !== null
+      ? String(order.parentId)
+      : null;
+
+  if (!parentOrderId) {
+    return { updated: false, reason: 'missing_parent_order_id' };
+  }
+
+  const symbol = normalizeSymbol(order);
+
+  const brokerTradeRes = await pool.query(
+    `
+    SELECT id
+    FROM broker_trades
+    WHERE userid = $1
+      AND ibkrorderid = $2
+      AND symbol = $3
+    ORDER BY executedat DESC
+    LIMIT 1
+    `,
+    [userid, parentOrderId, symbol]
+  );
+
+  const brokerTrade = brokerTradeRes.rows[0];
+  if (!brokerTrade) {
+    return { updated: false, reason: 'parent_broker_trade_not_found' };
+  }
+
+  const journalRes = await pool.query(
+    `
+    SELECT *
+    FROM journal_entries
+    WHERE user_id = $1
+      AND broker_trade_id = $2
+      AND status IN ('open', 'trimmed')
+    ORDER BY opened_at DESC
+    LIMIT 1
+    `,
+    [userid, brokerTrade.id]
+  );
+
+  const entry = journalRes.rows[0];
+  if (!entry) {
+    return { updated: false, reason: 'journal_entry_not_found' };
+  }
+
+  const orderType = String(order.orderType || '').toUpperCase();
+  const stopPrice =
+    orderType === 'STP' || orderType === 'STP LMT' || orderType === 'STP_LMT'
+      ? toNumberOrNull(order.auxPrice)
+      : null;
+  const targetPrice = orderType === 'LMT' ? toNumberOrNull(order.lmtPrice) : null;
+
+  if (stopPrice == null && targetPrice == null) {
+    return { updated: false, reason: 'not_stop_or_target_update' };
+  }
+
+  const nextStopPrice = stopPrice ?? toNumberOrNull(entry.stop_price);
+  const nextTargetPrice = targetPrice ?? toNumberOrNull(entry.target_price);
+
+  const updated = await pool.query(
+    `
+    UPDATE journal_entries
+    SET
+      stop_price = COALESCE($3, stop_price),
+      current_stop = COALESCE($3, current_stop),
+      target_price = COALESCE($4, target_price),
+      updated_at = now()
+    WHERE id = $1 AND user_id = $2
+    RETURNING *
+    `,
+    [entry.id, userid, stopPrice, targetPrice]
+  );
+
+  const updatedEntry = updated.rows[0];
+
+  if (updatedEntry) {
+    await syncLiveMarketForEntry(userid, updatedEntry);
+  }
+
+  return {
+    updated: !!updatedEntry,
+    entry: updatedEntry || null,
+    stopPrice: nextStopPrice,
+    targetPrice: nextTargetPrice,
+  };
+}
+
+
+
 async function ingestOpenOrders(userid, orders) {
   let received = 0;
   let journalCreated = 0;
@@ -748,6 +841,19 @@ async function ingestOpenOrders(userid, orders) {
 
     await upsertOpenOrder(userid, order);
     received++;
+
+    try {
+  const syncResult = await syncJournalFromOpenOrder(userid, order);
+  if (syncResult.updated) {
+    console.log('[Bridge] journal updated from open order:', {
+      orderId: order.orderId,
+      stopPrice: syncResult.stopPrice,
+      targetPrice: syncResult.targetPrice,
+    });
+  }
+} catch (err) {
+  console.error('[Bridge] syncJournalFromOpenOrder error:', err);
+}
 
     const orderType = String(order.orderType || '').toUpperCase();
     const isStopChild =
@@ -888,6 +994,48 @@ if (entry) {
   return { received, journalCreated, skipped };
 }
 
+async function ingestAccountSummary(userId, summary) {
+  const netLiquidation = summary?.netLiquidation?.value;
+  const currency = summary?.netLiquidation?.currency || null;
+
+  if (netLiquidation == null) {
+    return { updated: false, reason: 'missing_net_liquidation' };
+  }
+
+  const amount = Number(netLiquidation);
+
+  if (Number.isNaN(amount)) {
+    return { updated: false, reason: 'invalid_net_liquidation' };
+  }
+
+  const query = `
+    INSERT INTO user_settings (
+      user_id,
+      starting_account_size,
+      current_account_size,
+      updated_at
+    )
+    VALUES ($1, $2, $2, now())
+    ON CONFLICT (user_id)
+    DO UPDATE SET
+      starting_account_size = $2,
+      current_account_size = $2,
+      updated_at = now()
+    RETURNING user_id, starting_account_size, current_account_size
+  `;
+
+  const values = [userId, amount];
+  const { rows } = await pool.query(query, values);
+
+  console.log('[BridgeService] user_settings DB returned:', rows[0]);
+
+  return {
+    updated: true,
+    userSettings: rows[0],
+    currency,
+  };
+}
+
 module.exports = {
   registerBridge,
   getBridgeStatus,
@@ -896,4 +1044,5 @@ module.exports = {
   ingestExecutions,
   ingestPositions,
   ingestOpenOrders,
+  ingestAccountSummary,
 };
