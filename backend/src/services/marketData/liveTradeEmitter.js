@@ -90,7 +90,7 @@ function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
   const numericPrice = Number(currentPrice);
 
   if (!normalizedSymbol || !Number.isFinite(numericPrice)) {
-    console.log('[liveTradeEmitter] skipped invalid tick:', { symbol, currentPrice });
+    // console.log('[liveTradeEmitter] skipped invalid tick:', { symbol, currentPrice });
     return;
   }
 
@@ -98,9 +98,9 @@ function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
     return;
   }
 
-  console.log(
-    `[liveTradeEmitter] tick ${normalizedSymbol} @ ${numericPrice} | matched trades: ${trades.length}`
-  );
+  // console.log(
+  //   `[liveTradeEmitter] tick ${normalizedSymbol} @ ${numericPrice} | matched trades: ${trades.length}`
+  // );
 
   const updatesByUser = new Map();
 
@@ -129,9 +129,9 @@ function emitTradeUpdatesForSymbol(symbol, currentPrice, trades = []) {
     });
   }
 
-  console.log(
-    `[liveTradeEmitter] broadcasted trade-update for ${normalizedSymbol} to ${emittedUserCount} user(s), ${emittedTradeCount} trade(s)`
-  );
+  // console.log(
+  //   `[liveTradeEmitter] broadcasted trade-update for ${normalizedSymbol} to ${emittedUserCount} user(s), ${emittedTradeCount} trade(s)`
+  // );
 }
 
 module.exports = {

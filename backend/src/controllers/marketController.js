@@ -118,9 +118,9 @@ function sendInitialTradeSnapshot(res, userId) {
     trades,
   });
 
-  console.log(
-    `[marketController] sent initial trade snapshot to user ${userId}: ${trades.length} trade(s)`
-  );
+  // console.log(
+  //   `[marketController] sent initial trade snapshot to user ${userId}: ${trades.length} trade(s)`
+  // );
 }
 
 async function streamMarket(req, res) {

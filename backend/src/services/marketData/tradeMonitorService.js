@@ -127,11 +127,11 @@ async function processLivePriceUpdate({
   const currentPrice = toNumber(price, NaN);
 
   if (!normalizedSymbol || !Number.isFinite(currentPrice)) {
-    console.log('[tradeMonitorService] skipped invalid price update:', {
-      symbol,
-      price,
-      timestamp,
-    });
+    // console.log('[tradeMonitorService] skipped invalid price update:', {
+    //   symbol,
+    //   price,
+    //   timestamp,
+    // });
     return [];
   }
 
@@ -139,9 +139,9 @@ async function processLivePriceUpdate({
     return [];
   }
 
-  console.log(
-    `[tradeMonitorService] processing ${normalizedSymbol} @ ${currentPrice} | matched trades: ${trades.length}`
-  );
+  // console.log(
+  //   `[tradeMonitorService] processing ${normalizedSymbol} @ ${currentPrice} | matched trades: ${trades.length}`
+  // );
 
   const triggered = [];
 
@@ -253,10 +253,10 @@ async function processLivePriceUpdate({
         }
       }
     } catch (error) {
-      console.error(
-        `[tradeMonitorService] failed processing trade ${trade.id} (${trade.ticker})`,
-        error
-      );
+      // console.error(
+      //   `[tradeMonitorService] failed processing trade ${trade.id} (${trade.ticker})`,
+      //   error
+      // );
     }
   }
 

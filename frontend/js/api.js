@@ -32,31 +32,73 @@ async function apiRequest(path, options = {}) {
 
 export const api = {
   get: (path) => apiRequest(path),
+
   post: (path, body) =>
     apiRequest(path, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+
   put: (path, body) =>
     apiRequest(path, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+
   patch: (path, body) =>
     apiRequest(path, {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+
   delete: (path) =>
     apiRequest(path, {
       method: 'DELETE',
     }),
 
-  // connectIbkr: () => api.get('/broker/connect/ibkr'),
-  // getBrokerStatus: () => api.get('/broker/status'),
-  // getBrokerAccounts: () => api.get('/broker/accounts'),
-  // selectBrokerAccount: (body) => api.post('/broker/account/select', body),
-  // syncBrokerTrades: () => api.post('/broker/sync', {}),
-  // disconnectBroker: () => api.post('/broker/disconnect', {}),
-  // getBrokerTrades: () => api.get('/broker/trades'),
+  connectIbkr: () => apiRequest('/broker/connect/ibkr'),
+getBrokerStatus: () => apiRequest('/broker/status'),
+getBrokerAccounts: () => apiRequest('/broker/accounts'),
+selectBrokerAccount: (body) =>
+  apiRequest('/broker/account/select', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }),
+syncBrokerTrades: () =>
+  apiRequest('/broker/sync', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  }),
+disconnectBroker: () =>
+  apiRequest('/broker/disconnect', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  }),
+getBrokerTrades: () => apiRequest('/broker/trades'),
+
+
+registerBridge: (body) => api.post('/broker/bridge/register', body),
+getBridgeStatus: () => api.get('/broker/bridge/status'),
+
+
+getIbkrFlexStatus: () => apiRequest('/ibkr/flex/status'),
+
+connectIbkrFlex: (body) =>
+  apiRequest('/ibkr/flex/connect', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }),
+
+syncIbkrFlex: () =>
+  apiRequest('/ibkr/flex/sync-now', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  }),
+
+disconnectIbkrFlex: () =>
+  apiRequest('/ibkr/flex/disconnect', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  }),
+
 };

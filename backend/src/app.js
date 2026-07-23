@@ -9,6 +9,11 @@ const adminRoutes = require('./routes/adminRoutes');
 const protectedRoutes = require('./routes/protectedRoutes');
 const userRoutes = require('./routes/userRoutes');
 const marketRoutes = require('./routes/marketRoutes');
+const brokerRoutes = require('./routes/brokeRoutes');
+const bridgeRoutes = require('./routes/bridgeRoutes');
+const ibkrFlexRoutes = require('./routes/ibkrFlexRoutes');
+
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -30,6 +35,12 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/broker', brokerRoutes);
+
+app.use('/api', bridgeRoutes);
+app.use('/api/ibkr/flex', ibkrFlexRoutes);
+
+
 
 
 

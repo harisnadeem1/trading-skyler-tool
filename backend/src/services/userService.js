@@ -183,6 +183,7 @@ async function createJournalEntry(userId, payload) {
     `
     INSERT INTO journal_entries (
       user_id,
+      broker_trade_id,
       ticker,
       direction,
       entry_price,
@@ -213,19 +214,20 @@ async function createJournalEntry(userId, payload) {
       $6, $7, $8, $9, $10,
       $11, $12, $13, $14, $15,
       $16, $17, $18, $19, $20,
-      $21, $22, $23, $24, $25
+      $21, $22, $23, $24, $25, $26
     )
     RETURNING *
     `,
     [
       userId,
+      payload.broker_trade_id ?? null,
       payload.ticker,
       direction,
       payload.entry_price ?? payload.entry,
       payload.stop_price ?? payload.stop,
       payload.target_price ?? payload.target ?? null,
-      payload.original_stop ?? payload.stop ?? null,
-      payload.current_stop ?? payload.stop ?? null,
+      payload.original_stop ?? payload.stop_price ?? payload.stop ?? null,
+      payload.current_stop ?? payload.stop_price ?? payload.stop ?? null,
       payload.shares ?? 0,
       payload.original_shares ?? payload.shares ?? 0,
       payload.remaining_shares ?? payload.shares ?? 0,

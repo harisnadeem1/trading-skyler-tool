@@ -6,6 +6,7 @@ const pool = require('./config/db');
 const finnhubService = require('./services/marketData/finnhubService');
 const { reloadOpenTrades } = require('./services/marketData/subscriptionManager');
 const { startTradeSnapshotJob } = require('./jobs/tradeSnapshotJob');
+const { startIbkrFlexPolling } = require('./jobs/ibkrFlexPollingJob');
 
 const PORT = process.env.PORT || 3000;
 const ENABLE_FINNHUB_WS = process.env.ENABLE_FINNHUB_WS === 'true';
@@ -36,6 +37,14 @@ async function startServer() {
     } else {
       console.log('Trade snapshot job disabled by environment');
     }
+
+
+
+startIbkrFlexPolling();
+
+
+
+
 
     require('dotenv').config();
 console.log({

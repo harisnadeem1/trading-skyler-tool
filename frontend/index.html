@@ -800,25 +800,26 @@
         </div>
 
         <!-- Position Chart Modal -->
-<div class="position-chart-modal" id="positionChartModal" aria-hidden="true">
-  <div class="position-chart-modal__overlay" id="positionChartOverlay"></div>
+        <div class="position-chart-modal" id="positionChartModal" aria-hidden="true">
+          <div class="position-chart-modal__overlay" id="positionChartOverlay"></div>
 
-  <div class="position-chart-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="positionChartTitle">
-    <div class="position-chart-modal__header">
-      <div>
-        <h2 class="position-chart-modal__title" id="positionChartTitle">Trade Chart</h2>
-        <p class="position-chart-modal__subtitle" id="positionChartSubtitle">-</p>
-      </div>
+          <div class="position-chart-modal__dialog" role="dialog" aria-modal="true"
+            aria-labelledby="positionChartTitle">
+            <div class="position-chart-modal__header">
+              <div>
+                <h2 class="position-chart-modal__title" id="positionChartTitle">Trade Chart</h2>
+                <p class="position-chart-modal__subtitle" id="positionChartSubtitle">-</p>
+              </div>
 
-      <button class="position-chart-modal__close" id="positionChartClose" aria-label="Close chart">×</button>
-    </div>
+              <button class="position-chart-modal__close" id="positionChartClose" aria-label="Close chart">×</button>
+            </div>
 
-    <div class="position-chart-modal__body">
-      <div class="position-chart-legend" id="positionChartLegend"></div>
-      <div class="position-chart-canvas" id="positionChartCanvas"></div>
-    </div>
-  </div>
-</div>
+            <div class="position-chart-modal__body">
+              <div class="position-chart-legend" id="positionChartLegend"></div>
+              <div class="position-chart-canvas" id="positionChartCanvas"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- Empty State -->
         <div class="positions-empty" id="positionsEmpty">
@@ -1347,17 +1348,108 @@
         </div>
 
         <!-- Data Management -->
-       <div class="settings-section" >
-  <h3 class="settings-section__title">Data Management</h3>
+        <div class="settings-section">
+          <h3 class="settings-section__title">Data Management</h3>
+
+          <div class="btn-group btn-group--vertical">
+            <button class="btn btn--secondary" id="exportDataBtn">Export All Data</button>
+            <button class="btn btn--secondary" id="importDataBtn">Import Data</button>
+            <button class="btn btn--ghost text-danger" id="clearDataBtn">Clear All Data</button>
+          </div>
+        </div>
+
+
+        <div class="settings-section">
+          <h3 class="settings-section__title">Broker Connection</h3>
+
+          <div class="btn-group btn-group--vertical">
+            <button class="btn btn--secondary" id="syncBrokerTradesBtn" type="button">Sync Broker Trades</button>
+
+            <button class="btn btn--secondary" id="connectIbkrBtn">Connect IBKR</button>
+          </div>
+
+          <p id="ibkrConnectMessage"></p>
+        </div>
+
+
+        <div class="settings-section settings-section--bridge">
+          <h3 class="settings-section__title">TWS Bridge</h3>
+
+          <p class="settings-section__text" id="bridgeStatusText">Bridge status: checking...</p>
+          <p class="settings-section__text settings-section__text--muted" id="bridgeLastSeenText"></p>
+
+          <div class="btn-group btn-group--vertical">
+            <button class="btn btn--secondary" id="generateBridgeTokenBtn" type="button">
+              Generate Bridge Token
+            </button>
+          </div>
+
+          <div class="bridge-token-card" id="bridgeTokenBox" hidden>
+            <div class="bridge-token-card__header">
+              <span class="bridge-token-card__label">Bridge Token</span>
+              <button class="btn btn--secondary btn--sm bridge-token-card__copy" id="copyBridgeTokenBtn" type="button">
+                Copy
+              </button>
+            </div>
+
+            <code class="bridge-token-card__value" id="bridgeTokenValue"></code>
+
+            <p class="bridge-token-card__help">
+              Copy this token now and paste it into your local bridge <strong>.env</strong>.
+            </p>
+          </div>
+        </div>
+
+
+        <div class="settings-section" id="ibkrFlexSection">
+  <h3 class="settings-section__title">IBKR Flex Import</h3>
+
+  <p class="settings-section__text settings-section__text--muted">
+    Near-live trade import using IBKR Flex token and query IDs.
+  </p>
+
+  <p id="ibkrFlexStatusText" class="settings-section__text">Status: checking...</p>
+
+  <div class="input-group">
+    <label class="input-label" for="flexToken">Flex Token</label>
+    <input type="text" class="input input--mono" id="flexToken" autocomplete="off">
+    <span class="input-hint">Paste your IBKR Flex Web Service token.</span>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="flexTokenExpiresAt">Token Expiry (optional)</label>
+    <input type="datetime-local" class="input input--mono" id="flexTokenExpiresAt">
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="tradeConfirmQueryId">Trade Confirmation Query ID</label>
+    <input type="text" class="input input--mono" id="tradeConfirmQueryId" autocomplete="off">
+    <span class="input-hint">Used for same-day near-live execution imports.</span>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="activityQueryId">Activity Query ID (optional)</label>
+    <input type="text" class="input input--mono" id="activityQueryId" autocomplete="off">
+    <span class="input-hint">Used for history/backfill and reconciliation.</span>
+  </div>
 
   <div class="btn-group btn-group--vertical">
-    <button class="btn btn--secondary" id="exportDataBtn">Export All Data</button>
-    <button class="btn btn--secondary" id="importDataBtn">Import Data</button>
-    <button class="btn btn--ghost text-danger" id="clearDataBtn">Clear All Data</button>
+    <button class="btn btn--secondary" id="saveIbkrFlexBtn" type="button">
+      Save Flex Connection
+    </button>
+
+    <button class="btn btn--secondary" id="syncIbkrFlexBtn" type="button">
+      Sync Flex Trades Now
+    </button>
+
+    <button class="btn btn--ghost text-danger" id="disconnectIbkrFlexBtn" type="button">
+      Disconnect Flex
+    </button>
   </div>
 </div>
 
-<!-- <div class="settings-section" id="ibkrSection">
+
+        <!-- <div class="settings-section" id="ibkrSection">
   <h3 class="settings-section__title">IBKR Integration</h3>
 
   <div class="btn-group btn-group--vertical">
@@ -2128,6 +2220,7 @@
   <!-- Scripts -->
   <script type="module" src="js/main.js"></script>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script type="module" src="./js/ibkr-flex.js"></script>
 
 </body>
 

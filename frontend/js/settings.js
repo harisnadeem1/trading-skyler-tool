@@ -7,11 +7,14 @@ import { parseNumber, formatCurrency, formatWithCommas } from './utils.js';
 import { showToast } from './ui.js';
 import { dataManager } from './dataManager.js';
 import { clearDataModal } from './clearDataModal.js';
+
+import { api } from './api.js';
 // import { initBrokerUI } from './broker.js';
 
 class Settings {
   constructor() {
     this.elements = {};
+    this.bridgeStatusInterval = null;
 
   }
 
@@ -19,6 +22,8 @@ class Settings {
     this.cacheElements();
     this.bindEvents();
     this.loadAndApply();
+
+    this.startBridgeStatusPolling();
     // initBrokerUI();
 
     state.on('settingsChanged', () => {
@@ -58,6 +63,17 @@ class Settings {
       exportDataBtn: document.getElementById('exportDataBtn'),
       importDataBtn: document.getElementById('importDataBtn'),
       clearDataBtn: document.getElementById('clearDataBtn'),
+syncBrokerTradesBtn: document.getElementById('syncBrokerTradesBtn'),
+connectIbkrBtn: document.getElementById('connectIbkrBtn'),
+ibkrConnectMessage: document.getElementById('ibkrConnectMessage'),
+
+generateBridgeTokenBtn: document.getElementById('generateBridgeTokenBtn'),
+bridgeTokenBox: document.getElementById('bridgeTokenBox'),
+bridgeTokenValue: document.getElementById('bridgeTokenValue'),
+bridgeStatusText: document.getElementById('bridgeStatusText'),
+bridgeLastSeenText: document.getElementById('bridgeLastSeenText'),
+copyBridgeTokenBtn: document.getElementById('copyBridgeTokenBtn'),
+
 
       summaryStarting: document.getElementById('summaryStarting'),
       summaryPnL: document.getElementById('summaryPnL'),
@@ -204,7 +220,145 @@ class Settings {
     if (this.elements.settingsPanel) {
       this.elements.settingsPanel.addEventListener('click', (e) => this.handlePresetClick(e));
     }
+
+
+
+    if (this.elements.connectIbkrBtn) {
+  this.elements.connectIbkrBtn.addEventListener('click', async () => {
+    try {
+      this.elements.connectIbkrBtn.disabled = true;
+
+      if (this.elements.ibkrConnectMessage) {
+        this.elements.ibkrConnectMessage.textContent = 'Checking IBKR Gateway session...';
+      }
+
+      const result = await api.connectIbkr();
+
+      if (this.elements.ibkrConnectMessage) {
+        this.elements.ibkrConnectMessage.textContent =
+          result?.message || 'IBKR Gateway connected successfully';
+      }
+
+      showToast(result?.message || 'IBKR connected', 'success');
+    } catch (error) {
+  const errorMessage = error.message || 'Failed to connect to IBKR Gateway';
+
+  if (this.elements.ibkrConnectMessage) {
+    this.elements.ibkrConnectMessage.textContent = errorMessage;
   }
+
+  showToast(errorMessage, 'error');
+
+  const shouldOpenGateway =
+    error.status === 401 ||
+    error.status === 403 ||
+    /not authenticated|log in|gateway|reauth/i.test(errorMessage);
+
+  if (shouldOpenGateway) {
+    if (this.elements.ibkrConnectMessage) {
+      this.elements.ibkrConnectMessage.textContent =
+        `${errorMessage} Opening IBKR Gateway login...`;
+    }
+
+    setTimeout(() => {
+      window.open('https://localhost:5000/', '_blank', 'noopener,noreferrer');
+    }, 500);
+  }
+} finally {
+      this.elements.connectIbkrBtn.disabled = false;
+    }
+  });
+}
+
+
+if (this.elements.syncBrokerTradesBtn) {
+  this.elements.syncBrokerTradesBtn.addEventListener('click', async () => {
+    try {
+      this.elements.syncBrokerTradesBtn.disabled = true;
+
+      if (this.elements.ibkrConnectMessage) {
+        this.elements.ibkrConnectMessage.textContent = 'Syncing latest IBKR trades...';
+      }
+
+      const result = await api.syncBrokerTrades();
+
+      if (this.elements.ibkrConnectMessage) {
+        this.elements.ibkrConnectMessage.textContent =
+          result?.message || `IBKR sync completed. Imported ${result?.imported ?? 0} trade(s).`;
+      }
+
+      showToast(
+        result?.message || `IBKR sync completed. Imported ${result?.imported ?? 0} trade(s).`,
+        'success'
+      );
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to sync IBKR trades';
+
+      if (this.elements.ibkrConnectMessage) {
+        this.elements.ibkrConnectMessage.textContent = errorMessage;
+      }
+
+      showToast(errorMessage, 'error');
+
+      const shouldOpenGateway =
+        error.status === 401 ||
+        error.status === 403 ||
+        /not authenticated|log in|gateway|reauth/i.test(errorMessage);
+
+      if (shouldOpenGateway) {
+        if (this.elements.ibkrConnectMessage) {
+          this.elements.ibkrConnectMessage.textContent =
+            `${errorMessage} Opening IBKR Gateway login...`;
+        }
+
+        setTimeout(() => {
+          window.open('https://localhost:5000/', '_blank', 'noopener,noreferrer');
+        }, 500);
+      }
+    } finally {
+      this.elements.syncBrokerTradesBtn.disabled = false;
+    }
+  });
+}
+
+if (this.elements.generateBridgeTokenBtn) {
+  this.elements.generateBridgeTokenBtn.addEventListener('click', async () => {
+    try {
+      this.elements.generateBridgeTokenBtn.disabled = true;
+
+      const result = await api.registerBridge({ label: 'Client PC' });
+
+      if (this.elements.bridgeTokenValue) {
+        this.elements.bridgeTokenValue.textContent = result.bridgeToken;
+      }
+
+      if (this.elements.bridgeTokenBox) {
+        this.elements.bridgeTokenBox.hidden = false;
+      }
+
+      showToast('Bridge token generated', 'success');
+      this.loadBridgeStatus();
+    } catch (error) {
+      console.error('Failed to generate bridge token:', error);
+      showToast(error.message || 'Failed to generate bridge token', 'error');
+    } finally {
+      this.elements.generateBridgeTokenBtn.disabled = false;
+    }
+  });
+}
+
+
+if (this.elements.copyBridgeTokenBtn) {
+  this.elements.copyBridgeTokenBtn.addEventListener('click', () => {
+    this.copyBridgeToken();
+  });
+}
+
+
+  }
+
+
+  
 
   async handlePresetClick(e) {
     const btn = e.target.closest('.preset-btn[data-setting]');
@@ -326,6 +480,89 @@ class Settings {
     this.updateAccountDisplay(state.account.currentSize);
     this.updateSummary();
   }
+
+
+  async loadBridgeStatus() {
+  try {
+    if (!this.elements.bridgeStatusText) return;
+
+    const status = await api.getBridgeStatus();
+
+    if (!status.registered) {
+      this.elements.bridgeStatusText.textContent = 'Bridge status: not registered';
+      if (this.elements.bridgeLastSeenText) {
+        this.elements.bridgeLastSeenText.textContent = '';
+      }
+      return;
+    }
+
+    this.elements.bridgeStatusText.textContent = `Bridge status: ${status.status}`;
+
+    if (this.elements.bridgeLastSeenText) {
+      this.elements.bridgeLastSeenText.textContent = status.lastSeenAt
+        ? `Last seen: ${new Date(status.lastSeenAt).toLocaleString()}`
+        : '';
+    }
+  } catch (error) {
+    console.error('Failed to load bridge status:', error);
+    if (this.elements.bridgeStatusText) {
+      this.elements.bridgeStatusText.textContent = 'Bridge status: unavailable';
+    }
+  }
+}
+
+
+async copyBridgeToken() {
+  try {
+    const token = this.elements.bridgeTokenValue?.textContent?.trim();
+    if (!token) {
+      showToast('No bridge token to copy', 'error');
+      return;
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(token);
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = token;
+      textArea.setAttribute('readonly', '');
+      textArea.style.position = 'absolute';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+
+    const btn = this.elements.copyBridgeTokenBtn;
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1500);
+    }
+
+    showToast('Bridge token copied', 'success');
+  } catch (error) {
+    console.error('Copy bridge token failed:', error);
+    showToast('Failed to copy bridge token', 'error');
+  }
+}
+
+startBridgeStatusPolling() {
+  if (this.bridgeStatusInterval) {
+    clearInterval(this.bridgeStatusInterval);
+  }
+
+  this.loadBridgeStatus();
+  this.bridgeStatusInterval = setInterval(() => {
+    this.loadBridgeStatus();
+  }, 20000);
+}
 
   open() {
     this.elements.settingsPanel?.classList.add('open');
