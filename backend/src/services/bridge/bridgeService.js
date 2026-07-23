@@ -786,34 +786,83 @@ async function syncJournalFromOpenOrder(userid, order) {
   }
 
   const orderType = String(order.orderType || '').toUpperCase();
-  const stopPrice =
+
+  const incomingStop =
     orderType === 'STP' || orderType === 'STP LMT' || orderType === 'STP_LMT'
       ? toNumberOrNull(order.auxPrice)
       : null;
-  const targetPrice = orderType === 'LMT' ? toNumberOrNull(order.lmtPrice) : null;
 
-  if (stopPrice == null && targetPrice == null) {
+  const incomingTarget =
+    orderType === 'LMT'
+      ? toNumberOrNull(order.lmtPrice)
+      : null;
+
+  if (incomingStop == null && incomingTarget == null) {
     return { updated: false, reason: 'not_stop_or_target_update' };
   }
 
-  const nextStopPrice = stopPrice ?? toNumberOrNull(entry.stop_price);
-  const nextTargetPrice = targetPrice ?? toNumberOrNull(entry.target_price);
+  const entryPrice = toNumberOrNull(entry.entry_price);
+  const shares = toNumberOrNull(entry.remaining_shares || entry.shares);
 
-  const updated = await pool.query(
+  let nextCurrentStop = toNumberOrNull(entry.current_stop);
+  let nextTargetPrice = toNumberOrNull(entry.target_price);
+
+  if (incomingStop != null) nextCurrentStop = incomingStop;
+  if (incomingTarget != null) nextTargetPrice = incomingTarget;
+
+  let nextRiskDollars = toNumberOrNull(entry.risk_dollars);
+  let nextRiskPercent = toNumberOrNull(entry.risk_percent);
+  let nextStopDistance = toNumberOrNull(entry.stop_distance);
+
+  if (incomingStop != null && entryPrice != null && shares != null) {
+    nextRiskDollars = Number((shares * Math.abs(entryPrice - nextCurrentStop)).toFixed(8));
+    nextStopDistance =
+      entryPrice > 0
+        ? Number(((Math.abs(entryPrice - nextCurrentStop) / entryPrice) * 100).toFixed(8))
+        : null;
+
+    const settingsRes = await pool.query(
+      `
+      SELECT current_account_size
+      FROM user_settings
+      WHERE user_id = $1
+      LIMIT 1
+      `,
+      [userid]
+    );
+
+    const accountSize = toNumberOrNull(settingsRes.rows[0]?.current_account_size);
+    nextRiskPercent =
+      accountSize && accountSize > 0
+        ? Number(((nextRiskDollars / accountSize) * 100).toFixed(8))
+        : null;
+  }
+
+  const updatedRes = await pool.query(
     `
     UPDATE journal_entries
     SET
-      stop_price = COALESCE($3, stop_price),
       current_stop = COALESCE($3, current_stop),
       target_price = COALESCE($4, target_price),
+      risk_dollars = $5,
+      risk_percent = $6,
+      stop_distance = $7,
       updated_at = now()
     WHERE id = $1 AND user_id = $2
     RETURNING *
     `,
-    [entry.id, userid, stopPrice, targetPrice]
+    [
+      entry.id,
+      userid,
+      incomingStop,
+      incomingTarget,
+      nextRiskDollars,
+      nextRiskPercent,
+      nextStopDistance,
+    ]
   );
 
-  const updatedEntry = updated.rows[0];
+  const updatedEntry = updatedRes.rows[0];
 
   if (updatedEntry) {
     await syncLiveMarketForEntry(userid, updatedEntry);
@@ -822,8 +871,11 @@ async function syncJournalFromOpenOrder(userid, order) {
   return {
     updated: !!updatedEntry,
     entry: updatedEntry || null,
-    stopPrice: nextStopPrice,
+    currentStop: nextCurrentStop,
     targetPrice: nextTargetPrice,
+    riskDollars: nextRiskDollars,
+    riskPercent: nextRiskPercent,
+    stopDistance: nextStopDistance,
   };
 }
 
