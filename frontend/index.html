@@ -1358,6 +1358,56 @@
           </div>
         </div>
 
+           <div class="settings-section settings-section--bridge">
+  <h3 class="settings-section__title">TWS Bridge</h3>
+
+  <p class="settings-section__text" id="bridgeStatusText">Bridge status: checking...</p>
+  <p class="settings-section__text settings-section__text--muted" id="bridgeLastSeenText"></p>
+
+  <div class="btn-group btn-group--vertical">
+    <button class="btn btn--secondary" id="generateBridgeTokenBtn" type="button">
+      Generate Bridge Token
+    </button>
+  </div>
+
+  <div class="bridge-token-card" id="bridgeTokenBox" hidden>
+    <div class="bridge-token-card__header">
+      <span class="bridge-token-card__label">Bridge Token</span>
+      <button class="btn btn--secondary btn--sm bridge-token-card__copy" id="copyBridgeTokenBtn" type="button">
+        Copy
+      </button>
+    </div>
+
+    <code class="bridge-token-card__value" id="bridgeTokenValue"></code>
+
+    <p class="bridge-token-card__help">
+      Copy this token now and paste it into your bridge. Make sure you download the correct bridge app for your device. TWS should be running on your machine before you paste the token.
+    </p>
+
+    <div class="bridge-downloads" id="bridgeDownloads">
+      <a
+        class="btn btn--secondary btn--sm"
+        id="downloadBridgeWindowsBtn"
+        href="https://drive.google.com/uc?export=download&id=1ht22z_IJUgYc7QzaP1ZgxxlXKjVBS-oo"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Download for Windows
+      </a>
+
+      <a
+        class="btn btn--secondary btn--sm"
+        id="downloadBridgeMacBtn"
+        href="https://drive.google.com/uc?export=download&id=1cnUrUw6y-0pL40VrPAlOlDQACElzyDAm"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Download for macOS
+      </a>
+    </div>
+  </div>
+</div>
+
 
         <div class="settings-section">
           <h3 class="settings-section__title">Gateway Broker Connection</h3>
@@ -1372,33 +1422,7 @@
         </div>
 
 
-        <div class="settings-section settings-section--bridge">
-          <h3 class="settings-section__title">TWS Bridge</h3>
-
-          <p class="settings-section__text" id="bridgeStatusText">Bridge status: checking...</p>
-          <p class="settings-section__text settings-section__text--muted" id="bridgeLastSeenText"></p>
-
-          <div class="btn-group btn-group--vertical">
-            <button class="btn btn--secondary" id="generateBridgeTokenBtn" type="button">
-              Generate Bridge Token
-            </button>
-          </div>
-
-          <div class="bridge-token-card" id="bridgeTokenBox" hidden>
-            <div class="bridge-token-card__header">
-              <span class="bridge-token-card__label">Bridge Token</span>
-              <button class="btn btn--secondary btn--sm bridge-token-card__copy" id="copyBridgeTokenBtn" type="button">
-                Copy
-              </button>
-            </div>
-
-            <code class="bridge-token-card__value" id="bridgeTokenValue"></code>
-
-            <p class="bridge-token-card__help">
-              Copy this token now and paste it into your local bridge <strong>.env</strong>.
-            </p>
-          </div>
-        </div>
+     
 
 
         <div class="settings-section" id="ibkrFlexSection">

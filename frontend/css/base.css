@@ -1455,3 +1455,15 @@ main {
   padding: 8px 12px;
   font-size: 12px;
 }
+
+.bridge-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.bridge-downloads .btn {
+  min-width: 170px;
+  justify-content: center;
+}
