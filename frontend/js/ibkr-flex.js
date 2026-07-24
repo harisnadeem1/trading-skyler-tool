@@ -21,8 +21,13 @@ async function loadIbkrFlexStatus() {
       return;
     }
 
-    const lastSync = data.flexLastTradeSyncAt || 'never';
-    setIbkrFlexStatus(`Connected (${data.status}) | last trade sync: ${lastSync}`, 'success');
+    const tradeSync = data.flexLastTradeSyncAt || 'never';
+    const historySync = data.flexLastHistorySyncAt || 'never';
+
+    setIbkrFlexStatus(
+      `Connected (${data.status}) | trade sync: ${tradeSync} | activity sync: ${historySync}`,
+      'success'
+    );
   } catch (error) {
     setIbkrFlexStatus(error.message || 'Failed to load', 'danger');
   }
@@ -47,12 +52,23 @@ async function saveIbkrFlexConnection() {
 
 async function syncIbkrFlexNow() {
   try {
-    setIbkrFlexStatus('Syncing...', 'warning');
+    setIbkrFlexStatus('Syncing trade confirmations...', 'warning');
     const result = await api.post('/ibkr/flex/sync-now', {});
-    setIbkrFlexStatus(`Sync complete (${result.imported || 0} imported)`, 'success');
+    setIbkrFlexStatus(`Trade sync complete (${result.imported || 0} imported)`, 'success');
     await loadIbkrFlexStatus();
   } catch (error) {
-    setIbkrFlexStatus(error.message || 'Sync failed', 'danger');
+    setIbkrFlexStatus(error.message || 'Trade sync failed', 'danger');
+  }
+}
+
+async function syncIbkrFlexHistoryNow() {
+  try {
+    setIbkrFlexStatus('Syncing activity / net liquidation...', 'warning');
+    const result = await api.post('/ibkr/flex/sync-history-now', {});
+    setIbkrFlexStatus(`Activity sync complete (${result.imported || 0} imported)`, 'success');
+    await loadIbkrFlexStatus();
+  } catch (error) {
+    setIbkrFlexStatus(error.message || 'Activity sync failed', 'danger');
   }
 }
 
@@ -67,6 +83,7 @@ async function disconnectIbkrFlex() {
 
 document.getElementById('saveIbkrFlexBtn')?.addEventListener('click', saveIbkrFlexConnection);
 document.getElementById('syncIbkrFlexBtn')?.addEventListener('click', syncIbkrFlexNow);
+document.getElementById('syncIbkrFlexHistoryBtn')?.addEventListener('click', syncIbkrFlexHistoryNow);
 document.getElementById('disconnectIbkrFlexBtn')?.addEventListener('click', disconnectIbkrFlex);
 
 loadIbkrFlexStatus();

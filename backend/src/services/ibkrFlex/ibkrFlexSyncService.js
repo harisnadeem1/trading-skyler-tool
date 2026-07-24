@@ -22,6 +22,11 @@ function isTooManyRequestsError(error) {
   return msg.includes('too many requests');
 }
 
+function roundMoney(value) {
+  if (value === null || value === undefined) return null;
+  return Number(Number(value).toFixed(2));
+}
+
 async function saveConnection(userId, payload) {
   const sql = `
     INSERT INTO broker_connections (
@@ -31,11 +36,12 @@ async function saveConnection(userId, payload) {
       connectedat, updatedat
     )
     VALUES (
-      $1, 'ibkr', 'gateway', 'connected', true,
+      $1, 'ibkr', 'flex', 'connected', true,
       $2, $3, $4, $5, now(), now()
     )
     ON CONFLICT (userid, brokername)
     DO UPDATE SET
+      authmode = 'flex',
       flex_enabled = true,
       flex_token = EXCLUDED.flex_token,
       flex_token_expires_at = EXCLUDED.flex_token_expires_at,
@@ -150,6 +156,240 @@ async function upsertTrade(userId, brokerConnectionId, trade, source) {
   return rows[0].id;
 }
 
+async function applyLatestAccountSnapshotToUserSettings(client, userId, accountSnapshots) {
+  if (!Array.isArray(accountSnapshots) || accountSnapshots.length === 0) return;
+
+  const sorted = [...accountSnapshots].sort((a, b) => {
+    const da = new Date(a.reportDate).getTime();
+    const db = new Date(b.reportDate).getTime();
+    return db - da;
+  });
+
+  const latest = sorted.find(x => x.total !== null && x.total !== undefined);
+  if (!latest) return;
+
+  const brokerCurrentAccountSize = roundMoney(latest.total);
+  if (brokerCurrentAccountSize === null) return;
+
+  await client.query(
+    `
+    UPDATE user_settings
+    SET broker_current_account_size = $2,
+        broker_balance_as_of = $3,
+        updated_at = now()
+    WHERE user_id = $1
+    `,
+    [userId, brokerCurrentAccountSize, latest.reportDate]
+  );
+}
+async function syncBrokerTradesToJournal(client, userId) {
+  const { rows: brokerTrades } = await client.query(
+    `
+    SELECT bt.*
+    FROM broker_trades bt
+    LEFT JOIN journal_entries je
+      ON je.broker_trade_id = bt.id
+    WHERE bt.userid = $1
+      AND je.id IS NULL
+    ORDER BY bt.executedat ASC, bt.createdat ASC
+    `,
+    [userId]
+  );
+
+  let journalEntriesCreated = 0;
+  let exitEventsCreated = 0;
+
+  for (const trade of brokerTrades) {
+    const qty = Number(trade.quantity);
+    const price = Number(trade.price);
+    const commission = Number(trade.commission || 0);
+    const isBuy = trade.side === 'BUY';
+    const ticker = trade.symbol;
+
+    if (isBuy) {
+      const insertResult = await client.query(
+        `
+        INSERT INTO journal_entries (
+          user_id,
+          ticker,
+          direction,
+          entry_price,
+          stop_price,
+          target_price,
+          original_stop,
+          current_stop,
+          shares,
+          original_shares,
+          remaining_shares,
+          position_size,
+          risk_dollars,
+          risk_percent,
+          stop_distance,
+          status,
+          notes,
+          thesis,
+          wizard_complete,
+          wizard_skipped,
+          opened_at,
+          created_at,
+          updated_at,
+          broker_trade_id
+        )
+        VALUES (
+          $1,
+          $2,
+          'long',
+          $3,
+          $3,
+          NULL,
+          $3,
+          $3,
+          $4,
+          $4,
+          $4,
+          $5,
+          0,
+          0,
+          0,
+          'open',
+          'Imported from IBKR Flex',
+          NULL,
+          true,
+          '[]'::jsonb,
+          $6,
+          now(),
+          now(),
+          $7
+        )
+        RETURNING id
+        `,
+        [
+          userId,
+          ticker,
+          price,
+          qty,
+          roundMoney(price * qty),
+          trade.executedat,
+          trade.id
+        ]
+      );
+
+      if (insertResult.rows[0]) {
+        journalEntriesCreated += 1;
+      }
+
+      continue;
+    }
+
+    let remainingToClose = qty;
+
+    const { rows: openEntries } = await client.query(
+      `
+      SELECT *
+      FROM journal_entries
+      WHERE user_id = $1
+        AND ticker = $2
+        AND status IN ('open', 'trimmed')
+        AND COALESCE(remaining_shares, 0) > 0
+      ORDER BY opened_at ASC, created_at ASC
+      `,
+      [userId, ticker]
+    );
+
+    for (const entry of openEntries) {
+      if (remainingToClose <= 0) break;
+
+      const entryRemaining = Number(entry.remaining_shares || 0);
+      if (entryRemaining <= 0) continue;
+
+      const sharesClosed = Math.min(entryRemaining, remainingToClose);
+      const entryPrice = Number(entry.entry_price);
+      const pnl = roundMoney((price - entryPrice) * sharesClosed - commission);
+      const newRemaining = Number((entryRemaining - sharesClosed).toFixed(8));
+      const originalShares = Number(entry.original_shares || entry.shares || entryRemaining);
+      const totalRealizedPnl = roundMoney(Number(entry.total_realized_pnl || 0) + pnl);
+      const percentTrimmed =
+        originalShares > 0 ? Number(((sharesClosed / originalShares) * 100).toFixed(2)) : null;
+      const eventType = newRemaining > 0 ? 'trim' : 'close';
+      const newStatus = newRemaining > 0 ? 'trimmed' : 'closed';
+
+      await client.query(
+        `
+        INSERT INTO journal_trade_exits (
+          journal_entry_id,
+          user_id,
+          event_type,
+          exit_date,
+          shares_closed,
+          exit_price,
+          r_multiple,
+          pnl,
+          percent_trimmed,
+          created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, now())
+        `,
+        [
+          entry.id,
+          userId,
+          eventType,
+          trade.executedat,
+          sharesClosed,
+          price,
+          pnl,
+          percentTrimmed
+        ]
+      );
+
+      await client.query(
+        `
+        UPDATE journal_entries
+        SET remaining_shares = $2,
+            shares = $2,
+            status = $3,
+            exit_price = CASE WHEN $3 = 'closed' THEN $4 ELSE exit_price END,
+            exit_date = CASE WHEN $3 = 'closed' THEN $5 ELSE exit_date END,
+            pnl = CASE WHEN $3 = 'closed' THEN $6 ELSE pnl END,
+            total_realized_pnl = $7,
+            updated_at = now()
+        WHERE id = $1
+        `,
+        [
+          entry.id,
+          newRemaining,
+          newStatus,
+          price,
+          trade.executedat,
+          totalRealizedPnl,
+          totalRealizedPnl
+        ]
+      );
+
+      remainingToClose = Number((remainingToClose - sharesClosed).toFixed(8));
+      exitEventsCreated += 1;
+    }
+  }
+
+  await client.query(
+    `
+    UPDATE user_settings us
+    SET realized_pnl = COALESCE((
+      SELECT SUM(COALESCE(j.total_realized_pnl, 0))
+      FROM journal_entries j
+      WHERE j.user_id = us.user_id
+    ), 0),
+    updated_at = now()
+    WHERE us.user_id = $1
+    `,
+    [userId]
+  );
+
+  return {
+    journalEntriesCreated,
+    exitEventsCreated
+  };
+}
+
 async function syncTradesForConnection(connection, queryId, source, syncField) {
   const logId = await createSyncLog(connection.userid, connection.id);
   let imported = 0;
@@ -163,65 +403,70 @@ async function syncTradesForConnection(connection, queryId, source, syncField) {
     );
 
     const download = await ibkrFlexService.downloadReport({
-  token: connection.flex_token,
-  queryId
-});
+      token: connection.flex_token,
+      queryId
+    });
 
-console.log('[IBKR FLEX] download meta:', {
-  userId: connection.userid,
-  connectionId: connection.id,
-  source,
-  queryId,
-  referenceCode: download.referenceCode,
-  responseUrl: download.responseUrl,
-  xmlLength: download.xml ? download.xml.length : 0
-});
+    const { trades, accountSnapshots } = ibkrFlexParser.parseFlexReport(download.xml);
 
-if (download.xml) {
-  console.log('[IBKR FLEX] raw xml preview start ----------------');
-  console.log(download.xml.slice(0, 4000));
-  console.log('[IBKR FLEX] raw xml preview end ------------------');
-}
+    const client = await pool.connect();
+    let journalSyncResult = {
+      journalEntriesCreated: 0,
+      exitEventsCreated: 0
+    };
 
-const trades = ibkrFlexParser.parseExecutions(download.xml);
+    try {
+      await client.query('BEGIN');
 
-console.log('[IBKR FLEX] parsed trades count:', trades.length);
+      for (const trade of trades) {
+        await upsertTrade(connection.userid, connection.id, trade, source);
+        imported += 1;
+      }
 
-if (trades.length > 0) {
-  console.log('[IBKR FLEX] first parsed trade:', JSON.stringify(trades[0], null, 2));
-}
+      if (source === 'ibkr_flex_activity' && accountSnapshots.length > 0) {
+        await applyLatestAccountSnapshotToUserSettings(
+          client,
+          connection.userid,
+          accountSnapshots
+        );
+      }
 
-for (const trade of trades) {
-  console.log('[IBKR FLEX] upserting trade:', JSON.stringify({
-    ibkrExecutionId: trade.ibkrExecutionId,
-    ibkrOrderId: trade.ibkrOrderId,
-    symbol: trade.symbol,
-    side: trade.side,
-    quantity: trade.quantity,
-    price: trade.price,
-    executedAt: trade.executedAt,
-    source
-  }, null, 2));
+      journalSyncResult = await syncBrokerTradesToJournal(client, connection.userid);
 
-  await upsertTrade(connection.userid, connection.id, trade, source);
-  imported += 1;
-}
+      await client.query(
+        `UPDATE broker_connections
+         SET status = 'connected',
+             lastsyncat = now(),
+             ${syncField} = now(),
+             flex_last_reference_code = $2,
+             flex_last_response_url = $3,
+             ibkraccountid = COALESCE($4, ibkraccountid),
+             lasterror = NULL,
+             updatedat = now()
+         WHERE id = $1`,
+        [
+          connection.id,
+          download.referenceCode,
+          download.responseUrl,
+          trades[0]?.accountId || accountSnapshots[0]?.accountId || null
+        ]
+      );
 
-    await pool.query(
-      `UPDATE broker_connections
-       SET status = 'connected',
-           lastsyncat = now(),
-           ${syncField} = now(),
-           flex_last_reference_code = $2,
-           flex_last_response_url = $3,
-           lasterror = NULL,
-           updatedat = now()
-       WHERE id = $1`,
-      [connection.id, download.referenceCode, download.responseUrl]
-    );
+      await finishSyncLog(logId, 'success', imported, null);
+      await client.query('COMMIT');
 
-    await finishSyncLog(logId, 'success', imported, null);
-    return { imported };
+      return {
+        imported,
+        accountSnapshotsImported: accountSnapshots.length,
+        journalEntriesCreated: journalSyncResult.journalEntriesCreated,
+        exitEventsCreated: journalSyncResult.exitEventsCreated
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     const message = error.message || 'Sync failed';
 

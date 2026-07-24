@@ -101,4 +101,9 @@ disconnectIbkrFlex: () =>
     body: JSON.stringify({}),
   }),
 
+
+
+
+  getTrendMapCurrent: () => api.get('/trend-map/current'),
+refreshTrendMap: () => api.post('/trend-map/refresh', {}),
 };

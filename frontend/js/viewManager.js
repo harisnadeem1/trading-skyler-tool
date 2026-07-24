@@ -1,7 +1,3 @@
-/**
- * View Manager - Handles view swapping between 4 views
- */
-
 import { state } from './state.js';
 
 class ViewManager {
@@ -13,7 +9,8 @@ class ViewManager {
       journal: null,
       stats: null,
       compound: null,
-      scans: null
+      scans: null,
+      'trend-map': null
     };
     this.navElement = null;
     this.navButtons = null;
@@ -23,13 +20,14 @@ class ViewManager {
   }
 
   init() {
-    // Get DOM elements for all views
     this.views.dashboard = document.querySelector('.main');
     this.views.positions = document.getElementById('positionsView');
     this.views.journal = document.getElementById('journalView');
     this.views.stats = document.getElementById('statsView');
     this.views.compound = document.getElementById('compoundView');
     this.views.scans = document.getElementById('scansView');
+    this.views['trend-map'] = document.getElementById('trendMapView');
+
     this.navElement = document.getElementById('viewNav');
     this.navButtons = document.querySelectorAll('.view-nav__btn');
     this.mobileNavTrigger = document.getElementById('mobileNavTrigger');
@@ -40,7 +38,6 @@ class ViewManager {
       return;
     }
 
-    // Set initial state - dashboard visible, others hidden
     Object.entries(this.views).forEach(([name, el]) => {
       if (!el) return;
       if (name === 'dashboard') {
@@ -52,7 +49,6 @@ class ViewManager {
       }
     });
 
-    // Mobile trigger click handler
     if (this.mobileNavTrigger) {
       this.mobileNavTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -62,30 +58,25 @@ class ViewManager {
           this.expandNav();
         }
       });
-      // Set initial trigger icon
       this.updateMobileTriggerIcon();
     }
 
-    // Bind navigation buttons
-    this.navButtons.forEach(btn => {
+    this.navButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const view = e.currentTarget.dataset.view;
         const isActive = e.currentTarget.classList.contains('view-nav__btn--active');
 
         if (this.isMobile()) {
-          // Mobile: switch view and collapse
           if (view && !isActive) {
             this.switchTo(view);
           }
           this.collapseNav();
         } else {
-          // Desktop: just switch view
           if (view) this.switchTo(view);
         }
       });
     });
 
-    // Close expanded nav when clicking outside or on backdrop
     if (this.mobileNavBackdrop) {
       this.mobileNavBackdrop.addEventListener('click', () => {
         if (this.isNavExpanded()) {
@@ -96,18 +87,17 @@ class ViewManager {
 
     document.addEventListener('click', (e) => {
       if (this.isMobile() && this.isNavExpanded()) {
-        // Close if clicking outside nav and trigger (but not on backdrop, which has its own handler)
-        if (!this.navElement.contains(e.target) && 
-            !this.mobileNavTrigger?.contains(e.target) &&
-            !this.mobileNavBackdrop?.contains(e.target)) {
+        if (
+          !this.navElement.contains(e.target) &&
+          !this.mobileNavTrigger?.contains(e.target) &&
+          !this.mobileNavBackdrop?.contains(e.target)
+        ) {
           this.collapseNav();
         }
       }
     });
 
-    // Handle window resize - collapse nav if switching from mobile to desktop
     window.addEventListener('resize', () => {
-      // Debounce resize events
       if (this.resizeTimeout) {
         clearTimeout(this.resizeTimeout);
       }
@@ -115,18 +105,24 @@ class ViewManager {
         if (!this.isMobile() && this.isNavExpanded()) {
           this.collapseNav();
         }
-        // Update mobile trigger icon on resize
         this.updateMobileTriggerIcon();
       }, 150);
     });
 
-    // Handle URL hash on load
     this.initDeepLink();
 
-    // Keyboard shortcuts: Cmd/Ctrl + 1-4 for direct navigation
     document.addEventListener('keydown', (e) => {
       if (e.metaKey || e.ctrlKey) {
-        const viewMap = { '1': 'dashboard', '2': 'positions', '3': 'journal', '4': 'stats', '5': 'compound', '6': 'scans' };
+        const viewMap = {
+          '1': 'dashboard',
+          '2': 'positions',
+          '3': 'journal',
+          '4': 'stats',
+          '5': 'compound',
+          '6': 'scans',
+          '7': 'trend-map'
+        };
+
         if (viewMap[e.key]) {
           e.preventDefault();
           this.switchTo(viewMap[e.key]);
@@ -136,7 +132,6 @@ class ViewManager {
     });
   }
 
-  // Mobile nav helpers
   isMobile() {
     return window.innerWidth <= this.mobileBreakpoint;
   }
@@ -150,7 +145,6 @@ class ViewManager {
     this.navElement?.classList.add('view-nav--expanded');
     this.mobileNavTrigger?.classList.add('mobile-nav-trigger--active');
     this.mobileNavBackdrop?.classList.add('mobile-nav-backdrop--active');
-    // Prevent body scroll when nav is open
     document.body.style.overflow = 'hidden';
   }
 
@@ -158,7 +152,6 @@ class ViewManager {
     this.navElement?.classList.remove('view-nav--expanded');
     this.mobileNavTrigger?.classList.remove('mobile-nav-trigger--active');
     this.mobileNavBackdrop?.classList.remove('mobile-nav-backdrop--active');
-    // Restore body scroll
     document.body.style.overflow = '';
   }
 
@@ -184,39 +177,55 @@ class ViewManager {
     }
   }
 
- switchTo(view, options = { animate: true }) {
-  if (view === this.currentView) return;
-  if (!this.views[view]) return;
+  switchTo(view, options = { animate: true }) {
+    if (view === this.currentView) return;
+    if (!this.views[view]) return;
 
-  const previousView = this.currentView;
-  const fromView = this.views[previousView];
-  const toView = this.views[view];
+    const previousView = this.currentView;
+    const fromView = this.views[previousView];
+    const toView = this.views[view];
 
-  if (!fromView || !toView) return;
+    if (!fromView || !toView) return;
 
-  this.navButtons.forEach(btn => {
-    const isActive = btn.dataset.view === view;
-    btn.classList.toggle('view-nav__btn--active', isActive);
-  });
+    this.navButtons.forEach((btn) => {
+      const isActive = btn.dataset.view === view;
+      btn.classList.toggle('view-nav__btn--active', isActive);
+    });
 
-  this.updateMobileTriggerIcon();
-  window.history.replaceState(null, '', `#${view}`);
+    this.updateMobileTriggerIcon();
+    window.history.replaceState(null, '', `#${view}`);
 
-  const finishSwitch = () => {
-    this.currentView = view;
-    state.emit('viewChanged', { from: previousView, to: view });
-  };
+    const finishSwitch = () => {
+      this.currentView = view;
+      state.emit('viewChanged', { from: previousView, to: view });
+    };
 
-  if (options.animate) {
-    fromView.classList.add('view--hiding');
-    fromView.classList.remove('view--active');
+    if (options.animate) {
+      fromView.classList.add('view--hiding');
+      fromView.classList.remove('view--active');
 
-    setTimeout(() => {
-      fromView.classList.remove('view--hiding');
+      setTimeout(() => {
+        fromView.classList.remove('view--hiding');
+        fromView.classList.add('view--hidden');
+
+        toView.classList.remove('view--hidden');
+        toView.classList.add('view--entering');
+        toView.classList.add('view--active');
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            finishSwitch();
+          });
+        });
+
+        setTimeout(() => {
+          toView.classList.remove('view--entering');
+        }, 300);
+      }, 200);
+    } else {
+      fromView.classList.remove('view--active');
       fromView.classList.add('view--hidden');
-
       toView.classList.remove('view--hidden');
-      toView.classList.add('view--entering');
       toView.classList.add('view--active');
 
       requestAnimationFrame(() => {
@@ -224,28 +233,11 @@ class ViewManager {
           finishSwitch();
         });
       });
-
-      setTimeout(() => {
-        toView.classList.remove('view--entering');
-      }, 300);
-    }, 200);
-  } else {
-    fromView.classList.remove('view--active');
-    fromView.classList.add('view--hidden');
-    toView.classList.remove('view--hidden');
-    toView.classList.add('view--active');
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        finishSwitch();
-      });
-    });
+    }
   }
-}
 
   toggle() {
-    // Cycle through views: dashboard → positions → journal → stats → compound → scans
-    const viewOrder = ['dashboard', 'positions', 'journal', 'stats', 'compound', 'scans'];
+    const viewOrder = ['dashboard', 'positions', 'journal', 'stats', 'compound', 'scans', 'trend-map'];
     const currentIndex = viewOrder.indexOf(this.currentView);
     const nextIndex = (currentIndex + 1) % viewOrder.length;
     this.switchTo(viewOrder[nextIndex]);
@@ -275,7 +267,10 @@ class ViewManager {
     return this.currentView === 'scans';
   }
 
-  // Navigate to a specific view (for use by other modules)
+  isTrendMapView() {
+    return this.currentView === 'trend-map';
+  }
+
   navigateTo(view) {
     if (this.views[view] !== undefined) {
       this.switchTo(view);

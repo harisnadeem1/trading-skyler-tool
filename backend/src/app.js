@@ -12,6 +12,7 @@ const marketRoutes = require('./routes/marketRoutes');
 const brokerRoutes = require('./routes/brokeRoutes');
 const bridgeRoutes = require('./routes/bridgeRoutes');
 const ibkrFlexRoutes = require('./routes/ibkrFlexRoutes');
+const trendMapRoutes = require('./routes/trendMapRoutes');
 
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/broker', brokerRoutes);
 
 app.use('/api', bridgeRoutes);
 app.use('/api/ibkr/flex', ibkrFlexRoutes);
+app.use('/api/trend-map', trendMapRoutes);
 
 
 

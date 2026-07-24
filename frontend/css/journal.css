@@ -670,3 +670,117 @@
     font-size: var(--text-xs);
   }
 }
+
+.journal-view {
+  display: none;
+  flex-direction: column;
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: calc(100dvh - var(--header-height) - 60px);
+  overflow: hidden;
+}
+
+.journal-table-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+  overflow-x: auto;
+  overflow-y: auto;
+  margin-bottom: var(--space-4);
+  -webkit-overflow-scrolling: touch;
+}
+
+.journal-view .journal-table {
+  width: max-content;
+  min-width: 1200px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.journal-view .journal-table th,
+.journal-view .journal-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.journal-view .journal-table th {
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: var(--text-xs);
+  background: var(--bg-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+
+
+.journal-view {
+  display: none;
+  flex-direction: column;
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: calc(100dvh - var(--header-height) - 60px);
+  overflow: hidden;
+}
+
+.journal-table-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-lg);
+  overflow-x: auto;
+  overflow-y: auto;
+  margin-bottom: var(--space-4);
+  -webkit-overflow-scrolling: touch;
+}
+
+.journal-view .journal-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.journal-view .journal-table th,
+.journal-view .journal-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.journal-view .journal-table th {
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: var(--text-xs);
+  background: var(--bg-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}

@@ -60,6 +60,7 @@
   <link rel="stylesheet" href="css/stats.css">
   <link rel="stylesheet" href="css/compound.css">
   <link rel="stylesheet" href="css/scans.css">
+  <link rel="stylesheet" href="css/trendMap.css">
 </head>
 
 <body>
@@ -176,7 +177,18 @@
               </svg>
               <span class="view-nav__text">Compound</span>
             </button>
+
+            <!-- <button class="view-nav__btn" data-view="trend-map">
+              <svg class="view-nav__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17l6-6 4 4 8-8"></path>
+                <path d="M14 7h7v7"></path>
+              </svg>
+              <span class="view-nav__text">Trend Map</span>
+            </button> -->
           </nav>
+
+
         </div>
         <!-- Mobile nav backdrop -->
         <div class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
@@ -755,6 +767,7 @@
       </main>
 
       <!-- Positions View -->
+
       <section class="positions-view view--hidden" id="positionsView">
         <div class="positions-header">
           <div class="positions-header__left">
@@ -833,6 +846,7 @@
       </section>
 
       <!-- Journal View -->
+
       <section class="journal-view view--hidden" id="journalView">
         <div class="journal-header">
           <div class="journal-header__left">
@@ -939,6 +953,7 @@
       </section>
 
       <!-- Stats View (view swapped with main) -->
+
       <section class="stats-view view--hidden" id="statsView">
         <div class="stats-header">
           <div class="stats-header__left">
@@ -1038,6 +1053,7 @@
       </section>
 
       <!-- Compound View -->
+
       <section class="view--compound view--hidden" id="compoundView">
         <div class="compound-header">
           <div class="compound-header__left">
@@ -1171,6 +1187,83 @@
           </div>
         </div>
       </section>
+
+
+      <section class="trend-map-view view--hidden" id="trendMapView" data-view="trend-map">
+  <div class="trend-map-view__inner">
+    <div class="trend-map__header">
+      <div class="trend-map__heading">
+        <p class="trend-map__eyebrow">Market Regime</p>
+        <h1 class="trend-map__title">Trend Map</h1>
+        <p class="trend-map__subtitle">
+          QQQE breadth, regime, exposure guidance, and the full 7-signal block.
+        </p>
+      </div>
+
+      <div class="trend-map__toolbar">
+        <label class="trend-control">
+          <span class="trend-control__label">Signal 5</span>
+          <select id="trendMapSignal5Select" class="trend-control__select">
+            <option value="AUTO">Auto from recent trades</option>
+            <option value="YES">Manual: YES</option>
+            <option value="ATTEMPT">Manual: ATTEMPT</option>
+            <option value="NO">Manual: NO</option>
+          </select>
+        </label>
+
+        <button id="trendMapRefreshBtn" class="btn btn--secondary" type="button">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <div id="trendMapStatus"></div>
+
+    <div class="trend-map__grid">
+      <article class="trend-card trend-card--hero trend-card--full">
+        <div class="trend-card__head">
+          <div>
+            <h3 class="trend-card__title">Current Regime</h3>
+            <span id="trendMapAsOf" class="trend-card__meta">—</span>
+          </div>
+          <span id="trendMapSignal5Source" class="trend-chip">Signal 5: Auto from recent trades</span>
+        </div>
+
+        <div class="trend-hero">
+          <div id="trendMapRegimeBadge" class="trend-regime trend-regime--gray">—</div>
+
+          <div class="trend-hero__content">
+            <h3 id="trendMapActionTitle" class="trend-map__action-title">Trend Map unavailable</h3>
+            <p id="trendMapExposureMessage" class="trend-map__exposure-message">
+              No data available.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="trend-card trend-card--metrics">
+        <div class="trend-card__head">
+          <h3 class="trend-card__title">Key Metrics</h3>
+        </div>
+        <div id="trendMapMetricsGrid" class="trend-metrics-grid"></div>
+      </article>
+
+      <article class="trend-card trend-card--signals">
+        <div class="trend-card__head">
+          <h3 class="trend-card__title">Seven Signals</h3>
+        </div>
+        <div id="trendMapSignalsGrid" class="trend-signals-grid"></div>
+      </article>
+
+      <article id="trendMapWarningCard" class="trend-card trend-card--warning view--hidden">
+        <div class="trend-card__head">
+          <h3 class="trend-card__title">Warning</h3>
+        </div>
+        <p id="trendMapWarningText" class="trend-warning__text"></p>
+      </article>
+    </div>
+  </div>
+</section>
 
       <!-- Scans View -->
       <section class="scans-view view--hidden" id="scansView">
@@ -1358,55 +1451,48 @@
           </div>
         </div>
 
-           <div class="settings-section settings-section--bridge">
-  <h3 class="settings-section__title">TWS Bridge</h3>
+        <div class="settings-section settings-section--bridge">
+          <h3 class="settings-section__title">TWS Bridge</h3>
 
-  <p class="settings-section__text" id="bridgeStatusText">Bridge status: checking...</p>
-  <p class="settings-section__text settings-section__text--muted" id="bridgeLastSeenText"></p>
+          <p class="settings-section__text" id="bridgeStatusText">Bridge status: checking...</p>
+          <p class="settings-section__text settings-section__text--muted" id="bridgeLastSeenText"></p>
 
-  <div class="btn-group btn-group--vertical">
-    <button class="btn btn--secondary" id="generateBridgeTokenBtn" type="button">
-      Generate Bridge Token
-    </button>
-  </div>
+          <div class="btn-group btn-group--vertical">
+            <button class="btn btn--secondary" id="generateBridgeTokenBtn" type="button">
+              Generate Bridge Token
+            </button>
+          </div>
 
-  <div class="bridge-token-card" id="bridgeTokenBox" hidden>
-    <div class="bridge-token-card__header">
-      <span class="bridge-token-card__label">Bridge Token</span>
-      <button class="btn btn--secondary btn--sm bridge-token-card__copy" id="copyBridgeTokenBtn" type="button">
-        Copy
-      </button>
-    </div>
+          <div class="bridge-token-card" id="bridgeTokenBox" hidden>
+            <div class="bridge-token-card__header">
+              <span class="bridge-token-card__label">Bridge Token</span>
+              <button class="btn btn--secondary btn--sm bridge-token-card__copy" id="copyBridgeTokenBtn" type="button">
+                Copy
+              </button>
+            </div>
 
-    <code class="bridge-token-card__value" id="bridgeTokenValue"></code>
+            <code class="bridge-token-card__value" id="bridgeTokenValue"></code>
 
-    <p class="bridge-token-card__help">
-      Copy this token now and paste it into your bridge. Make sure you download the correct bridge app for your device. TWS should be running on your machine before you paste the token.
-    </p>
+            <p class="bridge-token-card__help">
+              Copy this token now and paste it into your bridge. Make sure you download the correct bridge app for your
+              device. TWS should be running on your machine before you paste the token.
+            </p>
 
-    <div class="bridge-downloads" id="bridgeDownloads">
-      <a
-        class="btn btn--secondary btn--sm"
-        id="downloadBridgeWindowsBtn"
-        href="https://drive.google.com/uc?export=download&id=1ht22z_IJUgYc7QzaP1ZgxxlXKjVBS-oo"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Download for Windows
-      </a>
+            <div class="bridge-downloads" id="bridgeDownloads">
+              <a class="btn btn--secondary btn--sm" id="downloadBridgeWindowsBtn"
+                href="https://drive.google.com/uc?export=download&id=1ht22z_IJUgYc7QzaP1ZgxxlXKjVBS-oo" target="_blank"
+                rel="noopener noreferrer">
+                Download for Windows
+              </a>
 
-      <a
-        class="btn btn--secondary btn--sm"
-        id="downloadBridgeMacBtn"
-        href="https://drive.google.com/uc?export=download&id=1cnUrUw6y-0pL40VrPAlOlDQACElzyDAm"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Download for macOS
-      </a>
-    </div>
-  </div>
-</div>
+              <a class="btn btn--secondary btn--sm" id="downloadBridgeMacBtn"
+                href="https://drive.google.com/uc?export=download&id=1cnUrUw6y-0pL40VrPAlOlDQACElzyDAm" target="_blank"
+                rel="noopener noreferrer">
+                Download for macOS
+              </a>
+            </div>
+          </div>
+        </div>
 
 
         <div class="settings-section">
@@ -1422,55 +1508,68 @@
         </div>
 
 
-     
+
 
 
         <div class="settings-section" id="ibkrFlexSection">
-  <h3 class="settings-section__title">IBKR Flex Import</h3>
+          <h3 class="settings-section__title">IBKR Flex Import</h3>
 
-  <p class="settings-section__text settings-section__text--muted">
-    Near-live trade import using IBKR Flex token and query IDs.
-  </p>
+          <p class="settings-section__text settings-section__text--muted">
+            Import IBKR executions and account activity using your Flex Web Service token and query IDs.
+          </p>
 
-  <p id="ibkrFlexStatusText" class="settings-section__text">Status: checking...</p>
+          <p id="ibkrFlexStatusText" class="settings-section__text">Status: checking...</p>
 
-  <div class="input-group">
-    <label class="input-label" for="flexToken">Flex Token</label>
-    <input type="text" class="input input--mono" id="flexToken" autocomplete="off">
-    <span class="input-hint">Paste your IBKR Flex Web Service token.</span>
-  </div>
+          <div class="input-group">
+            <label class="input-label" for="flexToken">Flex Token</label>
+            <input type="text" class="input input--mono" id="flexToken" autocomplete="off">
+            <span class="input-hint">
+              Paste your IBKR Flex Web Service current token.
+            </span>
+          </div>
 
-  <div class="input-group">
-    <label class="input-label" for="flexTokenExpiresAt">Token Expiry (optional)</label>
-    <input type="datetime-local" class="input input--mono" id="flexTokenExpiresAt">
-  </div>
+          <div class="input-group">
+            <label class="input-label" for="flexTokenExpiresAt">Token Expiry (optional)</label>
+            <input type="datetime-local" class="input input--mono" id="flexTokenExpiresAt">
+            <span class="input-hint">
+              Optional. Store the expiry date if you want to track token renewal.
+            </span>
+          </div>
 
-  <div class="input-group">
-    <label class="input-label" for="tradeConfirmQueryId">Trade Confirmation Query ID</label>
-    <input type="text" class="input input--mono" id="tradeConfirmQueryId" autocomplete="off">
-    <span class="input-hint">Used for same-day near-live execution imports.</span>
-  </div>
+          <div class="input-group">
+            <label class="input-label" for="tradeConfirmQueryId">Trade Confirmation Query ID</label>
+            <input type="text" class="input input--mono" id="tradeConfirmQueryId" autocomplete="off">
+            <span class="input-hint">
+              Used for near-live execution imports, trims, and closes.
+            </span>
+          </div>
 
-  <div class="input-group">
-    <label class="input-label" for="activityQueryId">Activity Query ID (optional)</label>
-    <input type="text" class="input input--mono" id="activityQueryId" autocomplete="off">
-    <span class="input-hint">Used for history/backfill and reconciliation.</span>
-  </div>
+          <div class="input-group">
+            <label class="input-label" for="activityQueryId">Activity Query ID (optional)</label>
+            <input type="text" class="input input--mono" id="activityQueryId" autocomplete="off">
+            <span class="input-hint">
+              Used for account activity, history/backfill, and Net Liquidation checks.
+            </span>
+          </div>
 
-  <div class="btn-group btn-group--vertical">
-    <button class="btn btn--secondary" id="saveIbkrFlexBtn" type="button">
-      Save Flex Connection
-    </button>
+          <div class="btn-group btn-group--vertical">
+            <button class="btn btn--secondary" id="saveIbkrFlexBtn" type="button">
+              Save Flex Connection
+            </button>
 
-    <button class="btn btn--secondary" id="syncIbkrFlexBtn" type="button">
-      Sync Flex Trades Now
-    </button>
+            <button class="btn btn--secondary" id="syncIbkrFlexBtn" type="button">
+              Sync Flex Trades Now
+            </button>
 
-    <button class="btn btn--ghost text-danger" id="disconnectIbkrFlexBtn" type="button">
-      Disconnect Flex
-    </button>
-  </div>
-</div>
+            <button class="btn btn--secondary" id="syncIbkrFlexHistoryBtn" type="button">
+              Sync Activity / Net Liq
+            </button>
+
+            <button class="btn btn--ghost text-danger" id="disconnectIbkrFlexBtn" type="button">
+              Disconnect Flex
+            </button>
+          </div>
+        </div>
 
 
         <!-- <div class="settings-section" id="ibkrSection">

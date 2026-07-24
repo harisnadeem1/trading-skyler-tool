@@ -36,6 +36,8 @@ import {
   closeMarketStream,
 } from './marketStream.js';
 
+import { trendMapView } from './trendMap.js';
+
 let appInstance = null;
 
 class App {
@@ -75,6 +77,7 @@ class App {
     focusManager.init();
     hintArrow.init();
     tooltipHandler.init();
+    trendMapView.init();
 
     this.cacheDashboardElements();
     this.updateHeaderAccountValue();
