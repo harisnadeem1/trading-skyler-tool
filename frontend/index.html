@@ -1440,6 +1440,66 @@
           <span class="input-hint">Premium audio feedback for actions</span>
         </div>
 
+       <div class="settings-section" id="ibkrFlexSection">
+  <h3 class="settings-section__title">IBKR Flex Import</h3>
+
+  <p class="settings-section__text settings-section__text--muted">
+    Import IBKR executions and account activity using your Flex Web Service token and query IDs.
+  </p>
+
+  <p id="ibkrFlexStatusText" class="settings-section__text">Status: checking...</p>
+
+  <div class="btn-group btn-group--vertical">
+    <button class="btn btn--secondary" id="saveIbkrFlexBtn" type="button">
+      Save Flex Connection
+    </button>
+
+    <button class="btn btn--secondary" id="syncIbkrFlexBtn" type="button">
+      Sync Flex Trades Now
+    </button>
+
+    <button class="btn btn--secondary" id="syncIbkrFlexHistoryBtn" type="button">
+      Sync Activity / Net Liq
+    </button>
+
+    <button class="btn btn--ghost text-danger" id="disconnectIbkrFlexBtn" type="button">
+      Disconnect Flex
+    </button>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="flexToken">Flex Token</label>
+    <input type="text" class="input input--mono" id="flexToken" autocomplete="off">
+    <span class="input-hint">
+      Paste your IBKR Flex Web Service current token.
+    </span>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="flexTokenExpiresAt">Token Expiry (optional)</label>
+    <input type="datetime-local" class="input input--mono" id="flexTokenExpiresAt">
+    <span class="input-hint">
+      Optional. Store the expiry date if you want to track token renewal.
+    </span>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="tradeConfirmQueryId">Trade Confirmation Query ID</label>
+    <input type="text" class="input input--mono" id="tradeConfirmQueryId" autocomplete="off">
+    <span class="input-hint">
+      Used for near-live execution imports, trims, and closes.
+    </span>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label" for="activityQueryId">Activity Query ID (optional)</label>
+    <input type="text" class="input input--mono" id="activityQueryId" autocomplete="off">
+    <span class="input-hint">
+      Used for account activity, history/backfill, and Net Liquidation checks.
+    </span>
+  </div>
+</div>
+
         <!-- Data Management -->
         <div class="settings-section">
           <h3 class="settings-section__title">Data Management</h3>
@@ -1511,65 +1571,7 @@
 
 
 
-        <div class="settings-section" id="ibkrFlexSection">
-          <h3 class="settings-section__title">IBKR Flex Import</h3>
-
-          <p class="settings-section__text settings-section__text--muted">
-            Import IBKR executions and account activity using your Flex Web Service token and query IDs.
-          </p>
-
-          <p id="ibkrFlexStatusText" class="settings-section__text">Status: checking...</p>
-
-          <div class="input-group">
-            <label class="input-label" for="flexToken">Flex Token</label>
-            <input type="text" class="input input--mono" id="flexToken" autocomplete="off">
-            <span class="input-hint">
-              Paste your IBKR Flex Web Service current token.
-            </span>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label" for="flexTokenExpiresAt">Token Expiry (optional)</label>
-            <input type="datetime-local" class="input input--mono" id="flexTokenExpiresAt">
-            <span class="input-hint">
-              Optional. Store the expiry date if you want to track token renewal.
-            </span>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label" for="tradeConfirmQueryId">Trade Confirmation Query ID</label>
-            <input type="text" class="input input--mono" id="tradeConfirmQueryId" autocomplete="off">
-            <span class="input-hint">
-              Used for near-live execution imports, trims, and closes.
-            </span>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label" for="activityQueryId">Activity Query ID (optional)</label>
-            <input type="text" class="input input--mono" id="activityQueryId" autocomplete="off">
-            <span class="input-hint">
-              Used for account activity, history/backfill, and Net Liquidation checks.
-            </span>
-          </div>
-
-          <div class="btn-group btn-group--vertical">
-            <button class="btn btn--secondary" id="saveIbkrFlexBtn" type="button">
-              Save Flex Connection
-            </button>
-
-            <button class="btn btn--secondary" id="syncIbkrFlexBtn" type="button">
-              Sync Flex Trades Now
-            </button>
-
-            <button class="btn btn--secondary" id="syncIbkrFlexHistoryBtn" type="button">
-              Sync Activity / Net Liq
-            </button>
-
-            <button class="btn btn--ghost text-danger" id="disconnectIbkrFlexBtn" type="button">
-              Disconnect Flex
-            </button>
-          </div>
-        </div>
+       
 
 
         <!-- <div class="settings-section" id="ibkrSection">

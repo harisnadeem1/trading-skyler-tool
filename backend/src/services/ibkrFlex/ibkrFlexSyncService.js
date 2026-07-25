@@ -22,9 +22,9 @@ function isTooManyRequestsError(error) {
   return msg.includes('too many requests');
 }
 
-function roundMoney(value) {
+function roundFinalPnl(value) {
   if (value === null || value === undefined) return null;
-  return Number(Number(value).toFixed(2));
+  return Number(Number(value).toFixed(4));
 }
 
 async function saveConnection(userId, payload) {
@@ -106,16 +106,35 @@ async function finishSyncLog(logId, status, recordsImported, errorMessage = null
 async function upsertTrade(userId, brokerConnectionId, trade, source) {
   const sql = `
     INSERT INTO broker_trades (
-      userid, brokerconnectionid, ibkrexecutionid, ibkrorderid,
-      symbol, side, quantity, price, executedat, commission, currency,
-      source, account_id, con_id, asset_category, trade_date,
-      source_details, raw_payload
+      userid,
+      brokerconnectionid,
+      ibkrexecutionid,
+      ibkrorderid,
+      symbol,
+      side,
+      quantity,
+      price,
+      executedat,
+      commission,
+      currency,
+      source,
+      account_id,
+      con_id,
+      asset_category,
+      trade_date,
+      ibkr_transaction_id,
+      ibkr_open_close_indicator,
+      ibkr_order_ref,
+      ibkr_code,
+      source_details,
+      raw_payload
     )
     VALUES (
       $1, $2, $3, $4,
       $5, $6, $7, $8, $9, $10, $11,
       $12, $13, $14, $15, $16,
-      $17, $18
+      $17, $18, $19, $20,
+      $21, $22
     )
     ON CONFLICT (userid, ibkrexecutionid)
     DO UPDATE SET
@@ -126,6 +145,10 @@ async function upsertTrade(userId, brokerConnectionId, trade, source) {
       con_id = COALESCE(EXCLUDED.con_id, broker_trades.con_id),
       asset_category = COALESCE(EXCLUDED.asset_category, broker_trades.asset_category),
       trade_date = COALESCE(EXCLUDED.trade_date, broker_trades.trade_date),
+      ibkr_transaction_id = COALESCE(EXCLUDED.ibkr_transaction_id, broker_trades.ibkr_transaction_id),
+      ibkr_open_close_indicator = COALESCE(EXCLUDED.ibkr_open_close_indicator, broker_trades.ibkr_open_close_indicator),
+      ibkr_order_ref = COALESCE(EXCLUDED.ibkr_order_ref, broker_trades.ibkr_order_ref),
+      ibkr_code = COALESCE(EXCLUDED.ibkr_code, broker_trades.ibkr_code),
       source_details = EXCLUDED.source_details,
       raw_payload = EXCLUDED.raw_payload
     RETURNING id
@@ -148,7 +171,19 @@ async function upsertTrade(userId, brokerConnectionId, trade, source) {
     trade.conId,
     trade.assetCategory,
     trade.tradeDate,
-    JSON.stringify({ import_source: source }),
+    trade.ibkrTransactionId,
+    trade.ibkrOpenCloseIndicator,
+    trade.ibkrOrderRef,
+    trade.ibkrCode,
+    JSON.stringify({
+  import_source: source,
+  fifoPnlRealized: trade.ibkrFifoPnlRealized,
+  mtmPnl: trade.ibkrMtmPnl,
+  proceeds: trade.ibkrProceeds,
+  cost: trade.ibkrCost,
+  netCash: trade.ibkrNetCash,
+  tradeMoney: trade.ibkrTradeMoney
+}),
     JSON.stringify(trade.rawPayload || {})
   ];
 
@@ -168,7 +203,7 @@ async function applyLatestAccountSnapshotToUserSettings(client, userId, accountS
   const latest = sorted.find(x => x.total !== null && x.total !== undefined);
   if (!latest) return;
 
-  const brokerCurrentAccountSize = roundMoney(latest.total);
+  const brokerCurrentAccountSize = Number(latest.total);
   if (brokerCurrentAccountSize === null) return;
 
   await client.query(
@@ -182,31 +217,148 @@ async function applyLatestAccountSnapshotToUserSettings(client, userId, accountS
     [userId, brokerCurrentAccountSize, latest.reportDate]
   );
 }
+
+
+
 async function syncBrokerTradesToJournal(client, userId) {
   const { rows: brokerTrades } = await client.query(
     `
     SELECT bt.*
     FROM broker_trades bt
-    LEFT JOIN journal_entries je
-      ON je.broker_trade_id = bt.id
+    LEFT JOIN journal_entries je ON je.broker_trade_id = bt.id
+    LEFT JOIN journal_trade_exits jte ON jte.broker_trade_id = bt.id
     WHERE bt.userid = $1
       AND je.id IS NULL
-    ORDER BY bt.executedat ASC, bt.createdat ASC
+      AND jte.id IS NULL
+    ORDER BY bt.executedat ASC, bt.createdat ASC, bt.ibkrexecutionid ASC
     `,
     [userId]
   );
 
   let journalEntriesCreated = 0;
   let exitEventsCreated = 0;
+  let skippedAmbiguousTrades = 0;
+  let skippedNoMatchingOpenPosition = 0;
 
   for (const trade of brokerTrades) {
     const qty = Number(trade.quantity);
     const price = Number(trade.price);
-    const commission = Number(trade.commission || 0);
-    const isBuy = trade.side === 'BUY';
-    const ticker = trade.symbol;
+    const ticker = String(trade.symbol || '').trim();
+    const assetCategory = String(trade.asset_category || '').toUpperCase();
 
-    if (isBuy) {
+    if (!qty || Number.isNaN(qty) || !price || Number.isNaN(price) || !ticker) {
+      skippedAmbiguousTrades += 1;
+      continue;
+    }
+
+    if (assetCategory && assetCategory !== 'STK') {
+      skippedAmbiguousTrades += 1;
+      continue;
+    }
+
+    const side = String(trade.side || '').toUpperCase();
+    const oci = String(trade.ibkr_open_close_indicator || '').toUpperCase();
+    const code = String(trade.ibkr_code || '').toUpperCase();
+
+    const codeFlags = code
+      .split(';')
+      .map(x => x.trim())
+      .filter(Boolean);
+
+    const hasOpenFlag = oci === 'O' || codeFlags.includes('O');
+    const hasCloseFlag = oci === 'C' || codeFlags.includes('C');
+
+    const isOpeningLong = side === 'BUY' && hasOpenFlag;
+    const isOpeningShort = side === 'SELL' && hasOpenFlag;
+    const isClosingLong = side === 'SELL' && hasCloseFlag;
+    const isClosingShort = side === 'BUY' && hasCloseFlag;
+
+    const canAutoJournal =
+      isOpeningLong ||
+      isOpeningShort ||
+      isClosingLong ||
+      isClosingShort;
+
+    if (!canAutoJournal) {
+      skippedAmbiguousTrades += 1;
+      continue;
+    }
+
+    if (isOpeningLong || isOpeningShort) {
+      const direction = isOpeningShort ? 'short' : 'long';
+
+      const { rows: activeEntryRows } = await client.query(
+        `
+        SELECT je.*
+        FROM journal_entries je
+        WHERE je.user_id = $1
+          AND je.ticker = $2
+          AND je.direction = $3
+          AND je.status IN ('open', 'trimmed')
+          AND COALESCE(je.remaining_shares, 0) > 0
+        ORDER BY je.opened_at DESC, je.created_at DESC, je.id DESC
+        LIMIT 1
+        `,
+        [userId, ticker, direction]
+      );
+
+      if (activeEntryRows.length > 0) {
+        const existing = activeEntryRows[0];
+
+        const existingOriginalShares = Number(existing.original_shares || existing.shares || 0);
+        const existingRemainingShares = Number(existing.remaining_shares || existing.shares || 0);
+        const existingEntryPrice = Number(existing.entry_price || 0);
+        const existingPositionSize = Number(
+          existing.position_size || (existingEntryPrice * existingOriginalShares) || 0
+        );
+
+        const addedPositionSize = price * qty;
+        const newOriginalShares = Number((existingOriginalShares + qty).toFixed(8));
+        const newRemainingShares = Number((existingRemainingShares + qty).toFixed(8));
+        const newPositionSize = Number((existingPositionSize + addedPositionSize).toFixed(8));
+        const newAverageEntryPrice =
+          newOriginalShares > 0
+            ? Number((newPositionSize / newOriginalShares).toFixed(8))
+            : price;
+
+        const stopPrice =
+          direction === 'short'
+            ? Number((newAverageEntryPrice * 1.02).toFixed(8))
+            : newAverageEntryPrice;
+
+        await client.query(
+          `
+          UPDATE journal_entries
+          SET shares = $2,
+              original_shares = $3,
+              remaining_shares = $2,
+              position_size = $4,
+              entry_price = $5,
+              stop_price = $6,
+              original_stop = $6,
+              current_stop = $6,
+              status = 'open',
+              updated_at = now()
+          WHERE id = $1
+          `,
+          [
+            existing.id,
+            newRemainingShares,
+            newOriginalShares,
+            newPositionSize,
+            newAverageEntryPrice,
+            stopPrice
+          ]
+        );
+
+        continue;
+      }
+
+      const stopPrice =
+        direction === 'short'
+          ? Number((price * 1.02).toFixed(8))
+          : price;
+
       const insertResult = await client.query(
         `
         INSERT INTO journal_entries (
@@ -238,37 +390,42 @@ async function syncBrokerTradesToJournal(client, userId) {
         VALUES (
           $1,
           $2,
-          'long',
           $3,
-          $3,
-          NULL,
-          $3,
-          $3,
-          $4,
-          $4,
           $4,
           $5,
+          NULL,
+          $5,
+          $5,
+          $6,
+          $6,
+          $6,
+          $7,
           0,
           0,
           0,
           'open',
-          'Imported from IBKR Flex',
+          $8,
           NULL,
           true,
           '[]'::jsonb,
-          $6,
+          $9,
           now(),
           now(),
-          $7
+          $10
         )
         RETURNING id
         `,
         [
           userId,
           ticker,
+          direction,
           price,
+          stopPrice,
           qty,
-          roundMoney(price * qty),
+          price * qty,
+          direction === 'short'
+            ? 'Imported from IBKR Flex (short)'
+            : 'Imported from IBKR Flex',
           trade.executedat,
           trade.id
         ]
@@ -281,7 +438,9 @@ async function syncBrokerTradesToJournal(client, userId) {
       continue;
     }
 
+    const targetDirection = isClosingShort ? 'short' : 'long';
     let remainingToClose = qty;
+    let matchedAnyOpenEntry = false;
 
     const { rows: openEntries } = await client.query(
       `
@@ -289,12 +448,18 @@ async function syncBrokerTradesToJournal(client, userId) {
       FROM journal_entries
       WHERE user_id = $1
         AND ticker = $2
+        AND direction = $3
         AND status IN ('open', 'trimmed')
         AND COALESCE(remaining_shares, 0) > 0
-      ORDER BY opened_at ASC, created_at ASC
+      ORDER BY opened_at ASC, created_at ASC, id ASC
       `,
-      [userId, ticker]
+      [userId, ticker, targetDirection]
     );
+
+    if (openEntries.length === 0) {
+      skippedNoMatchingOpenPosition += 1;
+      continue;
+    }
 
     for (const entry of openEntries) {
       if (remainingToClose <= 0) break;
@@ -302,44 +467,103 @@ async function syncBrokerTradesToJournal(client, userId) {
       const entryRemaining = Number(entry.remaining_shares || 0);
       if (entryRemaining <= 0) continue;
 
+      matchedAnyOpenEntry = true;
+
       const sharesClosed = Math.min(entryRemaining, remainingToClose);
-      const entryPrice = Number(entry.entry_price);
-      const pnl = roundMoney((price - entryPrice) * sharesClosed - commission);
+      const entryPrice = Number(entry.entry_price || 0);
+
+      const rawPnl =
+        targetDirection === 'long'
+          ? (price - entryPrice) * sharesClosed
+          : (entryPrice - price) * sharesClosed;
+
+      let ibkrFifoPnlRealized = null;
+
+      try {
+        const sourceDetails =
+          trade.source_details && typeof trade.source_details === 'string'
+            ? JSON.parse(trade.source_details)
+            : trade.source_details;
+
+        if (
+          sourceDetails?.fifoPnlRealized !== null &&
+          sourceDetails?.fifoPnlRealized !== undefined
+        ) {
+          ibkrFifoPnlRealized = Number(sourceDetails.fifoPnlRealized);
+          if (Number.isNaN(ibkrFifoPnlRealized)) {
+            ibkrFifoPnlRealized = null;
+          }
+        }
+      } catch (_) {
+        ibkrFifoPnlRealized = null;
+      }
+
+      const originalExecutionQty = Number(trade.quantity || 0);
+
+      const executionPnlRaw =
+        ibkrFifoPnlRealized !== null && originalExecutionQty > 0
+          ? ibkrFifoPnlRealized * (sharesClosed / originalExecutionQty)
+          : rawPnl;
+
       const newRemaining = Number((entryRemaining - sharesClosed).toFixed(8));
       const originalShares = Number(entry.original_shares || entry.shares || entryRemaining);
-      const totalRealizedPnl = roundMoney(Number(entry.total_realized_pnl || 0) + pnl);
+      const previousRealizedRaw = Number(entry.total_realized_pnl || 0);
+      const totalRealizedRaw = previousRealizedRaw + executionPnlRaw;
+
+      const pnl = roundFinalPnl(executionPnlRaw);
+      const totalRealizedPnl = roundFinalPnl(totalRealizedRaw);
+
       const percentTrimmed =
-        originalShares > 0 ? Number(((sharesClosed / originalShares) * 100).toFixed(2)) : null;
+        originalShares > 0
+          ? Number(((sharesClosed / originalShares) * 100).toFixed(2))
+          : null;
+
       const eventType = newRemaining > 0 ? 'trim' : 'close';
       const newStatus = newRemaining > 0 ? 'trimmed' : 'closed';
 
-      await client.query(
+      const { rows: existingExit } = await client.query(
         `
-        INSERT INTO journal_trade_exits (
-          journal_entry_id,
-          user_id,
-          event_type,
-          exit_date,
-          shares_closed,
-          exit_price,
-          r_multiple,
-          pnl,
-          percent_trimmed,
-          created_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, now())
+        SELECT 1
+        FROM journal_trade_exits
+        WHERE user_id = $1
+          AND broker_trade_id = $2
+          AND journal_entry_id = $3
+        LIMIT 1
         `,
-        [
-          entry.id,
-          userId,
-          eventType,
-          trade.executedat,
-          sharesClosed,
-          price,
-          pnl,
-          percentTrimmed
-        ]
+        [userId, trade.id, entry.id]
       );
+
+      if (existingExit.length === 0) {
+        await client.query(
+          `
+          INSERT INTO journal_trade_exits (
+            journal_entry_id,
+            user_id,
+            event_type,
+            exit_date,
+            shares_closed,
+            exit_price,
+            r_multiple,
+            pnl,
+            percent_trimmed,
+            broker_trade_id,
+            created_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, $9, now())
+          `,
+          [
+            entry.id,
+            userId,
+            eventType,
+            trade.executedat,
+            sharesClosed,
+            price,
+            pnl,
+            percentTrimmed,
+            trade.id
+          ]
+        );
+      }
 
       await client.query(
         `
@@ -368,6 +592,10 @@ async function syncBrokerTradesToJournal(client, userId) {
       remainingToClose = Number((remainingToClose - sharesClosed).toFixed(8));
       exitEventsCreated += 1;
     }
+
+    if (!matchedAnyOpenEntry) {
+      skippedNoMatchingOpenPosition += 1;
+    }
   }
 
   await client.query(
@@ -386,8 +614,25 @@ async function syncBrokerTradesToJournal(client, userId) {
 
   return {
     journalEntriesCreated,
-    exitEventsCreated
+    exitEventsCreated,
+    skippedAmbiguousTrades,
+    skippedNoMatchingOpenPosition
   };
+}
+
+
+
+// Helper: check if any open position exists for ticker+direction
+async function hasOpenPosition(client, userId, ticker, direction) {
+  const { rows } = await client.query(
+    `SELECT 1 FROM journal_entries
+     WHERE user_id = $1 AND ticker = $2 AND direction = $3
+       AND status IN ('open', 'trimmed')
+       AND COALESCE(remaining_shares, 0) > 0
+     LIMIT 1`,
+    [userId, ticker, direction]
+  );
+  return rows.length > 0;
 }
 
 async function syncTradesForConnection(connection, queryId, source, syncField) {
@@ -406,8 +651,45 @@ async function syncTradesForConnection(connection, queryId, source, syncField) {
       token: connection.flex_token,
       queryId
     });
+const { trades, accountSnapshots } = ibkrFlexParser.parseFlexReport(download.xml);
 
-    const { trades, accountSnapshots } = ibkrFlexParser.parseFlexReport(download.xml);
+const jul22DebugTrades = trades
+  .filter(t => {
+    const executedAt = t.executedAt ? new Date(t.executedAt) : null;
+    const assetCategory = String(t.assetCategory || '').toUpperCase();
+
+    if (!executedAt || Number.isNaN(executedAt.getTime())) return false;
+
+    const month = executedAt.getUTCMonth() + 1;
+    const day = executedAt.getUTCDate();
+
+    return month === 7 && day === 22 && assetCategory === 'STK';
+  })
+  .map(t => ({
+    executionId: t.ibkrExecutionId,
+    orderId: t.ibkrOrderId,
+    transactionId: t.ibkrTransactionId,
+    symbol: t.symbol,
+    assetCategory: t.assetCategory,
+    side: t.side,
+    buySell: t.ibkrBuySell,
+    openClose: t.ibkrOpenCloseIndicator,
+    quantity: t.quantity,
+    price: t.price,
+    executedAt: t.executedAt,
+    tradeDate: t.tradeDate,
+    commission: t.commission,
+    fifoPnlRealized: t.ibkrFifoPnlRealized,
+    mtmPnl: t.ibkrMtmPnl,
+    proceeds: t.ibkrProceeds,
+    cost: t.ibkrCost,
+    netCash: t.ibkrNetCash
+  }));
+
+console.log(
+  'IBKR RAW JUL 22 STK DEBUG TRADES',
+  JSON.stringify(jul22DebugTrades, null, 2)
+);
 
     const client = await pool.connect();
     let journalSyncResult = {

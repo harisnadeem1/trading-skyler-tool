@@ -84,7 +84,6 @@ async function syncNow(req, res) {
     });
   }
 }
-
 async function syncHistoryNow(req, res) {
   try {
     const result = await flexSyncService.runHistorySyncForUser(req.user.id);
@@ -94,9 +93,14 @@ async function syncHistoryNow(req, res) {
       ...result
     });
   } catch (error) {
+    console.error('IBKR FLEX HISTORY SYNC ERROR:', error);
+    console.error('IBKR FLEX HISTORY SYNC ERROR MESSAGE:', error?.message);
+    console.error('IBKR FLEX HISTORY SYNC ERROR STACK:', error?.stack);
+    console.error('IBKR FLEX HISTORY SYNC ERROR USER:', req?.user?.id);
+
     return res.status(getStatusCode(error)).json({
       success: false,
-      message: error.message
+      message: error?.message || 'Unknown history sync error'
     });
   }
 }

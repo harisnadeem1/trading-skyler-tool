@@ -12,6 +12,22 @@ function setIbkrFlexStatus(message, tone = 'default') {
   if (tone === 'warning') el.classList.add('text-warning');
 }
 
+function formatDateTime(value) {
+  if (!value) return 'never';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit'
+  }).format(date);
+}
+
 async function loadIbkrFlexStatus() {
   try {
     const data = await api.get('/ibkr/flex/status');
@@ -21,11 +37,11 @@ async function loadIbkrFlexStatus() {
       return;
     }
 
-    const tradeSync = data.flexLastTradeSyncAt || 'never';
-    const historySync = data.flexLastHistorySyncAt || 'never';
+    const tradeSync = formatDateTime(data.flexLastTradeSyncAt);
+    const historySync = formatDateTime(data.flexLastHistorySyncAt);
 
     setIbkrFlexStatus(
-      `Connected (${data.status}) | trade sync: ${tradeSync} | activity sync: ${historySync}`,
+      `Connected (${data.status}) | Last trade sync: ${tradeSync} | Last activity sync: ${historySync}`,
       'success'
     );
   } catch (error) {

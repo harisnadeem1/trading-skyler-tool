@@ -142,26 +142,85 @@ function parseExecutions(xml) {
       const assetCategory = row.assetCategory || row.assetClass || row.secType || null;
       const tradeDate = normalizeDate(row.tradeDate || row.reportDate || row.date || null);
 
+      const openCloseIndicator = String(
+        row.openCloseIndicator ??
+        row.openClose ??
+        row.openCloseCode ??
+        row.ibOpenCloseIndicator ??
+        row.openingClosingIndicator ??
+        ''
+      ).trim().toUpperCase() || null;
+
+      const transactionId =
+        row.transactionID ||
+        row.transactionId ||
+        row.ibTransactionID ||
+        null;
+
+      const orderRef =
+        row.orderReference ||
+        row.orderRef ||
+        row.ibOrderRef ||
+        null;
+
+      const positionActionId =
+        row.positionActionID ||
+        row.positionActionId ||
+        null;
+
+      const code =
+        row.code != null ? String(row.code).trim() : null;
+
+      const transactionType =
+        row.transactionType != null ? String(row.transactionType).trim() : null;
+
+      const buySell =
+        row.buySell != null ? String(row.buySell).trim() : null;
+
+      const origTradeId =
+        row.origTradeID != null ? String(row.origTradeID).trim() : null;
+
+        const fifoPnlRealized = toNumber(row.fifoPnlRealized);
+const mtmPnl = toNumber(row.mtmPnl);
+const proceeds = toNumber(row.proceeds);
+const cost = toNumber(row.cost);
+const netCash = toNumber(row.netCash);
+const tradeMoney = toNumber(row.tradeMoney);
+
       if (!executionId || !symbol || !side || !quantity || quantity <= 0 || !price || !executedAt) {
         continue;
       }
 
       trades.push({
-        ibkrExecutionId: String(executionId),
-        ibkrOrderId: orderId ? String(orderId) : null,
-        symbol: String(symbol),
-        side,
-        quantity,
-        price,
-        executedAt,
-        commission,
-        currency,
-        accountId: accountId ? String(accountId) : null,
-        conId: conId ? String(conId) : null,
-        assetCategory: assetCategory ? String(assetCategory) : null,
-        tradeDate,
-        rawPayload: row
-      });
+  ibkrExecutionId: String(executionId),
+  ibkrOrderId: orderId ? String(orderId) : null,
+  ibkrTransactionId: transactionId ? String(transactionId) : null,
+  ibkrOpenCloseIndicator: openCloseIndicator,
+  ibkrOrderRef: orderRef ? String(orderRef) : null,
+  positionActionId: positionActionId ? String(positionActionId) : null,
+  ibkrCode: code,
+  ibkrTransactionType: transactionType,
+  ibkrBuySell: buySell,
+  ibkrOrigTradeId: origTradeId,
+  ibkrFifoPnlRealized: fifoPnlRealized,
+  ibkrMtmPnl: mtmPnl,
+  ibkrProceeds: proceeds,
+  ibkrCost: cost,
+  ibkrNetCash: netCash,
+  ibkrTradeMoney: tradeMoney,
+  symbol: String(symbol),
+  side,
+  quantity,
+  price,
+  executedAt,
+  commission,
+  currency,
+  accountId: accountId ? String(accountId) : null,
+  conId: conId ? String(conId) : null,
+  assetCategory: assetCategory ? String(assetCategory) : null,
+  tradeDate,
+  rawPayload: row
+});
     }
   }
 
