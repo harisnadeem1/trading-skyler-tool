@@ -220,20 +220,36 @@ async function applyLatestAccountSnapshotToUserSettings(client, userId, accountS
 
 
 
-async function syncBrokerTradesToJournal(client, userId) {
-  const { rows: brokerTrades } = await client.query(
-    `
-    SELECT bt.*
-    FROM broker_trades bt
-    LEFT JOIN journal_entries je ON je.broker_trade_id = bt.id
-    LEFT JOIN journal_trade_exits jte ON jte.broker_trade_id = bt.id
-    WHERE bt.userid = $1
-      AND je.id IS NULL
-      AND jte.id IS NULL
-    ORDER BY bt.executedat ASC, bt.createdat ASC, bt.ibkrexecutionid ASC
-    `,
-    [userId]
-  );
+async function syncBrokerTradesToJournal(client, userId, options = {}) {
+ const { sourceFilter = null, brokerTradeIds = null } = options;
+
+const queryParams = [userId];
+let whereSql = '';
+
+if (sourceFilter) {
+  queryParams.push(sourceFilter);
+  whereSql += ` AND bt.source = $${queryParams.length} `;
+}
+
+if (Array.isArray(brokerTradeIds) && brokerTradeIds.length > 0) {
+  queryParams.push(brokerTradeIds);
+  whereSql += ` AND bt.id = ANY($${queryParams.length}::uuid[]) `;
+}
+
+const { rows: brokerTrades } = await client.query(
+  `
+  SELECT bt.*
+  FROM broker_trades bt
+  LEFT JOIN journal_entries je ON je.broker_trade_id = bt.id
+  LEFT JOIN journal_trade_exits jte ON jte.broker_trade_id = bt.id
+  WHERE bt.userid = $1
+    ${whereSql}
+    AND je.id IS NULL
+    AND jte.id IS NULL
+  ORDER BY bt.executedat ASC, bt.createdat ASC, bt.ibkrexecutionid ASC
+  `,
+  queryParams
+);
 
   let journalEntriesCreated = 0;
   let exitEventsCreated = 0;
@@ -265,13 +281,63 @@ async function syncBrokerTradesToJournal(client, userId) {
       .map(x => x.trim())
       .filter(Boolean);
 
-    const hasOpenFlag = oci === 'O' || codeFlags.includes('O');
-    const hasCloseFlag = oci === 'C' || codeFlags.includes('C');
+    let hasOpenFlag = oci === 'O' || codeFlags.includes('O');
+let hasCloseFlag = oci === 'C' || codeFlags.includes('C');
 
-    const isOpeningLong = side === 'BUY' && hasOpenFlag;
-    const isOpeningShort = side === 'SELL' && hasOpenFlag;
-    const isClosingLong = side === 'SELL' && hasCloseFlag;
-    const isClosingShort = side === 'BUY' && hasCloseFlag;
+let isOpeningLong = side === 'BUY' && hasOpenFlag;
+let isOpeningShort = side === 'SELL' && hasOpenFlag;
+let isClosingLong = side === 'SELL' && hasCloseFlag;
+let isClosingShort = side === 'BUY' && hasCloseFlag;
+
+const source = String(trade.source || '').trim();
+const isTradeConfirmSource = source === 'ibkr_flex_trade_confirm';
+
+if (isTradeConfirmSource) {
+  const longOpenExists = await hasOpenPosition(client, userId, ticker, 'long');
+  const shortOpenExists = await hasOpenPosition(client, userId, ticker, 'short');
+
+  if (side === 'SELL' && longOpenExists) {
+    hasCloseFlag = true;
+    isClosingLong = true;
+    isOpeningShort = false;
+  }
+
+  if (side === 'BUY' && shortOpenExists) {
+    hasCloseFlag = true;
+    isClosingShort = true;
+    isOpeningLong = false;
+  }
+
+  if (!longOpenExists && !shortOpenExists) {
+    if (side === 'BUY') {
+      isOpeningLong = true;
+      isClosingShort = false;
+    }
+
+    if (side === 'SELL') {
+      isOpeningShort = true;
+      isClosingLong = false;
+    }
+  }
+}
+
+
+console.log(
+  '[IBKR CLASSIFY]',
+  {
+    execId: trade.ibkrexecutionid,
+    symbol: trade.symbol,
+    side,
+    oci,
+    code,
+    open: hasOpenFlag,
+    close: hasCloseFlag,
+    openLong: isOpeningLong,
+    openShort: isOpeningShort,
+    closeLong: isClosingLong,
+    closeShort: isClosingShort
+  }
+);
 
     const canAutoJournal =
       isOpeningLong ||
@@ -652,44 +718,22 @@ async function syncTradesForConnection(connection, queryId, source, syncField) {
       queryId
     });
 const { trades, accountSnapshots } = ibkrFlexParser.parseFlexReport(download.xml);
+const debugTrades = trades.map((t, index) => ({
+  i: index + 1,
+  execId: t.ibkrExecutionId,
+  symbol: t.symbol,
+  side: t.side,
+  qty: t.quantity,
+  px: t.price,
+  at: t.executedAt,
+  oci: t.ibkrOpenCloseIndicator,
+  code: t.ibkrCode,
+  src: source
+}));
 
-const jul22DebugTrades = trades
-  .filter(t => {
-    const executedAt = t.executedAt ? new Date(t.executedAt) : null;
-    const assetCategory = String(t.assetCategory || '').toUpperCase();
+console.log('IBKR FLEX TRADES DEBUG:', debugTrades);
 
-    if (!executedAt || Number.isNaN(executedAt.getTime())) return false;
 
-    const month = executedAt.getUTCMonth() + 1;
-    const day = executedAt.getUTCDate();
-
-    return month === 7 && day === 22 && assetCategory === 'STK';
-  })
-  .map(t => ({
-    executionId: t.ibkrExecutionId,
-    orderId: t.ibkrOrderId,
-    transactionId: t.ibkrTransactionId,
-    symbol: t.symbol,
-    assetCategory: t.assetCategory,
-    side: t.side,
-    buySell: t.ibkrBuySell,
-    openClose: t.ibkrOpenCloseIndicator,
-    quantity: t.quantity,
-    price: t.price,
-    executedAt: t.executedAt,
-    tradeDate: t.tradeDate,
-    commission: t.commission,
-    fifoPnlRealized: t.ibkrFifoPnlRealized,
-    mtmPnl: t.ibkrMtmPnl,
-    proceeds: t.ibkrProceeds,
-    cost: t.ibkrCost,
-    netCash: t.ibkrNetCash
-  }));
-
-console.log(
-  'IBKR RAW JUL 22 STK DEBUG TRADES',
-  JSON.stringify(jul22DebugTrades, null, 2)
-);
 
     const client = await pool.connect();
     let journalSyncResult = {
@@ -700,20 +744,39 @@ console.log(
     try {
       await client.query('BEGIN');
 
-      for (const trade of trades) {
-        await upsertTrade(connection.userid, connection.id, trade, source);
-        imported += 1;
-      }
+      const syncedBrokerTradeIds = [];
+
+for (const trade of trades) {
+  const brokerTradeId = await upsertTrade(
+    connection.userid,
+    connection.id,
+    trade,
+    source
+  );
+  syncedBrokerTradeIds.push(brokerTradeId);
+  imported += 1;
+}
 
       if (source === 'ibkr_flex_activity' && accountSnapshots.length > 0) {
-        await applyLatestAccountSnapshotToUserSettings(
-          client,
-          connection.userid,
-          accountSnapshots
-        );
-      }
+  await applyLatestAccountSnapshotToUserSettings(
+    client,
+    connection.userid,
+    accountSnapshots
+  );
+}
 
-      journalSyncResult = await syncBrokerTradesToJournal(client, connection.userid);
+if (source === 'ibkr_flex_activity') {
+  journalSyncResult = await syncBrokerTradesToJournal(client, connection.userid, {
+    sourceFilter: source
+  });
+}
+
+if (source === 'ibkr_flex_trade_confirm') {
+  journalSyncResult = await syncBrokerTradesToJournal(client, connection.userid, {
+    sourceFilter: source,
+    brokerTradeIds: syncedBrokerTradeIds
+  });
+}
 
       await client.query(
         `UPDATE broker_connections
