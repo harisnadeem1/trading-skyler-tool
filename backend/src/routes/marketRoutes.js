@@ -11,5 +11,6 @@ router.post('/reload-subscriptions', marketController.reloadSubscriptions);
 router.get('/cache', marketController.getCache);
 router.post('/run-snapshots', marketController.runSnapshots);
 router.get('/stream', marketController.streamMarket);
+router.get('/history', marketController.getHistory);
 
 module.exports = router;

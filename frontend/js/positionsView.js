@@ -8,6 +8,7 @@ import { trimModal } from './trimModal.js';
 import { viewManager } from './viewManager.js';
 import { wizard } from './wizard.js';
 import { subscribeToPrice, getLatestPrice, subscribeToTradeUpdates } from './marketStream.js';
+import { api } from './api.js';
 
 class PositionsView {
   constructor() {
@@ -189,7 +190,7 @@ class PositionsView {
 }
 
         if (action === 'chart') {
-          this.openChartModal(id);
+         void this.openChartModal(id);
         }
       });
     }
@@ -448,17 +449,14 @@ closeDeleteConfirm() {
 
 
 
-  openChartModal(tradeId) {
+  async openChartModal(tradeId) {
     const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
     if (!trade || !this.elements.chartModal) return;
 
     
 
-    this.renderChartModal(trade);
-
-    
-
-    this.startLiveChartFeed(trade);
+    await this.renderChartModal(trade);
+this.startLiveChartFeed(trade);
 
     this.elements.chartModal.classList.add('open');
     this.elements.chartModal.setAttribute('aria-hidden', 'false');
@@ -516,7 +514,7 @@ closeDeleteConfirm() {
     };
   }
 
-  renderChartModal(trade) {
+  async renderChartModal(trade) {
     const entry = Number(trade.entry ?? trade.entry_price ?? 0);
     const stop = Number(trade.currentStop ?? trade.current_stop ?? trade.stop ?? trade.stop_price ?? 0);
 
@@ -602,6 +600,15 @@ rightPriceScale: {
 },
 timeScale: {
   borderColor: 'rgba(157, 147, 132, 0.22)',
+  timeVisible: true,
+  secondsVisible: false,
+  tickMarkFormatter: (time) => {
+    const date = new Date(time * 1000);
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  },
 },
 crosshair: {
   vertLine: { color: 'rgba(158, 123, 59, 0.28)' },
@@ -625,98 +632,75 @@ crosshair: {
     });
 
     const seedPrice = Number(
-      livePrice ??
-      trade.currentPrice ??
-      trade.livePrice ??
-      trade.entry ??
-      trade.entry_price ??
-      0
-    );
+  livePrice ??
+  trade.currentPrice ??
+  trade.livePrice ??
+  trade.entry ??
+  trade.entry_price ??
+  0
+);
 
-    const now = Math.floor(Date.now() / 1000);
-    const initialPrice = seedPrice > 0 ? seedPrice : entry;
+const now = Math.floor(Date.now() / 1000);
+const initialPrice = seedPrice > 0 ? seedPrice : entry;
 
-    const levelValues = [initialPrice, entry, stop, fiveR];
-    if (target !== null && Number.isFinite(target)) {
-      levelValues.push(target);
-    }
+const data = await api.getMarketHistory(trade.ticker, '24h', '1m');
+const candles = Array.isArray(data?.candles) ? data.candles : [];
 
-    const minLevel = Math.min(...levelValues);
-    const maxLevel = Math.max(...levelValues);
-    const rangePadding = Math.max(
-      (maxLevel - minLevel) * 0.15,
-      Math.abs(initialPrice || 1) * 0.002,
-      0.5
-    );
+// If using line chart, convert candles to close values
+series.setData(
+  candles.length
+    ? candles.map((bar) => ({ time: bar.time, value: bar.close }))
+    : [{ time: now, value: initialPrice }]
+);
+chart.priceScale('right').applyOptions({
+  autoScale: false,
+  scaleMargins: { top: 0.2, bottom: 0.2 },
+});
+series.createPriceLine({
+  price: entry,
+  color: '#9e7b3b',
+  lineWidth: 2,
+  lineStyle: 0,
+  axisLabelVisible: true,
+  title: 'Entry',
+});
 
-    const visibleMin = minLevel - rangePadding;
-    const visibleMax = maxLevel + rangePadding;
+series.createPriceLine({
+  price: stop,
+  color: '#6a4b3c',
+  lineWidth: 2,
+  lineStyle: 2,
+  axisLabelVisible: true,
+  title: 'Stop',
+});
 
-    // ONE honest starting point, no fake history
-    series.setData([
-      { time: now, value: initialPrice },
-    ]);
+if (target !== null && Number.isFinite(target)) {
+  series.createPriceLine({
+    price: target,
+    color: '#c49a3a',
+    lineWidth: 2,
+    lineStyle: 2,
+    axisLabelVisible: true,
+    title: 'Target',
+  });
+}
 
-    chart.priceScale('right').applyOptions({
-      autoScale: false,
-      scaleMargins: { top: 0.20, bottom: 0.20 },
-    });
+series.createPriceLine({
+  price: fiveR,
+  color: '#c49a3a',
+  lineWidth: 2,
+  lineStyle: 1,
+  axisLabelVisible: true,
+  title: '5R',
+});
 
-    series.applyOptions({
-      autoscaleInfoProvider: () => ({
-        priceRange: {
-          minValue: visibleMin,
-          maxValue: visibleMax,
-        },
-      }),
-    });
+chart.timeScale().fitContent();
 
-    // Horizontal price lines for levels
-    series.createPriceLine({
-      price: entry,
-      color: '#9e7b3b',
-      lineWidth: 2,
-      lineStyle: 0,
-      axisLabelVisible: true,
-      title: 'Entry',
-    });
-
-    series.createPriceLine({
-      price: stop,
-      color: '#6a4b3c',
-      lineWidth: 2,
-      lineStyle: 2,
-      axisLabelVisible: true,
-      title: 'Stop',
-    });
-
-    if (target !== null && Number.isFinite(target)) {
-      series.createPriceLine({
-        price: target,
-        color: '#437a22',
-        lineWidth: 2,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'Target',
-      });
-    }
-
-    series.createPriceLine({
-      price: fiveR,
-      color: '#c49a3a',
-      lineWidth: 2,
-      lineStyle: 1,
-      axisLabelVisible: true,
-      title: '5R',
-    });
-
-    chart.timeScale().fitContent();
-
-    this.chart = chart;
-    this.chartSeries = series;
-    this.chartLastTime = now;
-    this.chartMinVisiblePrice = visibleMin;
-    this.chartMaxVisiblePrice = visibleMax;
+this.chart = chart;
+this.chartSeries = series;
+this.chartLastTime = candles.length ? candles[candles.length - 1].time : now;
+// this.chartMinVisiblePrice = visibleMin;
+// this.chartMaxVisiblePrice = visibleMax;
 
     requestAnimationFrame(() => {
       if (!this.chart || !this.elements.chartCanvas) return;

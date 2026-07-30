@@ -56,6 +56,11 @@ export const api = {
       method: 'DELETE',
     }),
 
+    getMarketHistory: (symbol, range = '24h', interval = '1m') =>
+  apiRequest(
+    `/market/history?symbol=${encodeURIComponent(symbol)}&range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`
+  ),
+
   connectIbkr: () => apiRequest('/broker/connect/ibkr'),
 getBrokerStatus: () => apiRequest('/broker/status'),
 getBrokerAccounts: () => apiRequest('/broker/accounts'),

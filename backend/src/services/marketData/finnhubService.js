@@ -460,6 +460,45 @@ function isConnected() {
   return connected;
 }
 
+async function fetchHistory(symbol, range = '24h', interval = '1m') {
+  const normalized = normalizeSymbol(symbol);
+
+  const end = Math.floor(Date.now() / 1000);
+  let start;
+
+  if (range === '24h') {
+    start = end - (24 * 60 * 60);
+  } else {
+    start = end - (24 * 60 * 60);
+  }
+
+  const resolution = interval === '1m' ? '1' : interval === '5m' ? '5' : '1';
+
+  const url =
+    `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(normalized)}` +
+    `&resolution=${resolution}&from=${start}&to=${end}&token=${FINNHUB_API_KEY}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Finnhub history failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.s !== 'ok' || !Array.isArray(data.t)) {
+    return [];
+  }
+
+  return data.t.map((time, i) => ({
+    time,
+    open: data.o[i],
+    high: data.h[i],
+    low: data.l[i],
+    close: data.c[i],
+    volume: data.v?.[i] ?? 0,
+  }));
+}
+
 module.exports = {
   fetchQuote,
   connect,
@@ -471,4 +510,5 @@ module.exports = {
   isConnected,
   refreshSymbolFromQuote,
   supportsQuoteFallback,
+  fetchHistory,
 };

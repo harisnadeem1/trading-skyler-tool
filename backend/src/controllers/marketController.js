@@ -14,6 +14,27 @@ const {
   sendToClient,
 } = require('../services/marketData/liveStream');
 const { buildTradeUpdate } = require('../services/marketData/liveTradeEmitter');
+const marketService = require('../services/marketService');
+
+
+async function getHistory(req, res) {
+  try {
+    const symbol = String(req.query.symbol || '').toUpperCase();
+    const range = String(req.query.range || '24h');
+    const interval = String(req.query.interval || '1m');
+
+    if (!symbol) {
+      return res.status(400).json({ message: 'Symbol is required' });
+    }
+
+    const candles = await marketService.getHistory(symbol, range, interval);
+
+    return res.json({ symbol, range, interval, candles });
+  } catch (error) {
+    console.error('getHistory error:', error);
+    return res.status(500).json({ message: 'Failed to fetch history' });
+  }
+}
 
 async function testQuote(req, res) {
   try {
@@ -101,14 +122,14 @@ function buildInitialTradesForUser(userId) {
 function sendInitialTradeSnapshot(res, userId) {
   const trades = buildInitialTradesForUser(userId);
 
-//   console.log(
-//   '[marketController] initial snapshot payload',
-//   trades.map((trade) => ({
-//     tradeId: trade.tradeId,
-//     symbol: trade.symbol,
-//     currentPrice: trade.currentPrice,
-//   }))
-// );
+  //   console.log(
+  //   '[marketController] initial snapshot payload',
+  //   trades.map((trade) => ({
+  //     tradeId: trade.tradeId,
+  //     symbol: trade.symbol,
+  //     currentPrice: trade.currentPrice,
+  //   }))
+  // );
 
   sendToClient(res, 'trade-update', {
     symbol: null,
@@ -174,4 +195,5 @@ module.exports = {
   getCache,
   runSnapshots,
   streamMarket,
+  getHistory,
 };
