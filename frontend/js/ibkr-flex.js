@@ -97,9 +97,18 @@ async function disconnectIbkrFlex() {
   }
 }
 
-document.getElementById('saveIbkrFlexBtn')?.addEventListener('click', saveIbkrFlexConnection);
-document.getElementById('syncIbkrFlexBtn')?.addEventListener('click', syncIbkrFlexNow);
-document.getElementById('syncIbkrFlexHistoryBtn')?.addEventListener('click', syncIbkrFlexHistoryNow);
-document.getElementById('disconnectIbkrFlexBtn')?.addEventListener('click', disconnectIbkrFlex);
+export function initIbkrFlexSettings() {
+  document.getElementById('saveIbkrFlexBtn')?.addEventListener('click', saveIbkrFlexConnection);
+  document.getElementById('syncIbkrFlexBtn')?.addEventListener('click', syncIbkrFlexNow);
+  document.getElementById('syncIbkrFlexHistoryBtn')?.addEventListener('click', syncIbkrFlexHistoryNow);
+  document.getElementById('disconnectIbkrFlexBtn')?.addEventListener('click', disconnectIbkrFlex);
 
-loadIbkrFlexStatus();
+  loadIbkrFlexStatus();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initIbkrFlexSettings);
+} else {
+  initIbkrFlexSettings();
+}
+

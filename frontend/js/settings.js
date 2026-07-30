@@ -7,10 +7,9 @@ import { parseNumber, formatCurrency, formatWithCommas } from './utils.js';
 import { showToast } from './ui.js';
 import { dataManager } from './dataManager.js';
 import { clearDataModal } from './clearDataModal.js';
-
 import { api } from './api.js';
 // import { initBrokerUI } from './broker.js';
-
+import { initIbkrFlexSettings } from './ibkr-flex.js';
 class Settings {
   constructor() {
     this.elements = {};
@@ -22,6 +21,8 @@ class Settings {
     this.cacheElements();
     this.bindEvents();
     this.loadAndApply();
+
+    initIbkrFlexSettings();
 
     this.startBridgeStatusPolling();
     // initBrokerUI();

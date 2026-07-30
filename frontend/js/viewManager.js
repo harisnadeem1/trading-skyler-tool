@@ -3,43 +3,66 @@ import { state } from './state.js';
 class ViewManager {
   constructor() {
     this.currentView = 'dashboard';
+
     this.views = {
       dashboard: null,
       positions: null,
       journal: null,
       stats: null,
       compound: null,
-      scans: null,
-      'trend-map': null
+      'trend-map': null,
     };
-    this.navElement = null;
-    this.navButtons = null;
-    this.mobileBreakpoint = 800;
-    this.mobileNavBackdrop = null;
-    this.resizeTimeout = null;
+
+    this.viewPaths = {
+      dashboard: './views/dashboard.html',
+      positions: './views/positions.html',
+      journal: './views/journal.html',
+      stats: './views/statistics.html',
+      compound: './views/compound.html',
+    };
+
+    this.partialPaths = [
+      './partials/settings-panel.html',
+      './partials/journal-modal.html',
+      './partials/trim-modal.html',
+      './partials/wizard-modal.html',
+    ];
+
+    this.dashboardMount = null;
+    this.positionsMount = null;
+    this.journalMount = null;
+    this.statsMount = null;
+    this.compoundMount = null;
+    this.globalPartialsMount = null;
   }
 
-  init() {
-    this.views.dashboard = document.querySelector('.main');
-    this.views.positions = document.getElementById('positionsView');
-    this.views.journal = document.getElementById('journalView');
-    this.views.stats = document.getElementById('statsView');
-    this.views.compound = document.getElementById('compoundView');
-    this.views.scans = document.getElementById('scansView');
-    this.views['trend-map'] = document.getElementById('trendMapView');
+  async init() {
+    this.dashboardMount = document.getElementById('dashboardMount');
+    this.positionsMount = document.getElementById('positionsMount');
+    this.journalMount = document.getElementById('journalMount');
+    this.statsMount = document.getElementById('statsMount');
+    this.compoundMount = document.getElementById('compoundMount');
+    this.globalPartialsMount = document.getElementById('globalPartialsMount');
 
-    this.navElement = document.getElementById('viewNav');
-    this.navButtons = document.querySelectorAll('.view-nav__btn');
-    this.mobileNavTrigger = document.getElementById('mobileNavTrigger');
-    this.mobileNavBackdrop = document.getElementById('mobileNavBackdrop');
-
-    if (!this.views.dashboard) {
-      console.warn('ViewManager: Dashboard element not found');
+    if (
+      !this.dashboardMount ||
+      !this.positionsMount ||
+      !this.journalMount ||
+      !this.statsMount ||
+      !this.compoundMount
+    ) {
+      console.warn('ViewManager: One or more view mount elements not found');
       return;
     }
 
+    await this.loadGlobalPartials();
+    await this.loadAllViews();
+
+    this.views['trend-map'] = document.getElementById('trendMapView');
+
     Object.entries(this.views).forEach(([name, el]) => {
       if (!el) return;
+
       if (name === 'dashboard') {
         el.classList.add('view--active');
         el.classList.remove('view--hidden');
@@ -49,69 +72,9 @@ class ViewManager {
       }
     });
 
-    if (this.mobileNavTrigger) {
-      this.mobileNavTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (this.isNavExpanded()) {
-          this.collapseNav();
-        } else {
-          this.expandNav();
-        }
-      });
-      this.updateMobileTriggerIcon();
-    }
+    await this.initDeepLink();
 
-    this.navButtons.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const view = e.currentTarget.dataset.view;
-        const isActive = e.currentTarget.classList.contains('view-nav__btn--active');
-
-        if (this.isMobile()) {
-          if (view && !isActive) {
-            this.switchTo(view);
-          }
-          this.collapseNav();
-        } else {
-          if (view) this.switchTo(view);
-        }
-      });
-    });
-
-    if (this.mobileNavBackdrop) {
-      this.mobileNavBackdrop.addEventListener('click', () => {
-        if (this.isNavExpanded()) {
-          this.collapseNav();
-        }
-      });
-    }
-
-    document.addEventListener('click', (e) => {
-      if (this.isMobile() && this.isNavExpanded()) {
-        if (
-          !this.navElement.contains(e.target) &&
-          !this.mobileNavTrigger?.contains(e.target) &&
-          !this.mobileNavBackdrop?.contains(e.target)
-        ) {
-          this.collapseNav();
-        }
-      }
-    });
-
-    window.addEventListener('resize', () => {
-      if (this.resizeTimeout) {
-        clearTimeout(this.resizeTimeout);
-      }
-      this.resizeTimeout = setTimeout(() => {
-        if (!this.isMobile() && this.isNavExpanded()) {
-          this.collapseNav();
-        }
-        this.updateMobileTriggerIcon();
-      }, 150);
-    });
-
-    this.initDeepLink();
-
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', async (e) => {
       if (e.metaKey || e.ctrlKey) {
         const viewMap = {
           '1': 'dashboard',
@@ -119,67 +82,94 @@ class ViewManager {
           '3': 'journal',
           '4': 'stats',
           '5': 'compound',
-          '6': 'scans',
-          '7': 'trend-map'
+          '6': 'trend-map',
         };
 
         if (viewMap[e.key]) {
           e.preventDefault();
-          this.switchTo(viewMap[e.key]);
-          if (this.isMobile()) this.collapseNav();
+          await this.switchTo(viewMap[e.key]);
         }
       }
     });
   }
 
-  isMobile() {
-    return window.innerWidth <= this.mobileBreakpoint;
-  }
-
-  isNavExpanded() {
-    return this.navElement?.classList.contains('view-nav--expanded');
-  }
-
-  expandNav() {
-    if (!this.isMobile()) return;
-    this.navElement?.classList.add('view-nav--expanded');
-    this.mobileNavTrigger?.classList.add('mobile-nav-trigger--active');
-    this.mobileNavBackdrop?.classList.add('mobile-nav-backdrop--active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  collapseNav() {
-    this.navElement?.classList.remove('view-nav--expanded');
-    this.mobileNavTrigger?.classList.remove('mobile-nav-trigger--active');
-    this.mobileNavBackdrop?.classList.remove('mobile-nav-backdrop--active');
-    document.body.style.overflow = '';
-  }
-
-  updateMobileTriggerIcon() {
-    if (!this.mobileNavTrigger) return;
-    const activeBtn = document.querySelector('.view-nav__btn--active');
-    if (!activeBtn) return;
-
-    const iconContainer = this.mobileNavTrigger.querySelector('.mobile-nav-trigger__icon');
-    if (!iconContainer) return;
-
-    const svg = activeBtn.querySelector('.view-nav__icon')?.cloneNode(true);
-    if (svg) {
-      iconContainer.innerHTML = '';
-      iconContainer.appendChild(svg);
+  async fetchHtml(path) {
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error(`Failed to load ${path}`);
     }
+    return response.text();
   }
 
-  initDeepLink() {
+  async loadViewIntoMount(path, mountEl, rootSelector) {
+    const html = await this.fetchHtml(path);
+    mountEl.innerHTML = html;
+
+    const root = mountEl.querySelector(rootSelector);
+
+    if (!root) {
+      throw new Error(`Root selector "${rootSelector}" not found in ${path}`);
+    }
+
+    return root;
+  }
+
+  async loadGlobalPartials() {
+    if (!this.globalPartialsMount) {
+      console.warn('ViewManager: globalPartialsMount not found');
+      return;
+    }
+
+    const partialHtml = await Promise.all(
+      this.partialPaths.map((path) => this.fetchHtml(path))
+    );
+
+    this.globalPartialsMount.innerHTML = partialHtml.join('\n');
+  }
+
+  async loadAllViews() {
+    this.views.dashboard = await this.loadViewIntoMount(
+      this.viewPaths.dashboard,
+      this.dashboardMount,
+      '#dashboardView'
+    );
+
+    this.views.positions = await this.loadViewIntoMount(
+      this.viewPaths.positions,
+      this.positionsMount,
+      '#positionsView'
+    );
+
+    this.views.journal = await this.loadViewIntoMount(
+      this.viewPaths.journal,
+      this.journalMount,
+      '#journalView'
+    );
+
+    this.views.stats = await this.loadViewIntoMount(
+      this.viewPaths.stats,
+      this.statsMount,
+      '#statsView'
+    );
+
+    this.views.compound = await this.loadViewIntoMount(
+      this.viewPaths.compound,
+      this.compoundMount,
+      '#compoundView'
+    );
+  }
+
+  async initDeepLink() {
     const hash = window.location.hash.slice(1);
     if (hash && this.views[hash]) {
-      this.switchTo(hash, { animate: false });
+      await this.switchTo(hash, { animate: false });
     }
   }
 
-  switchTo(view, options = { animate: true }) {
+  async switchTo(view, options = { animate: true }) {
     if (view === this.currentView) return;
     if (!this.views[view]) return;
+    window.scrollTo(0, 0);
 
     const previousView = this.currentView;
     const fromView = this.views[previousView];
@@ -187,12 +177,6 @@ class ViewManager {
 
     if (!fromView || !toView) return;
 
-    this.navButtons.forEach((btn) => {
-      const isActive = btn.dataset.view === view;
-      btn.classList.toggle('view-nav__btn--active', isActive);
-    });
-
-    this.updateMobileTriggerIcon();
     window.history.replaceState(null, '', `#${view}`);
 
     const finishSwitch = () => {
@@ -237,7 +221,15 @@ class ViewManager {
   }
 
   toggle() {
-    const viewOrder = ['dashboard', 'positions', 'journal', 'stats', 'compound', 'scans', 'trend-map'];
+    const viewOrder = [
+      'dashboard',
+      'positions',
+      'journal',
+      'stats',
+      'compound',
+      'trend-map',
+    ];
+
     const currentIndex = viewOrder.indexOf(this.currentView);
     const nextIndex = (currentIndex + 1) % viewOrder.length;
     this.switchTo(viewOrder[nextIndex]);
@@ -261,10 +253,6 @@ class ViewManager {
 
   isCompoundView() {
     return this.currentView === 'compound';
-  }
-
-  isScansView() {
-    return this.currentView === 'scans';
   }
 
   isTrendMapView() {

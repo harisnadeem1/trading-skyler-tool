@@ -40,20 +40,23 @@ class Journal {
 
   cacheElements() {
     this.elements = {
-      tradeNotes: document.getElementById('tradeNotes'),
-      logTradeBtn: document.getElementById('logTradeBtn'),
-      wizardHint: document.getElementById('wizardHint'),
+  tradeNotes: document.getElementById('tradeNotes'),
+  logTradeBtn: document.getElementById('logTradeBtn'),
+  wizardHint: document.getElementById('wizardHint'),
 
-      activeTrades: document.getElementById('activeTrades'),
-      activeTradeCount: document.getElementById('activeTradeCount'),
-      riskSummary: document.getElementById('riskSummary'),
-      viewPositionsBtn: document.getElementById('viewPositionsBtn'),
+  activeTrades: document.getElementById('activeTrades'),
+  activeTradeCount: document.getElementById('activeTradeCount'),
+  riskSummary: document.getElementById('riskSummary'),
+  viewPositionsBtn: document.getElementById('viewPositionsBtn'),
 
-      journalModal: document.getElementById('journalModal'),
-      journalModalOverlay: document.getElementById('journalModalOverlay'),
-      closeJournalBtn: document.getElementById('closeJournalBtn'),
-      viewJournalBtn: document.getElementById('viewJournalBtn'),
-      journalTableBody: document.getElementById('journalTableBody'),
+  journalModal: document.getElementById('journalModal'),
+  journalModalOverlay: document.getElementById('journalModalOverlay'),
+  closeJournalBtn: document.getElementById('closeJournalBtn'),
+  viewJournalBtn: document.getElementById('viewJournalBtn'),
+  journalTableBody: document.getElementById('journalTableBody'),
+  journalEmpty: document.getElementById('journalEmpty'),
+  journalTableContainer: document.querySelector('.journal-table-container'),
+  journalActions: document.querySelector('.journal-actions'),
 
       journalCount: document.getElementById('journalCount'),
       journalTotalPnL: document.getElementById('journalTotalPnL'),
@@ -130,6 +133,106 @@ class Journal {
     window.closeTrade = (id) => this.closeTrade(id);
     window.deleteTrade = (id) => this.deleteTrade(id);
   }
+
+  openDeleteConfirm(tradeId) {
+  const trade = state.journal.entries.find((t) => String(t.id) === String(tradeId));
+  if (!trade) return;
+
+  if (this.elements.deleteModal) {
+    this.elements.deleteModal.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'delete-confirm-modal';
+  modal.innerHTML = `
+    <div class="delete-confirm-modal__backdrop"></div>
+    <div class="delete-confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+      <div class="delete-confirm-modal__header">
+        <div class="delete-confirm-modal__title-wrap">
+          <span class="delete-confirm-modal__icon" aria-hidden="true">
+            <i data-lucide="trash-2"></i>
+          </span>
+          <div>
+            <h2 class="delete-confirm-modal__title" id="deleteConfirmTitle">Delete Trade?</h2>
+            <p class="delete-confirm-modal__subtitle">
+              This will permanently remove <strong>${trade.ticker || 'this trade'}</strong> from your journal.
+            </p>
+          </div>
+        </div>
+
+        <button class="delete-confirm-modal__close" type="button" aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal__body">
+        <p class="delete-confirm-modal__text">
+          This action cannot be undone.
+        </p>
+
+        <div class="delete-confirm-modal__meta">
+          <div><span>Ticker</span><strong>${trade.ticker || '—'}</strong></div>
+          <div><span>Status</span><strong>${String(trade.status || '').toUpperCase()}</strong></div>
+          <div><span>Entry</span><strong>${formatCurrency(Number(trade.entry ?? trade.entry_price ?? 0))}</strong></div>
+        </div>
+      </div>
+
+      <div class="delete-confirm-modal__footer">
+        <button class="btn btn--secondary" type="button" data-action="cancel">Cancel</button>
+        <button class="btn btn--danger" type="button" data-action="delete">Delete Trade</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  this.elements.deleteModal = modal;
+
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+    if (window.lucide?.createIcons) {
+      window.lucide.createIcons();
+    }
+  });
+
+  const close = () => this.closeDeleteConfirm();
+
+  modal.querySelector('.delete-confirm-modal__backdrop')?.addEventListener('click', close);
+  modal.querySelector('.delete-confirm-modal__close')?.addEventListener('click', close);
+  modal.querySelector('[data-action="cancel"]')?.addEventListener('click', close);
+  modal.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
+    try {
+      const deleted = await state.deleteJournalEntry(tradeId);
+      if (deleted) {
+        showToast('Trade removed from the journal.', 'success');
+        this.render();
+      }
+    } catch (error) {
+      console.error('Failed to delete trade:', error);
+      showToast('Failed to remove trade.', 'error');
+    }
+    close();
+  });
+
+  this.deleteConfirmEscHandler = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', this.deleteConfirmEscHandler);
+}
+
+closeDeleteConfirm() {
+  if (!this.elements.deleteModal) return;
+
+  this.elements.deleteModal.classList.remove('open');
+  setTimeout(() => {
+    this.elements.deleteModal?.remove();
+    this.elements.deleteModal = null;
+  }, 180);
+
+  if (this.deleteConfirmEscHandler) {
+    document.removeEventListener('keydown', this.deleteConfirmEscHandler);
+    this.deleteConfirmEscHandler = null;
+  }
+}
 
   async logTrade(skipWizard = false) {
     const results = state.results;
@@ -232,18 +335,8 @@ class Journal {
   }
 
   async deleteTrade(id) {
-    if (!confirm('Delete this trade?')) return;
-
-    try {
-      const deleted = await state.deleteJournalEntry(id);
-      if (deleted) {
-        showToast('🗑️ Trade deleted', 'success');
-      }
-    } catch (error) {
-      console.error('Failed to delete trade:', error);
-      showToast('❌ Failed to delete trade', 'error');
-    }
-  }
+  this.openDeleteConfirm(id);
+}
 
   render() {
     this.renderActiveTrades();
@@ -263,9 +356,11 @@ class Journal {
     if (activeTrades.length === 0) {
       this.elements.activeTrades.innerHTML = `
         <div class="empty-state">
-          <span class="empty-state__icon">🧘</span>
-          <span class="empty-state__text">No active trades</span>
-          <span class="empty-state__hint">Log a trade to see it here</span>
+          <span class="empty-state__icon" aria-hidden="true">
+                <i data-lucide="anchor"></i>
+              </span>
+          <span class="empty-state__text">No active positions</span>
+          <span class="empty-state__hint">Patience is also a position</span>
         </div>
       `;
       return;
@@ -424,23 +519,40 @@ class Journal {
     state.setUI('journalOpen', false);
   }
 
+  
+
   renderTable(filter = 'all') {
     if (!this.elements.journalTableBody) return;
 
     state.state.journal.filter = filter;
-    const trades = state.getFilteredEntries(filter);
+   const trades = state.getFilteredEntries(filter);
+const hasTrades = trades.length > 0;
 
-    if (trades.length === 0) {
-      this.elements.journalTableBody.innerHTML = `
-        <tr class="journal-empty">
-          <td colspan="11">No trades ${filter !== 'all' ? 'with status "' + filter + '"' : 'logged yet'}</td>
-        </tr>
-      `;
-      if (this.elements.journalSummaryText) {
-        this.elements.journalSummaryText.textContent = '0 trades';
-      }
-      return;
-    }
+if (this.elements.journalEmpty) {
+  this.elements.journalEmpty.classList.toggle('journal-empty--visible', !hasTrades);
+}
+
+if (this.elements.journalTableContainer) {
+  this.elements.journalTableContainer.style.display = hasTrades ? 'block' : 'none';
+}
+
+if (this.elements.journalActions) {
+  this.elements.journalActions.style.display = hasTrades ? 'flex' : 'none';
+}
+
+   if (trades.length === 0) {
+  this.elements.journalTableBody.innerHTML = `
+    <tr class="journal-empty-row">
+      <td colspan="11">No trades ${filter !== 'all' ? 'with status "' + filter + '"' : 'logged yet'}</td>
+    </tr>
+  `;
+
+  if (this.elements.journalSummaryText) {
+    this.elements.journalSummaryText.textContent = '0 trades';
+  }
+
+  return;
+}
 
     this.elements.journalTableBody.innerHTML = trades
       .map((trade) => {
@@ -477,6 +589,8 @@ class Journal {
       })
       .join('');
 
+      
+
     const getPnL = (t) => Number(t.totalRealizedPnL ?? t.total_realized_pnl ?? t.pnl ?? 0);
     const wins = trades.filter((t) => getPnL(t) > 0).length;
     const losses = trades.filter((t) => getPnL(t) < 0).length;
@@ -502,9 +616,13 @@ class Journal {
         parts.push(`${totalPnL >= 0 ? '+' : ''}${formatCurrency(totalPnL)}`);
       }
 
-      this.elements.journalSummaryText.textContent = parts.join(' · ');
-    }
-  }
+    this.elements.journalSummaryText.textContent = parts.join(' · ');
+}
+
+if (window.lucide?.createIcons) {
+  window.lucide.createIcons();
+}
+}
 }
 
 export const journal = new Journal();

@@ -1,6 +1,6 @@
 /* ========================================
    Animations & Transitions
-   ======================================== */
+   ========================================= */
 
 /* === Base Transitions === */
 
@@ -8,11 +8,20 @@
 .btn,
 .input,
 .preset-btn,
-.result-card {
-  transition: all var(--transition-base);
+.result-card,
+.filter-btn,
+.position-card,
+.stat-card,
+.compound-card {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
-/* === Fade Animations === */
+/* === Core Keyframes === */
 
 @keyframes fadeIn {
   from {
@@ -23,10 +32,10 @@
   }
 }
 
-@keyframes fadeInUp {
+@keyframes fadeInSoft {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -34,23 +43,10 @@
   }
 }
 
-@keyframes fadeInDown {
+@keyframes scaleInSoft {
   from {
     opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* === Scale Animations === */
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.985);
   }
   to {
     opacity: 1;
@@ -58,173 +54,102 @@
   }
 }
 
-@keyframes pop {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* === Slide Animations === */
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* === Pulse Animation === */
-
-@keyframes pulse {
+@keyframes pulseSoft {
   0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.6;
+    opacity: 0.82;
   }
 }
-
-/* === Glow Animation === */
-
-@keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 5px var(--primary-glow);
-  }
-  50% {
-    box-shadow: 0 0 20px var(--primary-glow);
-  }
-}
-
-/* === Shake Animation === */
 
 @keyframes shake {
   0%, 100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
-    transform: translateX(-4px);
+  25% {
+    transform: translateX(-3px);
   }
-  20%, 40%, 60%, 80% {
-    transform: translateX(4px);
+  75% {
+    transform: translateX(3px);
   }
 }
 
-/* === Animation Classes === */
+@keyframes valueFlash {
+  0% {
+    color: var(--text-primary);
+  }
+  50% {
+    color: var(--primary);
+  }
+  100% {
+    color: var(--text-primary);
+  }
+}
+
+@keyframes successFlash {
+  0% {
+    background-color: rgba(158, 123, 59, 0.10);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* === Utility Animation Classes === */
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-base) ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp var(--transition-slow) ease-out;
-}
-
-.animate-fade-in-down {
-  animation: fadeInDown var(--transition-slow) ease-out;
+  animation: fadeInSoft 0.24s ease-out;
 }
 
 .animate-scale-in {
-  animation: scaleIn var(--transition-base) ease-out;
-}
-
-.animate-pop {
-  animation: pop 0.3s ease-out;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight var(--transition-slow) ease-out;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft var(--transition-slow) ease-out;
+  animation: scaleInSoft 0.2s ease-out;
 }
 
 .animate-pulse {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
+  animation: pulseSoft 1.8s ease-in-out infinite;
 }
 
 .animate-shake {
-  animation: shake 0.5s ease-in-out;
+  animation: shake 0.35s ease-in-out;
 }
 
 /* === Staggered Animations === */
 
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
-.stagger-5 { animation-delay: 250ms; }
-.stagger-6 { animation-delay: 300ms; }
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 160ms; }
+.stagger-5 { animation-delay: 200ms; }
+.stagger-6 { animation-delay: 240ms; }
 
 /* === Page Load Animation === */
 
 .dashboard-header {
-  animation: fadeInUp 0.4s ease-out backwards;
+  animation: fadeInSoft 0.24s ease-out backwards;
   animation-delay: 0ms;
 }
 
 .panel {
-  animation: fadeInUp 0.5s ease-out backwards;
+  animation: fadeInSoft 0.24s ease-out backwards;
 }
 
-.panel--input {
-  animation-delay: 80ms;
-}
-
-.panel--results {
-  animation-delay: 160ms;
-}
-
-.panel--journal {
-  animation-delay: 240ms;
-}
+.panel--input { animation-delay: 40ms; }
+.panel--results { animation-delay: 80ms; }
+.panel--journal { animation-delay: 120ms; }
 
 /* === Result Card Updates === */
 
 .result-card.updated {
-  animation: pop 0.3s ease-out;
+  animation: fadeIn 0.18s ease-out;
 }
 
 .result-card.updated .result-card__value {
-  animation: valueUpdate 0.4s ease-out;
-}
-
-@keyframes valueUpdate {
-  0% {
-    transform: scale(1);
-    color: var(--primary);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
+  animation: valueFlash 0.3s ease-out;
 }
 
 /* === Collapsible Card Animation === */
@@ -233,7 +158,10 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.3s ease-out, opacity 0.2s ease-out, padding 0.3s ease-out;
+  transition:
+    max-height 0.24s ease-out,
+    opacity 0.18s ease-out,
+    padding 0.24s ease-out;
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -246,14 +174,17 @@
   padding-bottom: var(--space-5);
 }
 
-/* Settings card - max-height animation (push down, all screen sizes) */
+/* Settings card */
 .card--settings .card__body--collapsible {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
   padding-top: 0;
   padding-bottom: 0;
-  transition: max-height 0.3s ease-out, opacity 0.2s ease-out, padding 0.3s ease-out;
+  transition:
+    max-height 0.24s ease-out,
+    opacity 0.18s ease-out,
+    padding 0.24s ease-out;
 }
 
 .card--settings.open .card__body--collapsible {
@@ -270,7 +201,11 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.3s ease-out, opacity 0.2s ease-out, margin 0.3s ease-out, padding 0.3s ease-out;
+  transition:
+    max-height 0.24s ease-out,
+    opacity 0.18s ease-out,
+    margin 0.24s ease-out,
+    padding 0.24s ease-out;
   margin-top: 0;
   padding: 0;
 }
@@ -282,41 +217,25 @@
   padding: var(--space-4);
 }
 
-/* === Input Focus Glow === */
-
-.input:focus,
-.alert-input:focus {
-  animation: none;
-}
-
 /* === Button Press === */
 
 .btn:active,
 .preset-btn:active,
 .icon-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.985);
 }
 
-/* === Error Shake === */
+/* === Error State === */
 
 .input.error {
-  animation: shake 0.5s ease-in-out;
+  animation: shake 0.35s ease-in-out;
   border-color: var(--danger);
 }
 
 /* === Success Flash === */
 
-@keyframes successFlash {
-  0% {
-    background-color: var(--success-muted);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
 .flash-success {
-  animation: successFlash 1s ease-out;
+  animation: successFlash 0.8s ease-out;
 }
 
 /* === Loading State === */
@@ -331,80 +250,16 @@
   position: absolute;
   inset: 0;
   background: var(--bg-surface);
-  opacity: 0.7;
-  animation: pulse 1s ease-in-out infinite;
+  opacity: 0.65;
+  animation: pulseSoft 1.2s ease-in-out infinite;
 }
 
 /* === Toast Animations === */
 
-@keyframes toastSpringIn {
-  0% {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  40% {
-    opacity: 1;
-    transform: translateY(-4px) scale(1.01);
-  }
-  70% {
-    transform: translateY(2px) scale(0.995);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toastSpringOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-}
-
-@keyframes toastSlideDown {
-  0% {
-    opacity: 0;
-    transform: translateY(-24px) scale(0.96);
-  }
-  40% {
-    opacity: 1;
-    transform: translateY(4px) scale(1.01);
-  }
-  70% {
-    transform: translateY(-2px) scale(0.995);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toastSlideUp {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-}
-
-.toast.removing {
-  animation: toastSpringOut 0.25s ease-in forwards;
-}
-
-/* === Trade Card Animations === */
-
-@keyframes tradeCardIn {
+@keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -412,79 +267,86 @@
   }
 }
 
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.toast {
+  animation: toastIn 0.2s ease-out;
+}
+
+.toast.removing {
+  animation: toastOut 0.18s ease-in forwards;
+}
+
+/* === Trade Card === */
+
 .trade-card {
-  animation: tradeCardIn 0.3s ease-out;
+  animation: fadeInSoft 0.22s ease-out;
 }
 
 .trade-card.removing {
-  animation: slideOutRight 0.3s ease-in forwards;
+  animation: fadeIn 0.16s ease-out reverse forwards;
 }
 
-/* === Header Account Flash === */
-
-@keyframes accountFlash {
-  0% {
-    color: var(--text-primary);
-  }
-  30% {
-    color: var(--primary);
-    transform: scale(1.05);
-  }
-  100% {
-    color: var(--text-primary);
-    transform: scale(1);
-  }
-}
+/* === Header Account Update === */
 
 .header__account-value.updated {
-  animation: accountFlash 0.5s ease-out;
+  animation: valueFlash 0.35s ease-out;
 }
 
 /* === Insight Animation === */
 
 .insight {
-  animation: fadeInUp 0.3s ease-out;
+  animation: fadeInSoft 0.22s ease-out;
 }
 
 .insights .insight:nth-child(1) { animation-delay: 0ms; }
-.insights .insight:nth-child(2) { animation-delay: 50ms; }
-.insights .insight:nth-child(3) { animation-delay: 100ms; }
+.insights .insight:nth-child(2) { animation-delay: 40ms; }
+.insights .insight:nth-child(3) { animation-delay: 80ms; }
 
 /* === Preset Button Active State === */
 
 .preset-btn.active {
-  transition: all 0.15s ease-out;
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    color 0.15s ease-out;
 }
 
-/* === Modal Backdrop Blur === */
+/* === Modal Overlay === */
 
 .modal-overlay,
 .settings-overlay {
-  will-change: opacity, backdrop-filter;
+  transition: opacity 0.2s ease-out, backdrop-filter 0.2s ease-out;
 }
 
 .modal-overlay.open,
 .settings-overlay.open {
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
 /* === Input Valid State === */
 
 .input.valid {
-  border-color: var(--success);
+  border-color: var(--primary);
   animation: none;
 }
 
-/* === Badge Pulse === */
-
-.badge.pulse {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-/* === Risk Summary Indicator Animation === */
+/* === Risk Summary Indicator === */
 
 .risk-summary__indicator {
-  transition: all 0.3s ease-out;
+  transition:
+    background-color 0.24s ease-out,
+    color 0.24s ease-out,
+    border-color 0.24s ease-out;
 }
 
 /* === Smooth Number Transitions === */
@@ -498,52 +360,25 @@
 /* === Hero Card Hover === */
 
 .card--hero {
-  transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+  transition: border-color 0.24s ease-out, box-shadow 0.24s ease-out;
 }
 
 .card--hero:hover {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
-/* === Input Focus Ring === */
+/* === Input Focus === */
 
 .input:focus {
-  transition: border-color 0.15s ease-out;
+  transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
-/* === Button Hover Lift === */
+/* === Button Hover === */
 
 .btn--primary:hover,
-.btn--success:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn--primary:active,
-.btn--success:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: none;
-}
-
-/* === Link Underline Animation === */
-
-a {
-  position: relative;
-}
-
-a::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: currentColor;
-  transition: width 0.2s ease-out;
-}
-
-a:hover::after {
-  width: 100%;
+.btn--success:hover,
+.btn--secondary:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 /* === Skeleton Loading === */
@@ -572,9 +407,8 @@ a:hover::after {
 /* === Mobile Animation Fixes === */
 
 @media (max-width: 900px) {
-  /* Disable staggered panel animations on tablet/mobile to prevent overlap */
   .panel {
-    animation: fadeIn 0.3s ease-out backwards;
+    animation: fadeIn 0.22s ease-out backwards;
   }
 
   .panel--input,
@@ -585,129 +419,77 @@ a:hover::after {
 }
 
 @media (max-width: 600px) {
-  /* Use simpler fade animation on mobile - no translateY to prevent overlap */
   .panel {
-    animation: fadeIn 0.25s ease-out;
-    will-change: auto; /* Reset will-change to prevent layer issues */
+    animation: fadeIn 0.2s ease-out;
+    will-change: auto;
   }
 
-  /* Ensure panels don't visually overlap during render */
   .panel--input,
   .panel--results,
   .panel--journal {
     animation-delay: 0ms;
-    transform: none !important; /* Force no transforms for stable stacking */
+    transform: none !important;
   }
 
-  /* Reduce result card animation intensity */
   .result-card.updated {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.15s ease-out;
   }
 
-  /* Simpler trade card animation */
   .trade-card {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.18s ease-out;
   }
-}
-
-/* === Pulsing Glow (Save to Journal CTA) === */
-
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.3);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 24px 8px rgba(16, 185, 129, 0.5);
-    transform: scale(1.02);
-  }
-}
-
-.btn--pulse {
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-
-.btn--pulse:hover {
-  animation: none;
-  box-shadow: 0 0 28px 10px rgba(16, 185, 129, 0.45);
-  transform: scale(1.02);
 }
 
 /* === Theme Transition === */
-/* Only apply slow color transitions during active theme toggle */
 
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
-  transition: background-color 0.4s ease-out,
-              color 0.4s ease-out,
-              border-color 0.4s ease-out,
-              box-shadow 0.4s ease-out,
-              fill 0.4s ease-out,
-              stroke 0.4s ease-out !important;
+  transition:
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    border-color 0.3s ease-out,
+    box-shadow 0.3s ease-out,
+    fill 0.3s ease-out,
+    stroke 0.3s ease-out !important;
 }
 
 /* === View Swap Transitions === */
 
-@keyframes viewSlideOut {
+@keyframes viewFadeOut {
   from {
     opacity: 1;
-    transform: translateX(0);
   }
   to {
     opacity: 0;
-    transform: translateX(-20px);
   }
 }
 
-@keyframes viewSlideIn {
+@keyframes viewFadeIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes viewFadeScale {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
 .view--hiding {
-  animation: viewSlideOut 0.2s ease-out forwards;
+  animation: viewFadeOut 0.14s ease-out forwards;
   pointer-events: none;
 }
 
 .view--entering {
-  animation: viewSlideIn 0.3s ease-out forwards;
+  animation: viewFadeIn 0.18s ease-out forwards;
 }
 
-/* Mobile: Use fade + scale instead of slide */
 @media (max-width: 768px) {
   .view--hiding {
-    animation: fadeOut 0.15s ease-out forwards;
+    animation: viewFadeOut 0.12s ease-out forwards;
   }
 
   .view--entering {
-    animation: viewFadeScale 0.25s ease-out forwards;
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
+    animation: viewFadeIn 0.16s ease-out forwards;
   }
 }
 
@@ -720,5 +502,6 @@ html.theme-transitioning *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

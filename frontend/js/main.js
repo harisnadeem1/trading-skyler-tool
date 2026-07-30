@@ -17,9 +17,6 @@ import {
 } from './ui.js';
 import { trimModal } from './trimModal.js';
 import { wizard } from './wizard.js';
-import { confetti } from './confetti.js';
-import { achievements } from './achievements.js';
-import { soundFx } from './soundFx.js';
 import { dataManager } from './dataManager.js';
 import { clearDataModal } from './clearDataModal.js';
 import { viewManager } from './viewManager.js';
@@ -28,17 +25,24 @@ import { equityChart } from './statsChart.js';
 import { positionsView } from './positionsView.js';
 import { journalView } from './journalView.js';
 import { compoundView } from './compoundView.js';
-import { scansView } from './scansView.js';
 import { authManager } from './auth.js';
 import {
   subscribeToTradeAlerts,
   subscribeToMarketConnection,
   closeMarketStream,
 } from './marketStream.js';
-
 import { trendMapView } from './trendMap.js';
 
 let appInstance = null;
+const taglineMap = {
+  dashboard: 'Plan the trade. Define the risk. Execute with discipline.',
+  positions: 'Track open risk and manage positions with clarity.',
+  journal: 'Log the trade. Review the process. Improve the system.',
+  stats: 'Measure what matters. Study the edge.',
+  compound: 'Consistency compounds over time.',
+  'trend-map': 'The Ronin System.',
+  settings: 'Tune the platform to your workflow.',
+};
 
 class App {
   constructor() {
@@ -46,38 +50,43 @@ class App {
     this.toastContainer = null;
     this.unsubscribeTradeAlerts = null;
     this.unsubscribeMarketConnection = null;
-    this.init();
+    this.currentView = 'dashboard';
   }
 
-  init() {
+  async init() {
     console.log('Initializing TradeDeck...');
 
     dataManager.setModules(settings, calculator, journal, clearDataModal);
 
-    settings.init();
     theme.init();
+
+    await viewManager.init();
+
+this.currentView =
+  viewManager?.currentView ||
+  viewManager?.activeView ||
+  this.currentView;
+
+settings.init();
+    trimModal.init();
+    wizard.init();
+    clearDataModal.init();
+
     calculator.init();
     parser.init();
     journal.init();
-    trimModal.init();
-    wizard.init();
-    confetti.init();
-    achievements.init();
-    soundFx.init();
-    clearDataModal.init();
-    viewManager.init();
     stats.init();
     equityChart.init();
     positionsView.init();
     journalView.init();
     compoundView.init();
-    scansView.init();
+    trendMapView.init();
+
     keyboard.init();
     settingsToggle.init();
     focusManager.init();
     hintArrow.init();
     tooltipHandler.init();
-    trendMapView.init();
 
     this.cacheDashboardElements();
     this.updateHeaderAccountValue();
@@ -86,13 +95,19 @@ class App {
     this.setupGlobalEvents();
     this.setupGlobalFunctions();
     this.setupDashboardButtons();
+    this.setupShellNavigation();
+    this.setupMobileNavVisibility();
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+  window.lucide.createIcons();
+}
 
     settingsToggle.updateSummary(
       state.account.currentSize,
       state.account.maxPositionPercent
     );
 
-        this.ensureToastContainer();
+    this.ensureToastContainer();
     this.setupLiveNotifications();
 
     console.log('TradeDeck initialized successfully');
@@ -105,23 +120,35 @@ class App {
       streakText: document.getElementById('streakText'),
       viewPositionsBtn: document.getElementById('viewPositionsBtn'),
       viewJournalBtn: document.getElementById('viewJournalBtn'),
+      currentViewLabel: document.getElementById('currentViewLabel'),
+      currentViewTagline: document.getElementById('currentViewTagline'),
+      sidebar: document.getElementById('appSidebar'),
+      sidebarToggle: document.getElementById('sidebarToggle'),
+      desktopNavButtons: Array.from(document.querySelectorAll('.app-sidebar__link[data-view]')),
+      mobileNavButtons: Array.from(document.querySelectorAll('.mobile-bottom-nav__item[data-view]')),
+      mobileMoreBtn: document.getElementById('mobileMoreBtn'),
+      mobileMenuTrigger: document.getElementById('mobileMenuTrigger'),
+      mobileMoreSheet: document.getElementById('mobileMoreSheet'),
+      mobileMoreBackdrop: document.getElementById('mobileMoreBackdrop'),
+      mobileMoreLinks: Array.from(document.querySelectorAll('.mobile-more-sheet__link[data-view]')),
+      settingsBtn: document.getElementById('settingsBtn'),
+      mobileBottomNav: document.querySelector('.mobile-bottom-nav'),
     };
   }
 
   formatCurrency(value) {
-  const amount = Number(value ?? 0);
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+    const amount = Number(value ?? 0);
+    return amount.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
 
   updateHeaderAccountValue() {
-    const accountValueEl = document.querySelector('.header__account-value');
+    const accountValueEl = document.querySelector('.topbar__account-value');
     if (!accountValueEl) return;
-
     accountValueEl.textContent = this.formatCurrency(state.account.currentSize);
   }
 
@@ -151,18 +178,248 @@ class App {
   setupDashboardButtons() {
     if (this.dashboardEls.viewPositionsBtn) {
       this.dashboardEls.viewPositionsBtn.addEventListener('click', () => {
-        viewManager.navigateTo('positions');
+        this.navigateToView('positions');
       });
     }
 
     if (this.dashboardEls.viewJournalBtn) {
       this.dashboardEls.viewJournalBtn.addEventListener('click', () => {
-        viewManager.navigateTo('journal');
+        this.navigateToView('journal');
       });
     }
   }
 
+  setupShellNavigation() {
+    const {
+      sidebarToggle,
+      desktopNavButtons,
+      mobileNavButtons,
+      mobileMoreBtn,
+      mobileMenuTrigger,
+      mobileMoreSheet,
+      mobileMoreBackdrop,
+      mobileMoreLinks,
+      settingsBtn,
+    } = this.dashboardEls;
+
+  if (sidebarToggle) {
+  sidebarToggle.addEventListener('click', () => {
+    const shell = document.querySelector('.app-shell');
+    if (!shell) return;
+
+    shell.classList.toggle('sidebar-collapsed');
+    const expanded = !shell.classList.contains('sidebar-collapsed');
+
+    sidebarToggle.setAttribute('aria-expanded', String(expanded));
+    sidebarToggle.setAttribute(
+      'aria-label',
+      expanded ? 'Collapse sidebar' : 'Expand sidebar'
+    );
+
+    const icon = sidebarToggle.querySelector('[data-lucide]');
+    if (icon) {
+      icon.setAttribute(
+        'data-lucide',
+        expanded ? 'chevrons-left' : 'chevrons-right'
+      );
+    }
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  });
+}
+
+    desktopNavButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        if (view) this.handleNavAction(view);
+      });
+    });
+
+    mobileNavButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        if (view) this.handleNavAction(view);
+      });
+    });
+
+    mobileMoreLinks.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.view;
+        if (view) this.handleNavAction(view);
+      });
+    });
+
+    if (mobileMoreBtn) {
+      mobileMoreBtn.addEventListener('click', () => this.openMobileMoreSheet());
+    }
+
+    if (mobileMenuTrigger) {
+      mobileMenuTrigger.addEventListener('click', () => this.openMobileMoreSheet());
+    }
+
+    if (mobileMoreBackdrop) {
+      mobileMoreBackdrop.addEventListener('click', () => this.closeMobileMoreSheet());
+    }
+
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.handleNavAction('settings');
+      });
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        this.closeMobileMoreSheet();
+      }
+    });
+
+    this.syncNavigationState(this.currentView);
+  }
+
+  setupMobileNavVisibility() {
+  const { mobileBottomNav, mobileMoreSheet } = this.dashboardEls;
+  if (!mobileBottomNav) return;
+
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+
+  const updateMobileNav = () => {
+    const currentScrollY = window.scrollY;
+    const viewportHeight = window.innerHeight;
+    const fullHeight = document.documentElement.scrollHeight;
+    const nearBottom = currentScrollY + viewportHeight >= fullHeight - 8;
+    const scrollingUp = currentScrollY < lastScrollY;
+    const moreSheetOpen = mobileMoreSheet?.classList.contains('is-open');
+
+    if (moreSheetOpen) {
+      mobileBottomNav.classList.remove('mobile-bottom-nav--hidden');
+      lastScrollY = currentScrollY;
+      ticking = false;
+      return;
+    }
+
+    if (nearBottom && !scrollingUp) {
+      mobileBottomNav.classList.add('mobile-bottom-nav--hidden');
+    } else {
+      mobileBottomNav.classList.remove('mobile-bottom-nav--hidden');
+    }
+
+    lastScrollY = currentScrollY;
+    ticking = false;
+  };
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateMobileNav);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+}
+
+  openMobileMoreSheet() {
+    const { mobileMoreSheet, mobileMenuTrigger } = this.dashboardEls;
+    if (!mobileMoreSheet) return;
+
+    mobileMoreSheet.classList.add('is-open');
+    mobileMoreSheet.setAttribute('aria-hidden', 'false');
+
+    if (mobileMenuTrigger) {
+      mobileMenuTrigger.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  closeMobileMoreSheet() {
+    const { mobileMoreSheet, mobileMenuTrigger } = this.dashboardEls;
+    if (!mobileMoreSheet) return;
+
+    mobileMoreSheet.classList.remove('is-open');
+    mobileMoreSheet.setAttribute('aria-hidden', 'true');
+
+    if (mobileMenuTrigger) {
+      mobileMenuTrigger.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  handleNavAction(view) {
+    if (view === 'logout') {
+      const logoutBtn = document.getElementById('logout-btn');
+      logoutBtn?.click();
+      return;
+    }
+
+    if (view === 'settings') {
+      this.closeMobileMoreSheet();
+      if (typeof settingsToggle.toggle === 'function') {
+        settingsToggle.toggle();
+      } else if (typeof settingsToggle.open === 'function') {
+        settingsToggle.open();
+      }
+      return;
+    }
+
+    this.navigateToView(view);
+  }
+
+  navigateToView(view) {
+    this.currentView = view;
+    this.syncNavigationState(view);
+    this.closeMobileMoreSheet();
+
+    if (viewManager && typeof viewManager.navigateTo === 'function') {
+      viewManager.navigateTo(view);
+    }
+  }
+
+  syncNavigationState(view) {
+    const labelMap = {
+      dashboard: 'Dashboard',
+      positions: 'Positions',
+      journal: 'Journal',
+      stats: 'Statistics',
+      compound: 'Compound',
+      'trend-map': 'The Ronin System',
+      settings: 'Settings',
+    };
+
+    const {
+      desktopNavButtons,
+      mobileNavButtons,
+      mobileMoreLinks,
+      currentViewLabel,
+    } = this.dashboardEls;
+
+    desktopNavButtons.forEach((btn) => {
+      btn.classList.toggle('app-sidebar__link--active', btn.dataset.view === view);
+    });
+
+    mobileNavButtons.forEach((btn) => {
+      btn.classList.toggle('mobile-bottom-nav__item--active', btn.dataset.view === view);
+    });
+
+    mobileMoreLinks.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.view === view);
+    });
+
+    if (currentViewLabel) {
+      currentViewLabel.textContent = labelMap[view] || 'Dashboard';
+    }
+    if (currentViewTagline) {
+  currentViewTagline.textContent = taglineMap[view] || '';
+}
+  }
+
   setupGlobalEvents() {
+    state.on('viewChanged', ({ to }) => {
+  if (!to) return;
+  this.currentView = to;
+  this.syncNavigationState(to);
+});
     state.on('accountChanged', () => {
       settingsToggle.updateSummary(
         state.account.currentSize,
@@ -260,137 +517,124 @@ class App {
   }
 
   ensureToastContainer() {
-  let container = document.getElementById('toast-container');
+    let container = document.getElementById('toast-container');
 
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toast-container';
-    container.className = 'toast-container';
-    document.body.appendChild(container);
-  }
-
-  this.toastContainer = container;
-}
-
-setupLiveNotifications() {
-  if (typeof this.unsubscribeTradeAlerts === 'function') {
-    this.unsubscribeTradeAlerts();
-  }
-
-  if (typeof this.unsubscribeMarketConnection === 'function') {
-    this.unsubscribeMarketConnection();
-  }
-
-  this.unsubscribeTradeAlerts = subscribeToTradeAlerts((payload) => {
-    this.handleTradeAlert(payload);
-  });
-
-  this.unsubscribeMarketConnection = subscribeToMarketConnection((payload) => {
-    if (payload?.type === 'error') {
-      console.error('[marketStream] connection error', payload.error);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
     }
-  });
-}
 
-teardownLiveNotifications() {
-  if (typeof this.unsubscribeTradeAlerts === 'function') {
-    this.unsubscribeTradeAlerts();
+    this.toastContainer = container;
   }
 
-  if (typeof this.unsubscribeMarketConnection === 'function') {
-    this.unsubscribeMarketConnection();
-  }
+  setupLiveNotifications() {
+    if (typeof this.unsubscribeTradeAlerts === 'function') {
+      this.unsubscribeTradeAlerts();
+    }
 
-  this.unsubscribeTradeAlerts = null;
-  this.unsubscribeMarketConnection = null;
-}
+    if (typeof this.unsubscribeMarketConnection === 'function') {
+      this.unsubscribeMarketConnection();
+    }
 
-handleTradeAlert(payload) {
-  if (!payload || payload.type !== 'five_r_hit') return;
+    this.unsubscribeTradeAlerts = subscribeToTradeAlerts((payload) => {
+      this.handleTradeAlert(payload);
+    });
 
-  const title = '5R Hit';
-  const message = payload.message || `${payload.symbol} reached 5R`;
-
-  this.showToast({
-    type: 'success',
-    title,
-    message,
-    duration: 5000,
-    persistent: true,
-    position: 'top-right',
-  });
-
-  if (state.settings?.soundEnabled) {
-    try {
-      if (typeof soundFx.playNotification === 'function') {
-        soundFx.playNotification();
-      } else if (typeof soundFx.play === 'function') {
-        soundFx.play('notification');
+    this.unsubscribeMarketConnection = subscribeToMarketConnection((payload) => {
+      if (payload?.type === 'error') {
+        console.error('[marketStream] connection error', payload.error);
       }
-    } catch (error) {
-      console.error('Notification sound failed:', error);
+    });
+  }
+
+  teardownLiveNotifications() {
+    if (typeof this.unsubscribeTradeAlerts === 'function') {
+      this.unsubscribeTradeAlerts();
+    }
+
+    if (typeof this.unsubscribeMarketConnection === 'function') {
+      this.unsubscribeMarketConnection();
+    }
+
+    this.unsubscribeTradeAlerts = null;
+    this.unsubscribeMarketConnection = null;
+  }
+
+  handleTradeAlert(payload) {
+    if (!payload || payload.type !== 'five_r_hit') return;
+
+    const title = '5R Hit';
+    const message = payload.message || `${payload.symbol} reached 5R`;
+
+    this.showToast({
+      type: 'success',
+      title,
+      message,
+      duration: 5000,
+      persistent: true,
+      position: 'top-right',
+    });
+  }
+
+  showToast({
+    type = 'info',
+    title = '',
+    message = '',
+    duration = 4000,
+    persistent = false,
+    position = 'default',
+  }) {
+    let container = null;
+
+    if (position === 'top-right') {
+      container = document.getElementById('toastContainerTopRight');
+
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainerTopRight';
+        document.body.appendChild(container);
+      }
+    } else {
+      if (!this.toastContainer) {
+        this.ensureToastContainer();
+      }
+      container = this.toastContainer;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+
+    toast.innerHTML = `
+      <div class="toast__content">
+        <div class="toast__title">${title}</div>
+        <div class="toast__message">${message}</div>
+      </div>
+      <button class="toast__close" aria-label="Close notification">×</button>
+    `;
+
+    let isClosed = false;
+
+    const close = () => {
+      if (isClosed || !toast.parentNode) return;
+      isClosed = true;
+      toast.classList.add('toast--exit');
+      setTimeout(() => toast.remove(), 220);
+    };
+
+    toast.querySelector('.toast__close')?.addEventListener('click', close);
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('toast--visible');
+    });
+
+    if (!persistent) {
+      window.setTimeout(close, duration);
     }
   }
-}
-
-
-showToast({
-  type = 'info',
-  title = '',
-  message = '',
-  duration = 4000,
-  persistent = false,
-  position = 'default',
-}) {
-  let container = null;
-
-  if (position === 'top-right') {
-  container = document.getElementById('toastContainerTopRight');
-
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toastContainerTopRight';
-    document.body.appendChild(container);
-  }
-}  else {
-    if (!this.toastContainer) {
-      this.ensureToastContainer();
-    }
-    container = this.toastContainer;
-  }
-
-  const toast = document.createElement('div');
-  toast.className = `toast toast--${type}`;
-
-  toast.innerHTML = `
-    <div class="toast__content">
-      <div class="toast__title">${title}</div>
-      <div class="toast__message">${message}</div>
-    </div>
-    <button class="toast__close" aria-label="Close notification">×</button>
-  `;
-
-  let isClosed = false;
-
-  const close = () => {
-    if (isClosed || !toast.parentNode) return;
-    isClosed = true;
-    toast.classList.add('toast--exit');
-    setTimeout(() => toast.remove(), 220);
-  };
-
-  toast.querySelector('.toast__close')?.addEventListener('click', close);
-
-  container.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.classList.add('toast--visible');
-  });
-
-  if (!persistent) {
-    window.setTimeout(close, duration);
-  }
-}
 }
 
 function showAuthScreen() {
@@ -422,6 +666,7 @@ async function mountApp() {
   showApp();
 
   appInstance = new App();
+  await appInstance.init();
   return appInstance;
 }
 
@@ -493,22 +738,22 @@ function setupAuthUI() {
   }
 
   if (logoutBtn) {
-  logoutBtn.addEventListener('click', async () => {
-    try {
-      await authManager.logout();
-    } finally {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await authManager.logout();
+      } finally {
         if (appInstance && typeof appInstance.teardownLiveNotifications === 'function') {
-        appInstance.teardownLiveNotifications();
+          appInstance.teardownLiveNotifications();
+        }
+        closeMarketStream();
+        if (state && typeof state.reset === 'function') {
+          state.reset();
+        }
+        appInstance = null;
+        window.location.reload();
       }
-      closeMarketStream();
-      if (state && typeof state.reset === 'function') {
-        state.reset();
-      }
-      appInstance = null;
-      window.location.reload();
-    }
-  });
-}
+    });
+  }
 
   if (togglePasswordBtn && passwordInput) {
     togglePasswordBtn.addEventListener('click', () => {

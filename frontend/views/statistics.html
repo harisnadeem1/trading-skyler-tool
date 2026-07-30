@@ -1,0 +1,100 @@
+ <section class="stats-view view--hidden" id="statsView">
+        <!-- <div class="stats-header">
+          <div class="stats-header__left">
+            <span class="stats-header__icon">📊</span>
+            <div>
+              <h1 class="stats-header__title">Trading Stats</h1>
+              <span class="stats-header__subtitle">All-time performance metrics</span>
+            </div>
+          </div>
+          <div class="stats-header__period">
+            <div class="period-selector">
+              <button class="period-selector__btn period-selector__btn--active" data-period="all">All Time</button>
+              <button class="period-selector__btn" data-period="month">Month</button>
+              <button class="period-selector__btn" data-period="week">Week</button>
+            </div>
+          </div>
+        </div> -->
+
+        <!-- Trading Performance Section -->
+        <div class="stats-section">
+         <div class="stats-section__header">
+  <i data-lucide="trending-up" class="stats-section__icon"></i>
+  <h2 class="stats-section__title">Trading Performance</h2>
+</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-card__label">Open Positions</span>
+              <span class="stat-card__value" id="statOpenPositions">0</span>
+              <span class="stat-card__sub" id="statOpenRisk">$0 at risk</span>
+            </div>
+            <div class="stat-card" id="statPnLCard">
+              <span class="stat-card__label">Total P&L</span>
+              <span class="stat-card__value" id="statTotalPnL">$0.00</span>
+              <span class="stat-card__sub" id="statPnLTrades">0 closed trades</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card__label">Win Rate</span>
+              <span class="stat-card__value" id="statWinRate">—</span>
+              <span class="stat-card__sub" id="statWinLoss">0W / 0L</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card__label">Sharpe Ratio</span>
+              <span class="stat-card__value" id="statSharpe">—</span>
+              <span class="stat-card__sub">Risk-adjusted return</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Growth Section -->
+        <div class="stats-section">
+         
+<div class="stats-section__header">
+  <i data-lucide="wallet" class="stats-section__icon"></i>
+  <h2 class="stats-section__title">Account Growth</h2>
+</div>
+          <div class="stats-grid">
+            <div class="stat-card stat-card--lg">
+              <span class="stat-card__label">Current Account</span>
+              <span class="stat-card__value" id="statCurrentAccount">$10,000</span>
+              <span class="stat-card__sub" id="statAccountChange">+$0.00 from start</span>
+            </div>
+            <div class="stat-card" id="statTradingGrowthCard">
+              <span class="stat-card__label">Trading Growth</span>
+              <span class="stat-card__value" id="statTradingGrowth">0.00%</span>
+              <span class="stat-card__sub">P&L / Starting</span>
+            </div>
+            <div class="stat-card" id="statTotalGrowthCard">
+              <span class="stat-card__label">Total Growth</span>
+              <span class="stat-card__value" id="statTotalGrowth">0.00%</span>
+              <span class="stat-card__sub">Including deposits</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card__label">Net Cash Flow</span>
+              <span class="stat-card__value" id="statCashFlow">$0.00</span>
+              <span class="stat-card__sub">Deposits - Withdrawals</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equity Curve Chart -->
+       <div class="stats-section">
+  <div class="stats-chart">
+    <div class="stats-chart__header">
+      <h3 class="stats-chart__title">Equity Curve</h3>
+      <span class="stats-chart__value" id="statChartValue">$10,000</span>
+    </div>
+
+    <div class="stats-chart__container" id="equityChartContainer">
+      <canvas class="stats-chart__canvas" id="equityChartCanvas"></canvas>
+
+      <div class="stats-chart__empty" id="equityChartEmpty" style="display: none;">
+  <span class="stats-chart__empty-icon" aria-hidden="true">
+    <i data-lucide="chart-line"></i>
+  </span>
+  <span class="stats-chart__empty-text">No trades recorded. Wait for your setup.</span>
+</div>
+    </div>
+  </div>
+</div>
+      </section>

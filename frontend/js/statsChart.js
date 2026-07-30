@@ -16,25 +16,25 @@ class EquityChart {
     this.frameId = null;
 
     this.colors = {
-      line: '#3b82f6',
-      fill: 'rgba(59, 130, 246, 0.1)',
-      fillEnd: 'rgba(59, 130, 246, 0)',
-      profit: '#22c55e',
-      loss: '#ef4444',
-      grid: 'rgba(255, 255, 255, 0.05)',
-      text: '#64748b',
-      axis: '#2a3545'
+      line: '#3A3A3A',
+      fill: 'rgba(158, 123, 59, 0.08)',
+      fillEnd: 'rgba(158, 123, 59, 0)',
+      profit: '#9E7B3B',
+      loss: '#6A4B3C',
+      grid: 'rgba(217, 207, 188, 0.35)',
+      text: '#5E574D',
+      axis: '#C5B79B'
     };
 
     this.lightColors = {
-      line: '#2563eb',
-      fill: 'rgba(37, 99, 235, 0.08)',
-      fillEnd: 'rgba(37, 99, 235, 0)',
-      profit: '#16a34a',
-      loss: '#dc2626',
-      grid: 'rgba(0, 0, 0, 0.03)',
-      text: '#64748b',
-      axis: '#e2e8f0'
+      line: '#3A3A3A',
+      fill: 'rgba(158, 123, 59, 0.06)',
+      fillEnd: 'rgba(158, 123, 59, 0)',
+      profit: '#9E7B3B',
+      loss: '#6A4B3C',
+      grid: 'rgba(217, 207, 188, 0.25)',
+      text: '#5E574D',
+      axis: '#C5B79B'
     };
   }
 
@@ -54,10 +54,10 @@ class EquityChart {
     window.addEventListener('resize', () => this.scheduleRender());
 
     state.on('viewChanged', (data) => {
-  if (data.to === 'stats') {
-    this.handleViewShown();
-  }
-});
+      if (data.to === 'stats') {
+        this.handleViewShown();
+      }
+    });
 
     state.on('journalEntryAdded', () => this.scheduleRender());
     state.on('journalEntryUpdated', () => this.scheduleRender());
@@ -96,26 +96,25 @@ class EquityChart {
     });
   }
 
-
   handleViewShown() {
-  let attempts = 0;
-  const maxAttempts = 10;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-  const tryRender = () => {
-    attempts += 1;
+    const tryRender = () => {
+      attempts += 1;
 
-    if (this.isVisible()) {
-      this.resize();
-      return;
-    }
+      if (this.isVisible()) {
+        this.resize();
+        return;
+      }
 
-    if (attempts < maxAttempts) {
-      requestAnimationFrame(tryRender);
-    }
-  };
+      if (attempts < maxAttempts) {
+        requestAnimationFrame(tryRender);
+      }
+    };
 
-  requestAnimationFrame(tryRender);
-}
+    requestAnimationFrame(tryRender);
+  }
 
   resize() {
     if (!this.canvas || !this.container || !this.ctx) return;
@@ -165,6 +164,8 @@ class EquityChart {
     const colors = this.getColors();
 
     this.ctx.clearRect(0, 0, width, height);
+    this.ctx.fillStyle = '#F6F1E7';
+    this.ctx.fillRect(0, 0, width, height);
 
     if (data.length < 2) {
       this.showEmptyState(true);
@@ -275,15 +276,13 @@ class EquityChart {
       const point = data[i];
       const x = scaleX(point.date);
       const y = scaleY(point.balance);
-      const isProfit = point.pnl >= 0;
 
       this.ctx.beginPath();
       this.ctx.arc(x, y, 4, 0, Math.PI * 2);
-      this.ctx.fillStyle = isProfit ? colors.profit : colors.loss;
+      this.ctx.fillStyle = point.pnl >= 0 ? colors.profit : colors.loss;
       this.ctx.fill();
 
-      this.ctx.strokeStyle =
-        document.documentElement.dataset.theme === 'light' ? '#ffffff' : '#0f172a';
+      this.ctx.strokeStyle = '#F6F1E7';
       this.ctx.lineWidth = 1.5;
       this.ctx.stroke();
     }

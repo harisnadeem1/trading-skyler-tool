@@ -1,0 +1,79 @@
+<section class="positions-view view--hidden" id="positionsView">
+  <div class="positions-header">
+    <div class="positions-header__left">
+      <div>
+        <span class="positions-header__subtitle" id="positionsCount">0 active positions</span>
+      </div>
+    </div>
+    <div class="positions-header__right">
+      <div class="positions-header__actions">
+        <div class="positions-header__filters">
+          <button class="filter-btn filter-btn--active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="open">Open</button>
+          <button class="filter-btn" data-filter="trimmed">Trimmed</button>
+        </div>
+
+        <button class="positions-add-btn btn btn--success" id="positionsAddTradeBtn" type="button">
+          <span class="positions-add-btn__icon">+</span>
+          <span class="positions-add-btn__text">Add Trade</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Overview Bar -->
+  <div class="positions-risk-bar" id="positionsRiskBar">
+    <div class="positions-risk-bar__item">
+      <span class="positions-risk-bar__label">Open Risk</span>
+      <span class="positions-risk-bar__value" id="positionsOpenRisk">$0.00</span>
+    </div>
+    <div class="positions-risk-bar__divider"></div>
+    <div class="positions-risk-bar__item">
+      <span class="positions-risk-bar__label">Risk Level</span>
+      <span class="positions-risk-bar__value positions-risk-bar__value--indicator" id="positionsRiskLevel">LOW</span>
+    </div>
+  </div>
+
+  <!-- Positions Grid -->
+  <div class="positions-grid" id="positionsGrid">
+    <!-- Position cards will be rendered here -->
+  </div>
+
+  <!-- Position Chart Modal -->
+  <div class="position-chart-modal" id="positionChartModal" aria-hidden="true">
+    <div class="position-chart-modal__overlay" id="positionChartOverlay"></div>
+
+    <div class="position-chart-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="positionChartTitle">
+      <div class="position-chart-modal__header">
+        <div>
+          <h2 class="position-chart-modal__title" id="positionChartTitle">Trade Chart</h2>
+          <p class="position-chart-modal__subtitle" id="positionChartSubtitle">-</p>
+        </div>
+
+        <button class="position-chart-modal__close" id="positionChartClose" aria-label="Close chart">×</button>
+      </div>
+
+      <div class="position-chart-modal__body">
+        <div class="position-chart-legend" id="positionChartLegend"></div>
+        <div class="position-chart-canvas" id="positionChartCanvas"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+ <div class="positions-empty" id="positionsEmpty">
+  <span class="positions-empty__icon" aria-hidden="true">
+    <i data-lucide="anchor"></i>
+  </span>
+
+  <h2 class="positions-empty__title">No Active Positions</h2>
+
+  <p class="positions-empty__text">
+    Patience is also a position. Wait for the right structure.
+  </p>
+
+  <button class="positions-empty__cta btn btn--success" id="positionsEmptyAddTradeBtn" type="button">
+    Add Trade
+  </button>
+</div>
+</section>

@@ -1,5 +1,5 @@
 /**
- * Trade Wizard - Guided trade logging with thesis prompts
+ * Trade Wizard - Ronin themed guided trade logging with thesis prompts
  */
 
 import { state } from './state.js';
@@ -38,7 +38,6 @@ class TradeWizard {
 
       progressSteps: document.querySelectorAll('.wizard-progress__step'),
       connectors: document.querySelectorAll('.wizard-progress__connector'),
-
       steps: document.querySelectorAll('.wizard-step'),
 
       wizardTickerInput: document.getElementById('wizardTickerInput'),
@@ -101,6 +100,7 @@ class TradeWizard {
     this.elements.skipAllBtn?.addEventListener('click', async () => {
       if (this.validateTicker()) await this.skipAll();
     });
+
     this.elements.next1Btn?.addEventListener('click', () => {
       if (this.validateTicker()) this.goToStep(2);
     });
@@ -176,6 +176,8 @@ class TradeWizard {
     document.body.style.overflow = 'hidden';
 
     this.showStep(1);
+
+    if (window.lucide?.createIcons) window.lucide.createIcons();
   }
 
   close() {
@@ -292,6 +294,8 @@ class TradeWizard {
     if (step === 4) {
       this.updateConfirmation();
     }
+
+    if (window.lucide?.createIcons) window.lucide.createIcons();
   }
 
   goToStep(step) {
@@ -340,7 +344,7 @@ class TradeWizard {
 
     if (this.thesis.setupType) {
       this.elements.confirmSetupRow.style.display = 'flex';
-      this.elements.confirmSetup.textContent = this.thesis.setupType.toUpperCase();
+      this.elements.confirmSetup.textContent = this.prettySetupName(this.thesis.setupType);
     } else {
       this.elements.confirmSetupRow.style.display = 'none';
     }
@@ -354,8 +358,7 @@ class TradeWizard {
 
     if (this.thesis.entryType) {
       this.elements.confirmEntryTypeRow.style.display = 'flex';
-      this.elements.confirmEntryType.textContent =
-        this.thesis.entryType.charAt(0).toUpperCase() + this.thesis.entryType.slice(1);
+      this.elements.confirmEntryType.textContent = this.prettyEntryType(this.thesis.entryType);
     } else {
       this.elements.confirmEntryTypeRow.style.display = 'none';
     }
@@ -368,13 +371,25 @@ class TradeWizard {
 
     if (lastDate !== today && progress.currentStreak > 0) {
       this.elements.streakDisplay.style.display = 'flex';
-      this.elements.streakText.textContent = `${progress.currentStreak + 1} day streak!`;
+      this.elements.streakText.textContent = `${progress.currentStreak + 1} day streak.`;
     } else if (!lastDate) {
       this.elements.streakDisplay.style.display = 'flex';
-      this.elements.streakText.textContent = 'Start your streak!';
+      this.elements.streakText.textContent = 'Begin your streak.';
     } else {
       this.elements.streakDisplay.style.display = 'none';
     }
+  }
+
+  prettySetupName(value) {
+    const map = {
+      'flat-base-breakout': 'Flat Base Breakout',
+      'controlled-pullback': 'Controlled Pullback'
+    };
+    return map[value] || value;
+  }
+
+  prettyEntryType(value) {
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : '—';
   }
 
   async confirmTrade() {
@@ -426,7 +441,7 @@ class TradeWizard {
         wizardComplete,
         thesis: this.thesis,
         direction: result.entry.direction ?? trade.direction ?? 'long',
-        newAchievements: result.newAchievements || [],
+        newAchievements: result.newAchievements || []
       });
 
       this.showSuccessToast();
@@ -436,7 +451,7 @@ class TradeWizard {
       }
     } catch (error) {
       console.error('Failed to log wizard trade:', error);
-      showToast('❌ Failed to log trade', 'error');
+      showToast('Failed to log trade', 'error');
     }
   }
 
@@ -452,11 +467,11 @@ class TradeWizard {
 
   showSuccessToast() {
     const messages = [
-      '✅ Trade logged! Good luck!',
-      '🎯 Nice setup! Tracked.',
-      "🔥 You're on a roll! Trade saved.",
-      '📝 Disciplined trader! Logged.',
-      "✅ Trade captured! Let's go!"
+      'Trade logged. Discipline holds.',
+      'Setup recorded. Stay patient.',
+      'Trade captured. Execute with control.',
+      'Logged successfully. Stay the course.',
+      'Trade saved. Risk managed.'
     ];
     const message = messages[Math.floor(Math.random() * messages.length)];
     showToast(message, 'success');

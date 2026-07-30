@@ -1,0 +1,129 @@
+ <div class="modal-overlay" id="trimModalOverlay"></div>
+    <div class="modal modal--trim" id="trimModal">
+      <div class="modal__header">
+        <h2 class="modal__title">Close Position: <span id="trimModalTicker">TICKER</span></h2>
+        <button class="icon-btn" id="closeTrimModalBtn" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__content">
+        <!-- Trade Summary -->
+        <div class="trim-summary">
+          <div class="trim-summary__row">
+            <span class="trim-summary__label">Entry Price</span>
+            <span class="trim-summary__value" id="trimEntryPrice">$0.00</span>
+          </div>
+          <div class="trim-summary__row">
+            <span class="trim-summary__label">Original Stop</span>
+            <span class="trim-summary__value" id="trimOriginalStop">$0.00</span>
+          </div>
+          <div class="trim-summary__row">
+            <span class="trim-summary__label">Current Stop</span>
+            <span class="trim-summary__value" id="trimStopLoss">$0.00</span>
+          </div>
+          <div class="trim-summary__row">
+            <span class="trim-summary__label">Risk Per Share</span>
+            <span class="trim-summary__value" id="trimRiskPerShare">$0.00</span>
+          </div>
+          <div class="trim-summary__row trim-summary__row--highlight">
+            <span class="trim-summary__label">Remaining Shares</span>
+            <span class="trim-summary__value" id="trimRemainingShares">0</span>
+          </div>
+        </div>
+
+        <!-- R-Multiple Selection -->
+        <div class="trim-section">
+          <label class="input-label">Exit at R-Multiple</label>
+          <div class="preset-group preset-group--compact">
+            <button type="button" class="preset-btn" data-r="1">1R</button>
+            <button type="button" class="preset-btn" data-r="2">2R</button>
+            <button type="button" class="preset-btn" data-r="3">3R</button>
+            <button type="button" class="preset-btn" data-r="4">4R</button>
+            <button type="button" class="preset-btn active" data-r="5">5R</button>
+          </div>
+
+          <!-- Exit Price -->
+          <div class="input-group input-group--inline">
+            <label class="input-label" for="trimExitPrice">Exit Price</label>
+            <div class="input-wrapper input-wrapper--prefix input-wrapper--sm">
+              <span class="input-prefix">$</span>
+              <input type="text" class="input input--mono" id="trimExitPrice" placeholder="0.00" autocomplete="off">
+            </div>
+            <span class="trim-r-display" id="trimRDisplay">(5R)</span>
+          </div>
+        </div>
+
+        <!-- Trim Percentage Selection -->
+        <div class="trim-section">
+          <label class="input-label">Trim Percentage</label>
+          <div class="preset-group preset-group--compact">
+            <button type="button" class="preset-btn" data-trim="10">10%</button>
+            <button type="button" class="preset-btn" data-trim="20">20%</button>
+            <button type="button" class="preset-btn" data-trim="25">25%</button>
+            <button type="button" class="preset-btn" data-trim="50">50%</button>
+            <button type="button" class="preset-btn active" data-trim="100">All</button>
+          </div>
+
+          <!-- Custom trim percentage -->
+          <div class="preset-custom">
+            <span class="preset-custom__label">Custom</span>
+            <div class="input-wrapper input-wrapper--suffix input-wrapper--compact">
+              <input type="text" class="input input--mono" id="customTrimPercent" placeholder="" autocomplete="off">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+
+          <!-- Shares to close -->
+          <div class="trim-shares-display">
+            <span class="trim-shares-display__label">Closing</span>
+            <span class="trim-shares-display__value" id="trimSharesClosing">0 shares</span>
+            <span class="trim-shares-display__remaining" id="trimSharesRemaining">(0 remaining)</span>
+          </div>
+        </div>
+
+        <!-- Close Date -->
+        <div class="trim-section">
+          <div class="input-group">
+            <label class="input-label" for="trimDate">Close Date</label>
+            <input type="date" class="input input--mono" id="trimDate">
+          </div>
+        </div>
+
+        <!-- Update Stop Loss (optional) -->
+        <div class="trim-section">
+          <div class="input-group input-group--inline">
+            <label class="input-label" for="trimNewStop">
+              New Stop
+              <span class="label-optional">(optional)</span>
+            </label>
+            <div class="input-wrapper input-wrapper--prefix input-wrapper--sm">
+              <span class="input-prefix">$</span>
+              <input type="text" class="input input--mono" id="trimNewStop" placeholder="—" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <!-- P&L Preview -->
+        <div class="trim-preview" id="trimPreview">
+          <div class="trim-preview__header">P&L Preview</div>
+          <div class="trim-preview__row">
+            <span class="trim-preview__label">Profit per Share</span>
+            <span class="trim-preview__value text-success" id="trimProfitPerShare">+$0.00</span>
+          </div>
+          <div class="trim-preview__row trim-preview__row--total">
+            <span class="trim-preview__label">Total P&L</span>
+            <span class="trim-preview__value text-success" id="trimTotalPnL">+$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="cancelTrimBtn">Cancel</button>
+        <button class="btn btn--success" id="confirmTrimBtn">Confirm Trim</button>
+      </div>
+    </div>

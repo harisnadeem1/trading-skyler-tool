@@ -7,14 +7,11 @@
 .stats-view {
   display: none;
   flex-direction: column;
-  padding: var(--space-6);
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
   flex: 1;
   min-height: 0;
-  max-height: calc(100vh - var(--header-height) - 60px);
-  overflow-y: auto;
 }
 
 .stats-view.view--active {
@@ -194,7 +191,7 @@
 }
 
 .stat-card--lg .stat-card__value {
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
 }
 
 /* === Equity Chart Section === */
@@ -385,4 +382,38 @@
 .journal-view.view--active,
 .stats-view.view--active {
   display: flex;
+}
+
+
+.stats-chart__empty {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  background: var(--ronin-surface);
+}
+
+.stats-chart__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--ronin-surface-strong);
+  color: var(--ronin-gold);
+}
+
+.stats-chart__empty-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.stats-chart__empty-text {
+  color: var(--ronin-text-secondary);
+  font-size: 0.95rem;
 }

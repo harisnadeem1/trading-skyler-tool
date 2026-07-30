@@ -20,6 +20,7 @@ class PositionsView {
     this.chartDirection = null;
     this.liveTradeMap = new Map();
     this.tradeUpdatesUnsubscribe = null;
+    this.deleteConfirmEscHandler = null;
   }
 
   init() {
@@ -183,11 +184,9 @@ class PositionsView {
         }
 
         if (action === 'delete') {
-          if (confirm('Delete this trade?')) {
-            state.deleteJournalEntry(id);
-          }
-          return;
-        }
+  this.openDeleteConfirm(id);
+  return;
+}
 
         if (action === 'chart') {
           this.openChartModal(id);
@@ -337,6 +336,96 @@ patchLiveTradeCard(tradeId, liveTrade) {
     this.elements.addModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
+  openDeleteConfirm(tradeId) {
+  const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+  if (!trade) return;
+
+  if (this.elements.deleteModal) {
+    this.elements.deleteModal.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'delete-confirm-modal';
+  modal.innerHTML = `
+    <div class="delete-confirm-modal__backdrop"></div>
+    <div class="delete-confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+      <div class="delete-confirm-modal__header">
+        <div class="delete-confirm-modal__title-wrap">
+          <span class="delete-confirm-modal__icon" aria-hidden="true">
+            <i data-lucide="trash-2"></i>
+          </span>
+          <div>
+            <h2 class="delete-confirm-modal__title" id="deleteConfirmTitle">Delete Trade?</h2>
+            <p class="delete-confirm-modal__subtitle">
+              This will permanently remove <strong>${trade.ticker || 'this trade'}</strong> from your journal.
+            </p>
+          </div>
+        </div>
+
+        <button class="delete-confirm-modal__close" type="button" aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal__body">
+        <p class="delete-confirm-modal__text">
+          This action cannot be undone.
+        </p>
+
+        <div class="delete-confirm-modal__meta">
+          <div><span>Ticker</span><strong>${trade.ticker || '—'}</strong></div>
+          <div><span>Status</span><strong>${String(trade.status || '').toUpperCase()}</strong></div>
+          <div><span>Entry</span><strong>${formatCurrency(Number(trade.entry ?? trade.entry_price ?? 0))}</strong></div>
+        </div>
+      </div>
+
+      <div class="delete-confirm-modal__footer">
+        <button class="btn btn--secondary" type="button" data-action="cancel">Cancel</button>
+        <button class="btn btn--danger" type="button" data-action="delete">Delete Trade</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  this.elements.deleteModal = modal;
+
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  });
+
+  const close = () => this.closeDeleteConfirm();
+
+  modal.querySelector('.delete-confirm-modal__backdrop')?.addEventListener('click', close);
+  modal.querySelector('.delete-confirm-modal__close')?.addEventListener('click', close);
+  modal.querySelector('[data-action="cancel"]')?.addEventListener('click', close);
+  modal.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
+    state.deleteJournalEntry(tradeId);
+    close();
+  });
+
+  this.deleteConfirmEscHandler = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', this.deleteConfirmEscHandler);
+}
+
+closeDeleteConfirm() {
+  if (!this.elements.deleteModal) return;
+
+  this.elements.deleteModal.classList.remove('open');
+  setTimeout(() => {
+    this.elements.deleteModal?.remove();
+    this.elements.deleteModal = null;
+  }, 180);
+
+  if (this.deleteConfirmEscHandler) {
+    document.removeEventListener('keydown', this.deleteConfirmEscHandler);
+    this.deleteConfirmEscHandler = null;
+  }
+}
 
   getAddTradeFormData() {
     const entry = Number(this.elements.addEntry?.value || 0);
@@ -501,29 +590,23 @@ patchLiveTradeCard(tradeId, liveTrade) {
       width: this.elements.chartCanvas.clientWidth || 700,
       height: 360,
       layout: {
-        background: { color: '#121722' },
-        textColor: 'rgba(255,255,255,0.82)',
-      },
-      grid: {
-        vertLines: { color: 'rgba(255,255,255,0.05)' },
-        horzLines: { color: 'rgba(255,255,255,0.05)' },
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(255,255,255,0.08)',
-        autoScale: false,
-        scaleMargins: { top: 0.20, bottom: 0.20 },
-      },
-      timeScale: {
-        borderColor: 'rgba(255,255,255,0.08)',
-        timeVisible: true,
-        secondsVisible: true,
-        rightOffset: 8,
-        barSpacing: 14,
-      },
-      crosshair: {
-        vertLine: { color: 'rgba(255,255,255,0.15)' },
-        horzLine: { color: 'rgba(255,255,255,0.15)' },
-      },
+  background: { color: '#f6f1e7' },
+  textColor: '#1a1a1a',
+},
+grid: {
+  vertLines: { color: 'rgba(157, 147, 132, 0.18)' },
+  horzLines: { color: 'rgba(157, 147, 132, 0.18)' },
+},
+rightPriceScale: {
+  borderColor: 'rgba(157, 147, 132, 0.22)',
+},
+timeScale: {
+  borderColor: 'rgba(157, 147, 132, 0.22)',
+},
+crosshair: {
+  vertLine: { color: 'rgba(158, 123, 59, 0.28)' },
+  horzLine: { color: 'rgba(158, 123, 59, 0.28)' },
+},
       localization: {
         priceFormatter: (price) => Number(price).toFixed(2),
       },
@@ -532,7 +615,7 @@ patchLiveTradeCard(tradeId, liveTrade) {
     const { LineSeries } = window.LightweightCharts;
 
     const series = chart.addSeries(LineSeries, {
-      color: '#22d3ee',
+      color: '#2b2b2b',
       lineWidth: 2,
       lineVisible: true,
       pointMarkersVisible: false,
@@ -591,7 +674,7 @@ patchLiveTradeCard(tradeId, liveTrade) {
     // Horizontal price lines for levels
     series.createPriceLine({
       price: entry,
-      color: '#60a5fa',
+      color: '#9e7b3b',
       lineWidth: 2,
       lineStyle: 0,
       axisLabelVisible: true,
@@ -600,7 +683,7 @@ patchLiveTradeCard(tradeId, liveTrade) {
 
     series.createPriceLine({
       price: stop,
-      color: '#f87171',
+      color: '#6a4b3c',
       lineWidth: 2,
       lineStyle: 2,
       axisLabelVisible: true,
@@ -610,7 +693,7 @@ patchLiveTradeCard(tradeId, liveTrade) {
     if (target !== null && Number.isFinite(target)) {
       series.createPriceLine({
         price: target,
-        color: '#34d399',
+        color: '#437a22',
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
@@ -620,7 +703,7 @@ patchLiveTradeCard(tradeId, liveTrade) {
 
     series.createPriceLine({
       price: fiveR,
-      color: '#fbbf24',
+      color: '#c49a3a',
       lineWidth: 2,
       lineStyle: 1,
       axisLabelVisible: true,
@@ -1126,13 +1209,11 @@ patchLiveTradeCard(tradeId, liveTrade) {
     });
 
     this.elements.grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm('Delete this trade?')) {
-          state.deleteJournalEntry(id);
-        }
-      });
-    });
+  btn.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    this.openDeleteConfirm(id);
+  });
+});
 
     this.elements.grid.querySelectorAll('[data-action="chart"]').forEach(btn => {
       btn.addEventListener('click', (e) => {

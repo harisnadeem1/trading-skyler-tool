@@ -448,10 +448,29 @@ class JournalView {
               ${statusText}
             </span>
           </td>
-          <td class="journal-table__actions">
-            <button class="journal-table__action-btn" data-action="expand" data-id="${trade.id}" title="View details">👁️</button>
-            <button class="journal-table__action-btn journal-table__action-btn--delete" data-action="delete" data-id="${trade.id}" title="Delete trade">🗑️</button>
-          </td>
+     <td class="journal-table__actions">
+  <button
+    class="journal-table__action-btn journal-table__action-btn--view"
+    data-action="expand"
+    data-id="${trade.id}"
+    title="Edit details"
+    aria-label="Edit details"
+    type="button"
+  >
+    <span class="journal-table__action-icon">✎</span>
+  </button>
+
+  <button
+    class="journal-table__action-btn journal-table__action-btn--delete"
+    data-action="delete"
+    data-id="${trade.id}"
+    title="Delete trade"
+    aria-label="Delete trade"
+    type="button"
+  >
+    <span class="journal-table__action-icon">🗑</span>
+  </button>
+</td>
         </tr>
       `;
     }).join('');
@@ -665,14 +684,12 @@ class JournalView {
       });
     });
 
-    this.elements.tableBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm('Delete this trade?')) {
-          state.deleteJournalEntry(id);
-        }
-      });
-    });
+   this.elements.tableBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    this.openDeleteConfirm(id);
+  });
+});
   }
 
   bindModalActions() {
@@ -685,14 +702,12 @@ class JournalView {
       });
     });
 
-    this.elements.tradeModalBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (confirm('Delete this trade?')) {
-          state.deleteJournalEntry(id);
-        }
-      });
-    });
+   this.elements.tradeModalBody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    this.openDeleteConfirm(id);
+  });
+});
 
     this.elements.tradeModalBody.querySelectorAll('[data-action="edit-notes"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -825,6 +840,94 @@ class JournalView {
       });
     });
   }
+
+  openDeleteConfirm(tradeId) {
+  const trade = state.journal.entries.find((t) => String(t.id) === String(tradeId));
+  if (!trade) return;
+
+  if (this.elements.deleteModal) {
+    this.elements.deleteModal.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'delete-confirm-modal';
+  modal.innerHTML = `
+    <div class="delete-confirm-modal__backdrop"></div>
+    <div class="delete-confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+      <div class="delete-confirm-modal__header">
+        <div class="delete-confirm-modal__title-wrap">
+          <div>
+            <h2 class="delete-confirm-modal__title" id="deleteConfirmTitle">Delete Trade?</h2>
+            <p class="delete-confirm-modal__subtitle">
+              This will permanently remove <strong>${trade.ticker || 'this trade'}</strong> from your journal.
+            </p>
+          </div>
+        </div>
+
+        <button class="delete-confirm-modal__close" type="button" aria-label="Close dialog">×</button>
+      </div>
+
+      <div class="delete-confirm-modal__body">
+        <p class="delete-confirm-modal__text">This action cannot be undone.</p>
+
+        <div class="delete-confirm-modal__meta">
+          <div><span>Ticker</span><strong>${trade.ticker || '—'}</strong></div>
+          <div><span>Status</span><strong>${String(trade.status || '').toUpperCase()}</strong></div>
+          <div><span>Entry</span><strong>${formatCurrency(Number(trade.entry ?? trade.entry_price ?? 0))}</strong></div>
+        </div>
+      </div>
+
+      <div class="delete-confirm-modal__footer">
+        <button class="btn btn--secondary" type="button" data-action="cancel">Cancel</button>
+        <button class="btn btn--danger" type="button" data-action="delete">Delete Trade</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  this.elements.deleteModal = modal;
+
+  requestAnimationFrame(() => {
+    modal.classList.add('open');
+  });
+
+  const close = () => this.closeDeleteConfirm();
+
+  modal.querySelector('.delete-confirm-modal__backdrop')?.addEventListener('click', close);
+  modal.querySelector('.delete-confirm-modal__close')?.addEventListener('click', close);
+  modal.querySelector('[data-action="cancel"]')?.addEventListener('click', close);
+  modal.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
+    try {
+      const deleted = await state.deleteJournalEntry(tradeId);
+      if (deleted) {
+        this.render();
+      }
+    } catch (error) {
+      console.error('Failed to delete trade:', error);
+    }
+    close();
+  });
+
+  this.deleteConfirmEscHandler = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', this.deleteConfirmEscHandler);
+}
+
+closeDeleteConfirm() {
+  if (!this.elements.deleteModal) return;
+
+  this.elements.deleteModal.classList.remove('open');
+  setTimeout(() => {
+    this.elements.deleteModal?.remove();
+    this.elements.deleteModal = null;
+  }, 180);
+
+  if (this.deleteConfirmEscHandler) {
+    document.removeEventListener('keydown', this.deleteConfirmEscHandler);
+    this.deleteConfirmEscHandler = null;
+  }
+}
 
   showEmptyState() {
     if (this.elements.tableContainer) {
