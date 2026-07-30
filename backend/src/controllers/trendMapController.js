@@ -17,7 +17,10 @@ async function getCurrentTrendMap(req, res) {
       signal5Override,
     });
 
-    return res.json({ success: true, data });
+    return res.json({
+      success: true,
+      data,
+    });
   } catch (error) {
     console.error('[TREND MAP] getCurrentTrendMap error:', error);
     return res.status(500).json({
@@ -38,7 +41,11 @@ async function refreshTrendMap(req, res) {
       forceRefresh: true,
     });
 
-    return res.json({ success: true, refreshed: true, data });
+    return res.json({
+      success: true,
+      refreshed: true,
+      data,
+    });
   } catch (error) {
     console.error('[TREND MAP] refreshTrendMap error:', error);
     return res.status(500).json({

@@ -1,19 +1,19 @@
-/* ========================================
-   Trend Map View Container
-   ======================================== */
-
 .trend-map-view {
   display: none;
   flex-direction: column;
-  padding: var(--space-6);
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  flex: 1 1 auto;
   min-width: 0;
-  min-height: 0;
-  height: calc(100dvh - var(--header-height) - 60px);
-  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  overflow: visible;
+  height: auto;
+}
+
+.trend-map-view__inner {
+  overflow: visible;
+  flex: 0 0 auto;
 }
 
 .trend-map-view.view--active {
@@ -35,16 +35,13 @@
   padding-right: 2px;
 }
 
-/* ========================================
-   Trend Map Header
-   ======================================== */
-
 .trend-map__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
+  margin-bottom: var(--space-1);
 }
 
 .trend-map__heading {
@@ -57,7 +54,7 @@
   font-weight: var(--font-semibold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
+  color: var(--primary);
 }
 
 .trend-map__title {
@@ -73,7 +70,7 @@
   max-width: 70ch;
   font-size: var(--text-sm);
   line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .trend-map__toolbar {
@@ -101,7 +98,7 @@
   height: 42px;
   padding: 0 var(--space-3);
   border-radius: var(--border-radius);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   background: var(--bg-surface);
   color: var(--text-primary);
   font-size: var(--text-sm);
@@ -109,13 +106,9 @@
 }
 
 .trend-control__select:focus {
-  border-color: var(--primary);
+  border-color: var(--primary-hover);
   box-shadow: 0 0 0 3px var(--primary-muted);
 }
-
-/* ========================================
-   Trend Status
-   ======================================== */
 
 .trend-status {
   padding: var(--space-3) var(--space-4);
@@ -135,10 +128,6 @@
   border-color: color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
-/* ========================================
-   Trend Grid
-   ======================================== */
-
 .trend-map__grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -151,8 +140,9 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-4);
+  padding: var(--card-padding);
   min-width: 0;
+  box-shadow: var(--shadow-sm);
 }
 
 .trend-card--full {
@@ -198,13 +188,9 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   font-size: var(--text-xs);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
-
-/* ========================================
-   Hero
-   ======================================== */
 
 .trend-hero {
   display: grid;
@@ -231,36 +217,16 @@
   font-weight: var(--font-bold);
   letter-spacing: 0.06em;
   border: 1px solid transparent;
+  color: var(--text-primary);
 }
 
-.trend-regime--green {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
-  border-color: rgba(34, 197, 94, 0.22);
-}
-
-.trend-regime--yellow {
-  background: rgba(234, 179, 8, 0.12);
-  color: #eab308;
-  border-color: rgba(234, 179, 8, 0.22);
-}
-
-.trend-regime--amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.22);
-}
-
-.trend-regime--orange {
-  background: rgba(249, 115, 22, 0.12);
-  color: #f97316;
-  border-color: rgba(249, 115, 22, 0.22);
-}
-
+.trend-regime--green,
+.trend-regime--yellow,
+.trend-regime--amber,
+.trend-regime--orange,
 .trend-regime--red {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.22);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
 }
 
 .trend-regime--gray {
@@ -280,13 +246,9 @@
   margin: 0;
   font-size: var(--text-sm);
   line-height: 1.7;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   max-width: 72ch;
 }
-
-/* ========================================
-   Metrics
-   ======================================== */
 
 .trend-metrics-grid {
   display: grid;
@@ -297,7 +259,7 @@
 .trend-metric {
   padding: var(--space-3);
   border-radius: var(--border-radius);
-  background: var(--bg-elevated);
+  background: var(--bg-base);
   border: 1px solid var(--border-subtle);
   min-width: 0;
 }
@@ -318,10 +280,6 @@
   color: var(--text-primary);
 }
 
-/* ========================================
-   Signals
-   ======================================== */
-
 .trend-signals-grid {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -332,7 +290,7 @@
   padding: var(--space-4);
   border-radius: var(--border-radius-lg);
   border: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
+  background: var(--bg-base);
 }
 
 .trend-signal__top {
@@ -371,43 +329,19 @@
   color: var(--text-muted);
 }
 
-.trend-signal--green {
-  background: rgba(34, 197, 94, 0.08);
-  border-color: rgba(34, 197, 94, 0.18);
-}
-
-.trend-signal--yellow {
-  background: rgba(234, 179, 8, 0.08);
-  border-color: rgba(234, 179, 8, 0.18);
-}
-
-.trend-signal--amber {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.18);
-}
-
-.trend-signal--orange {
-  background: rgba(249, 115, 22, 0.08);
-  border-color: rgba(249, 115, 22, 0.18);
-}
-
-.trend-signal--red {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.18);
-}
-
+.trend-signal--green,
+.trend-signal--yellow,
+.trend-signal--amber,
+.trend-signal--orange,
+.trend-signal--red,
 .trend-signal--gray {
-  background: var(--bg-elevated);
+  background: var(--bg-base);
   border-color: var(--border-subtle);
 }
 
-/* ========================================
-   Warning
-   ======================================== */
-
 .trend-card--warning {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.18);
+  background: rgba(158, 123, 59, 0.08);
+  border-color: rgba(158, 123, 59, 0.2);
 }
 
 .trend-warning__text {
@@ -422,10 +356,6 @@
   font-size: var(--text-sm);
   padding: var(--space-2) 0;
 }
-
-/* ========================================
-   Responsive
-   ======================================== */
 
 @media (min-width: 760px) {
   .trend-metrics-grid {
@@ -476,9 +406,5 @@
 
   .trend-control {
     min-width: 100%;
-  }
-
-  .trend-map__toolbar .btn {
-    width: 100%;
   }
 }

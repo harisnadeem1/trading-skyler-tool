@@ -1003,3 +1003,60 @@
   width: 100px;
   height: auto;
 }
+
+.app-sidebar__icon-image {
+  width: 20px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.mobile-more-sheet__icon-image {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.ronin-icon-swap {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.ronin-icon-swap img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+  display: block;
+}
+
+.ronin-icon-swap__default {
+  opacity: 1;
+}
+
+.ronin-icon-swap__hover {
+  opacity: 0;
+}
+
+.app-sidebar__link:hover .ronin-icon-swap__default,
+.mobile-more-sheet__link:hover .ronin-icon-swap__default {
+  opacity: 0;
+}
+
+.app-sidebar__link:hover .ronin-icon-swap__hover,
+.mobile-more-sheet__link:hover .ronin-icon-swap__hover {
+  opacity: 1;
+}
+
+
+.view--hidden {
+  display: none !important;
+}

@@ -11,6 +11,7 @@ class ViewManager {
       stats: null,
       compound: null,
       'trend-map': null,
+      'ronin-system': null,
     };
 
     this.viewPaths = {
@@ -19,6 +20,9 @@ class ViewManager {
       journal: './views/journal.html',
       stats: './views/statistics.html',
       compound: './views/compound.html',
+      'trend-map': './views/trendmap.html',
+      'ronin-system': './views/ronin-system.html',
+
     };
 
     this.partialPaths = [
@@ -33,7 +37,11 @@ class ViewManager {
     this.journalMount = null;
     this.statsMount = null;
     this.compoundMount = null;
+    this.trendMapMount = null;
+    this.roninSystemMount = null;
+
     this.globalPartialsMount = null;
+    
   }
 
   async init() {
@@ -42,6 +50,8 @@ class ViewManager {
     this.journalMount = document.getElementById('journalMount');
     this.statsMount = document.getElementById('statsMount');
     this.compoundMount = document.getElementById('compoundMount');
+    this.trendMapMount = document.getElementById('trendMapMount');
+    this.roninSystemMount = document.getElementById('roninSystemMount');
     this.globalPartialsMount = document.getElementById('globalPartialsMount');
 
     if (
@@ -49,7 +59,8 @@ class ViewManager {
       !this.positionsMount ||
       !this.journalMount ||
       !this.statsMount ||
-      !this.compoundMount
+      !this.compoundMount ||
+      !this.trendMapMount
     ) {
       console.warn('ViewManager: One or more view mount elements not found');
       return;
@@ -157,6 +168,19 @@ class ViewManager {
       this.compoundMount,
       '#compoundView'
     );
+
+    this.views['trend-map'] = await this.loadViewIntoMount(
+  this.viewPaths['trend-map'],
+  this.trendMapMount,
+  '#trendMapView'
+);
+
+this.views['ronin-system'] = await this.loadViewIntoMount(
+  this.viewPaths['ronin-system'],
+  this.roninSystemMount,
+  '#roninSystemView'
+);
+
   }
 
   async initDeepLink() {

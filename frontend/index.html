@@ -150,10 +150,19 @@
               <span class="app-sidebar__text">Compound</span>
             </button>
 
-            <button class="app-sidebar__link" data-view="trend-map" type="button">
-              <i data-lucide="scroll-text" class="app-sidebar__icon"></i>
-              <span class="app-sidebar__text">The Ronin System</span>
-            </button>
+         <button class="app-sidebar__link" data-view="trend-map" type="button">
+  <i data-lucide="scroll-text" class="app-sidebar__icon"></i>
+  <span class="app-sidebar__text">Trend Map</span>
+</button>
+
+<button class="app-sidebar__link" data-view="ronin-system" type="button">
+  <span class="ronin-icon-swap">
+    <img src="assets/small-ronin-nobackground.png" class="ronin-icon-swap__default" alt="Ronin System" />
+    <img src="assets/small-ronin-white.png" class="ronin-icon-swap__hover" alt="Ronin System" />
+  </span>
+  <span class="app-sidebar__text">Ronin System</span>
+</button>
+
 
             <!-- <button class="app-sidebar__link" data-view="settings" type="button">
               <i data-lucide="settings" class="app-sidebar__icon"></i>
@@ -226,82 +235,8 @@
             <div id="journalMount"></div>
             <div id="statsMount"></div>
             <div id="compoundMount"></div>
-
-            <section class="trend-map-view view--hidden" id="trendMapView" data-view="trend-map">
-              <div class="trend-map-view__inner">
-                <div class="trend-map__header">
-                  <div class="trend-map__heading">
-                    <p class="trend-map__eyebrow">Market Regime</p>
-                    <h1 class="trend-map__title">Trend Map</h1>
-                    <p class="trend-map__subtitle">
-                      QQQE breadth, regime, exposure guidance, and the full 7-signal block.
-                    </p>
-                  </div>
-
-                  <div class="trend-map__toolbar">
-                    <label class="trend-control">
-                      <span class="trend-control__label">Signal 5</span>
-                      <select id="trendMapSignal5Select" class="trend-control__select">
-                        <option value="AUTO">Auto from recent trades</option>
-                        <option value="YES">Manual: YES</option>
-                        <option value="ATTEMPT">Manual: ATTEMPT</option>
-                        <option value="NO">Manual: NO</option>
-                      </select>
-                    </label>
-
-                    <button id="trendMapRefreshBtn" class="btn btn--secondary" type="button">
-                      Refresh
-                    </button>
-                  </div>
-                </div>
-
-                <div id="trendMapStatus"></div>
-
-                <div class="trend-map__grid">
-                  <article class="trend-card trend-card--hero trend-card--full">
-                    <div class="trend-card__head">
-                      <div>
-                        <h3 class="trend-card__title">Current Regime</h3>
-                        <span id="trendMapAsOf" class="trend-card__meta">—</span>
-                      </div>
-                      <span id="trendMapSignal5Source" class="trend-chip">Signal 5: Auto from recent trades</span>
-                    </div>
-
-                    <div class="trend-hero">
-                      <div id="trendMapRegimeBadge" class="trend-regime trend-regime--gray">—</div>
-
-                      <div class="trend-hero__content">
-                        <h3 id="trendMapActionTitle" class="trend-map__action-title">Trend Map unavailable</h3>
-                        <p id="trendMapExposureMessage" class="trend-map__exposure-message">
-                          No data available.
-                        </p>
-                      </div>
-                    </div>
-                  </article>
-
-                  <article class="trend-card trend-card--metrics">
-                    <div class="trend-card__head">
-                      <h3 class="trend-card__title">Key Metrics</h3>
-                    </div>
-                    <div id="trendMapMetricsGrid" class="trend-metrics-grid"></div>
-                  </article>
-
-                  <article class="trend-card trend-card--signals">
-                    <div class="trend-card__head">
-                      <h3 class="trend-card__title">Seven Signals</h3>
-                    </div>
-                    <div id="trendMapSignalsGrid" class="trend-signals-grid"></div>
-                  </article>
-
-                  <article id="trendMapWarningCard" class="trend-card trend-card--warning view--hidden">
-                    <div class="trend-card__head">
-                      <h3 class="trend-card__title">Warning</h3>
-                    </div>
-                    <p id="trendMapWarningText" class="trend-warning__text"></p>
-                  </article>
-                </div>
-              </div>
-            </section>
+           <div id="trendMapMount"></div>
+           <div id="roninSystemMount"></div>
 
             <section class="scans-view view--hidden" id="scansView">
               <div class="scans-header">
@@ -385,10 +320,18 @@
             <span class="mobile-more-sheet__text">Compound</span>
           </button>
 
-          <button class="mobile-more-sheet__link" data-view="trend-map" type="button">
-            <i data-lucide="scroll-text" class="mobile-more-sheet__icon"></i>
-            <span class="mobile-more-sheet__text">The Ronin System</span>
-          </button>
+         <button class="mobile-more-sheet__link" data-view="trend-map" type="button">
+  <i data-lucide="scroll-text" class="mobile-more-sheet__icon"></i>
+  <span class="mobile-more-sheet__text">Trend Map</span>
+</button>
+
+<button class="mobile-more-sheet__link" data-view="ronin-system" type="button">
+  <span class="ronin-icon-swap">
+    <img src="assets/small-ronin-nobackground.png" class="ronin-icon-swap__default" alt="Ronin System" />
+    <img src="assets/small-ronin-white.png" class="ronin-icon-swap__hover" alt="Ronin System" />
+  </span>
+  <span class="mobile-more-sheet__text">Ronin System</span>
+</button>
         </div>
       </div>
       <footer class="footer">

@@ -40,7 +40,9 @@ const taglineMap = {
   journal: 'Log the trade. Review the process. Improve the system.',
   stats: 'Measure what matters. Study the edge.',
   compound: 'Consistency compounds over time.',
-  'trend-map': 'The Ronin System.',
+  'trend-map': 'Market regime, exposure guidance, and the 7-signal block.',
+      'ronin-system': 'The rules, structure, and execution framework behind the method.',
+
   settings: 'Tune the platform to your workflow.',
 };
 
@@ -383,7 +385,8 @@ settings.init();
       journal: 'Journal',
       stats: 'Statistics',
       compound: 'Compound',
-      'trend-map': 'The Ronin System',
+      'trend-map': 'Trend Map',
+      'ronin-system': 'The Ronin System',
       settings: 'Settings',
     };
 

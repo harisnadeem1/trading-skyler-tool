@@ -1,0 +1,72 @@
+<section class="trend-map-view view--hidden ronin-view" id="trendMapView" data-view="trend-map">
+  <div class="trend-map-view__inner ronin-page">
+    <div class="trend-map__header ronin-page__header">
+      
+
+      <div class="trend-map__toolbar ronin-toolbar">
+        <label class="trend-control ronin-control">
+          <span class="trend-control__label ronin-control__label">Signal 5 Mode</span>
+          <select id="trendMapSignal5ModeSelect" class="trend-control__select ronin-select">
+            <option value="AUTO">Auto from database</option>
+            <option value="MANUAL">Manual</option>
+          </select>
+        </label>
+
+        <label class="trend-control ronin-control">
+          <span class="trend-control__label ronin-control__label">Signal 5 Value</span>
+          <select id="trendMapSignal5ValueSelect" class="trend-control__select ronin-select">
+            <option value="YES">YES</option>
+            <option value="ATTEMPT">ATTEMPT</option>
+            <option value="NO">NO</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div id="trendMapStatus"></div>
+
+    <div class="trend-map__grid ronin-grid">
+      <article class="trend-card trend-card--hero trend-card--full ronin-card ronin-card--hero">
+        <div class="trend-card__head ronin-card__head">
+          <div>
+            <h3 class="trend-card__title ronin-card__title">Current Regime</h3>
+            <span id="trendMapAsOf" class="trend-card__meta ronin-card__meta">—</span>
+          </div>
+          <span id="trendMapSignal5Source" class="trend-chip ronin-chip">Signal 5: Auto from database</span>
+        </div>
+
+        <div class="trend-hero ronin-hero">
+          <div id="trendMapRegimeBadge" class="trend-regime trend-regime--gray ronin-regime">—</div>
+
+          <div class="trend-hero__content">
+            <h3 id="trendMapActionTitle" class="trend-map__action-title ronin-action-title">Trend Map unavailable</h3>
+            <p id="trendMapExposureMessage" class="trend-map__exposure-message ronin-exposure">
+              No data available.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <article class="trend-card trend-card--metrics ronin-card">
+        <div class="trend-card__head ronin-card__head">
+          <h3 class="trend-card__title ronin-card__title">Key Metrics</h3>
+        </div>
+        <div id="trendMapMetricsGrid" class="trend-metrics-grid ronin-metrics-grid"></div>
+      </article>
+
+      <article class="trend-card trend-card--signals ronin-card">
+        <div class="trend-card__head ronin-card__head">
+          <h3 class="trend-card__title ronin-card__title">Seven Signals</h3>
+        </div>
+        <div id="trendMapSignalsGrid" class="trend-signals-grid ronin-signals-grid"></div>
+      </article>
+
+      <article id="trendMapWarningCard" class="trend-card trend-card--warning view--hidden ronin-card ronin-card--warning">
+        <div class="trend-card__head ronin-card__head">
+          <h3 class="trend-card__title ronin-card__title">Warning</h3>
+        </div>
+        <p id="trendMapWarningText" class="trend-warning__text ronin-warning"></p>
+      </article>
+    </div>
+  </div>
+</section>

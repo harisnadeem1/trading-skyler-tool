@@ -1,5 +1,3 @@
-// services/trendMap/trendMapSignalsService.js
-
 function toNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
@@ -28,12 +26,10 @@ function emaSeries(values, span) {
     if (seedCount < span) {
       seedSum += v;
       seedCount += 1;
-
       if (seedCount === span) {
         prevEma = seedSum / span;
         out[i] = prevEma;
       }
-
       continue;
     }
 
@@ -75,26 +71,26 @@ function deriveRegimeActionTitle(regime) {
   return titles[regime] || '';
 }
 
-function calculateTrendMapRegime(sig1, sig2, sig3, sig4, sig5) {
-  const signals2To5 = [sig2, sig3, sig4, sig5];
+function calculateTrendMapRegime(signal1, signal2, signal3, signal4, signal5) {
+  const signals2To5 = [signal2, signal3, signal4, signal5];
 
-  if (sig1 === 'YES' && signals2To5.every((s) => s === 'YES')) {
+  if (signal1 === 'YES' && signals2To5.every((s) => s === 'YES')) {
     return 'GREEN';
   }
 
-  if (sig1 === 'YES' && signals2To5.some((s) => s === 'NO')) {
+  if (signal1 === 'YES' && signals2To5.some((s) => s === 'NO')) {
     return 'YELLOW';
   }
 
-  if (sig1 === 'ATTEMPT' && signals2To5.some((s) => s === 'YES')) {
+  if (signal1 === 'ATTEMPT' && signals2To5.some((s) => s === 'YES')) {
     return 'AMBER';
   }
 
-  if (sig1 === 'NO' && signals2To5.some((s) => s === 'YES')) {
+  if (signal1 === 'NO' && signals2To5.some((s) => s === 'YES')) {
     return 'ORANGE';
   }
 
-  if (sig1 === 'NO' && signals2To5.every((s) => s === 'NO')) {
+  if (signal1 === 'NO' && signals2To5.every((s) => s === 'NO')) {
     return 'RED';
   }
 
@@ -118,8 +114,8 @@ function computeDailyMetrics(dailyBars) {
   const ma20 = sma(closes, 20);
 
   const latestOpen = opens[opens.length - 1];
-  const dailyPct = prevClose ? ((latestClose / prevClose) - 1) : null;
-  const intradayPct = latestOpen ? ((latestClose / latestOpen) - 1) : null;
+  const dailyPct = prevClose ? (latestClose / prevClose) - 1 : null;
+  const intradayPct = latestOpen ? (latestClose / latestOpen) - 1 : null;
 
   let pct5D = null;
   if (closes.length >= 6) {
@@ -129,7 +125,7 @@ function computeDailyMetrics(dailyBars) {
 
   const trailingWindow = closes.slice(-252);
   const rollingHigh = trailingWindow.length ? Math.max(...trailingWindow) : null;
-  const off52WkHigh = rollingHigh ? ((latestClose / rollingHigh) - 1) : null;
+  const off52WkHigh = rollingHigh ? (latestClose / rollingHigh) - 1 : null;
 
   return {
     latestClose,
@@ -238,7 +234,6 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
 
   const breadthSeries = [];
   const mcoInput = [];
-  const nhnlValues = [];
 
   for (let i = 1; i < sortedDates.length; i += 1) {
     const date = sortedDates[i];
@@ -248,15 +243,11 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
     let declines = 0;
     let unchanged = 0;
 
-    const symbolClosesToday = [];
-
     for (const symbol of symbols) {
       const current = ffilled[symbol].get(date);
       const prev = ffilled[symbol].get(prevDate);
 
       if (current === undefined || prev === undefined) continue;
-
-      symbolClosesToday.push(current);
 
       if (current > prev) advances += 1;
       else if (current < prev) declines += 1;
@@ -288,7 +279,6 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
     }
 
     const nhnl = newHighs - newLows;
-    nhnlValues.push(nhnl);
     mcoInput.push(ratioAdjustedBreadth);
 
     breadthSeries.push({
@@ -419,6 +409,10 @@ function buildTrendMapSignalBlock({
     };
   }
 
+  const signal1 = (
+    componentModel?.signal1 !== null && componentModel?.signal1 !== undefined
+  ) ? componentModel.signal1 : 'NO';
+
   const signal2 = (
     metrics.ma5 !== null &&
     metrics.ma5Prev !== null &&
@@ -435,13 +429,21 @@ function buildTrendMapSignalBlock({
   ) ? 'YES' : 'NO';
 
   const signal4 = weekly.weeklyBuySignal;
-  const signal5 = ['YES', 'NO', 'ATTEMPT'].includes(signal5Value) ? signal5Value : 'YES';
+
+  const signal5 = ['YES', 'NO', 'ATTEMPT'].includes(signal5Value) ? signal5Value : 'NO';
+
+  const signal6 = (
+    componentModel?.signal6 !== null && componentModel?.signal6 !== undefined
+  ) ? componentModel.signal6 : (
+    latestNHNLFromSheet !== null && latestNHNLFromSheet > 0 ? 'YES' : 'NO'
+  );
+
+  const signal7 = (
+    componentModel?.signal7 !== null && componentModel?.signal7 !== undefined
+  ) ? componentModel.signal7 : 'NO';
 
   const breadthStatus = componentModel?.status || 'INVALID';
   const breadthReason = componentModel?.reason || '';
-  const signal1 = componentModel?.signal1 ?? null;
-  const signal6 = componentModel?.signal6 ?? null;
-  const signal7 = componentModel?.signal7 ?? null;
 
   let marketRegime = 'PROVISIONAL';
   let dashboardWarning = '';
@@ -464,8 +466,8 @@ function buildTrendMapSignalBlock({
     {
       key: 'signal1',
       label: 'QQQE McClellan Summation Index (MCSI) in an uptrend?',
-      value: signal1 ?? 'N/A',
-      colorKey: statusColorKey(signal1 ?? 'N/A'),
+      value: signal1,
+      colorKey: statusColorKey(signal1),
     },
     {
       key: 'signal2',
@@ -494,53 +496,53 @@ function buildTrendMapSignalBlock({
     {
       key: 'signal6',
       label: 'QQQE net 52-Week High/Low indicator trending positive?',
-      value: signal6 ?? 'N/A',
-      colorKey: statusColorKey(signal6 ?? 'N/A'),
+      value: signal6,
+      colorKey: statusColorKey(signal6),
     },
     {
       key: 'signal7',
       label: 'McClellan Oscillator out of overbought territory?',
-      value: signal7 ?? 'N/A',
-      colorKey: statusColorKey(signal7 ?? 'N/A'),
+      value: signal7,
+      colorKey: statusColorKey(signal7),
     },
   ];
 
-  return {
-    asOf: now.toISOString(),
-    dashboardDate: formatDashboardDate(now),
-    ticker,
-    marketRegime,
-    regimeActionTitle,
-    exposureMessage,
-    metrics: {
-      latestClose: metrics.latestClose,
-      ma5: metrics.ma5,
-      ma10: metrics.ma10,
-      ma20: metrics.ma20,
-      weeklyClose: weekly.weeklyClose,
-      wma10: weekly.wma10,
-      wma20: weekly.wma20,
-      latestPctAbove20MA,
-      latestNHNLFromSheet,
-      componentCountUsed: componentModel?.symbols?.length || 0,
-      mcClellanSummationIndex: componentModel?.msiLatest ?? null,
-      mcClellanOscillator: componentModel?.mcoLatest ?? null,
-    },
-    signals,
-    breadthModelStatus: breadthStatus,
-    breadthModelReason: breadthReason,
-    dashboardWarning,
-    componentBreadthTail: (componentModel?.breadthSeries || []).slice(-30),
-  };
-}
+    return {
+      asOf: now.toISOString(),
+      dashboardDate: formatDashboardDate(now),
+      ticker,
+      marketRegime,
+      regimeActionTitle,
+      exposureMessage,
+      metrics: {
+        latestClose: metrics.latestClose,
+        ma5: metrics.ma5,
+        ma10: metrics.ma10,
+        ma20: metrics.ma20,
+        weeklyClose: weekly.weeklyClose,
+        wma10: weekly.wma10,
+        wma20: weekly.wma20,
+        latestPctAbove20MA,
+        latestNHNLFromSheet,
+        componentCountUsed: componentModel?.symbols?.length || 0,
+        mcClellanSummationIndex: componentModel?.msiLatest ?? null,
+        mcClellanOscillator: componentModel?.mcoLatest ?? null,
+      },
+      signals,
+      breadthModelStatus: breadthStatus,
+      breadthModelReason: breadthReason,
+      dashboardWarning,
+      componentBreadthTail: (componentModel?.breadthSeries || []).slice(-30),
+    };
+  }
 
-module.exports = {
-  statusColorKey,
-  deriveExposureMessage,
-  deriveRegimeActionTitle,
-  calculateTrendMapRegime,
-  computeDailyMetrics,
-  computeWeeklyMetrics,
-  computeComponentBreadthModel,
-  buildTrendMapSignalBlock,
-};
+  module.exports = {
+    statusColorKey,
+    deriveExposureMessage,
+    deriveRegimeActionTitle,
+    calculateTrendMapRegime,
+    computeDailyMetrics,
+    computeWeeklyMetrics,
+    computeComponentBreadthModel,
+    buildTrendMapSignalBlock,
+  };

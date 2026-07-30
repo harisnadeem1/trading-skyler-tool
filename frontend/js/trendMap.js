@@ -8,6 +8,7 @@ class TrendMapView {
       error: '',
       data: null,
       signal5Mode: 'AUTO',
+      signal5Value: 'YES',
     };
   }
 
@@ -23,8 +24,9 @@ class TrendMapView {
     this.els = {
       view: document.getElementById('trendMapView'),
       status: document.getElementById('trendMapStatus'),
-      refreshBtn: document.getElementById('trendMapRefreshBtn'),
-      signal5Select: document.getElementById('trendMapSignal5Select'),
+
+      signal5ModeSelect: document.getElementById('trendMapSignal5ModeSelect'),
+      signal5ValueSelect: document.getElementById('trendMapSignal5ValueSelect'),
 
       regimeBadge: document.getElementById('trendMapRegimeBadge'),
       actionTitle: document.getElementById('trendMapActionTitle'),
@@ -41,22 +43,34 @@ class TrendMapView {
   }
 
   bindEvents() {
-    if (this.els.refreshBtn) {
-      this.els.refreshBtn.addEventListener('click', () => this.refresh());
+    if (this.els.signal5ModeSelect) {
+      this.els.signal5ModeSelect.addEventListener('change', () => {
+        this.state.signal5Mode = this.els.signal5ModeSelect.value || 'AUTO';
+        this.syncControls();
+        this.load();
+      });
     }
 
-    if (this.els.signal5Select) {
-      this.els.signal5Select.addEventListener('change', () => {
-        this.state.signal5Mode = this.els.signal5Select.value || 'AUTO';
-        this.load();
+    if (this.els.signal5ValueSelect) {
+      this.els.signal5ValueSelect.addEventListener('change', () => {
+        this.state.signal5Value = this.els.signal5ValueSelect.value || 'YES';
+        this.syncControls();
+        if (this.state.signal5Mode === 'MANUAL') {
+          this.load();
+        }
       });
     }
   }
 
   buildTrendMapUrl(basePath) {
-    const selected = String(this.state.signal5Mode || 'AUTO').toUpperCase();
-    if (!selected || selected === 'AUTO') return basePath;
-    return `${basePath}?signal5Override=${encodeURIComponent(selected)}`;
+    const params = new URLSearchParams();
+
+    if (this.state.signal5Mode === 'MANUAL') {
+      params.set('signal5Override', this.state.signal5Value || 'YES');
+    }
+
+    const qs = params.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
   }
 
   async load() {
@@ -78,33 +92,15 @@ class TrendMapView {
     }
   }
 
-  async refresh() {
-    this.state.loading = true;
-    this.state.error = '';
-    this.renderStatus();
-    this.syncControls();
-
-    try {
-      const response = await api.post(this.buildTrendMapUrl('/trend-map/refresh'), {});
-      this.state.data = response?.data || null;
-      this.state.error = '';
-    } catch (error) {
-      this.state.error = error?.message || 'Failed to refresh Trend Map.';
-    } finally {
-      this.state.loading = false;
-      this.render();
-    }
-  }
-
   syncControls() {
-    if (this.els.refreshBtn) {
-      this.els.refreshBtn.disabled = this.state.loading;
-      this.els.refreshBtn.textContent = this.state.loading ? 'Refreshing...' : 'Refresh';
+    if (this.els.signal5ModeSelect) {
+      this.els.signal5ModeSelect.disabled = this.state.loading;
+      this.els.signal5ModeSelect.value = this.state.signal5Mode || 'AUTO';
     }
 
-    if (this.els.signal5Select) {
-      this.els.signal5Select.disabled = this.state.loading;
-      this.els.signal5Select.value = this.state.signal5Mode || 'AUTO';
+    if (this.els.signal5ValueSelect) {
+      this.els.signal5ValueSelect.disabled = this.state.loading || this.state.signal5Mode !== 'MANUAL';
+      this.els.signal5ValueSelect.value = this.state.signal5Value || 'YES';
     }
   }
 
@@ -154,14 +150,6 @@ class TrendMapView {
     return map[colorKey] || 'trend-signal--gray';
   }
 
-  getSourceLabel(data) {
-    const source = data?.signal5Source;
-    if (source === 'MANUAL_OVERRIDE') {
-      return `Signal 5: Manual (${this.state.signal5Mode})`;
-    }
-    return 'Signal 5: Auto from recent trades';
-  }
-
   renderStatus() {
     if (!this.els.status) return;
 
@@ -203,7 +191,9 @@ class TrendMapView {
     }
 
     if (this.els.sourcePill) {
-      this.els.sourcePill.textContent = this.getSourceLabel(data);
+      this.els.sourcePill.textContent = data.signal5Source === 'MANUAL_OVERRIDE'
+        ? `Signal 5: Manual (${this.state.signal5Value})`
+        : 'Signal 5: Auto from database';
     }
   }
 
@@ -286,7 +276,7 @@ class TrendMapView {
     if (this.els.actionTitle) this.els.actionTitle.textContent = 'Trend Map unavailable';
     if (this.els.exposureMessage) this.els.exposureMessage.textContent = 'No data available.';
     if (this.els.asOf) this.els.asOf.textContent = '—';
-    if (this.els.sourcePill) this.els.sourcePill.textContent = 'Signal 5: Auto from recent trades';
+    if (this.els.sourcePill) this.els.sourcePill.textContent = 'Signal 5: Auto from database';
 
     if (this.els.metricsGrid) {
       this.els.metricsGrid.innerHTML = `<div class="trend-empty">No metrics available.</div>`;
@@ -300,7 +290,6 @@ class TrendMapView {
   }
 
   render() {
-    this.syncControls();
     this.renderStatus();
 
     if (!this.state.data) {
@@ -308,6 +297,7 @@ class TrendMapView {
       return;
     }
 
+    this.syncControls();
     this.renderHeader(this.state.data);
     this.renderMetrics(this.state.data.metrics || {});
     this.renderSignals(this.state.data.signals || []);
