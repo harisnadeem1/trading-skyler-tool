@@ -86,7 +86,8 @@ class PositionsView {
       chartTitle: document.getElementById('positionChartTitle'),
       chartSubtitle: document.getElementById('positionChartSubtitle'),
       chartLegend: document.getElementById('positionChartLegend'),
-      chartCanvas: document.getElementById('positionChartCanvas')
+      chartCanvas: document.getElementById('positionChartCanvas'),
+      chartLoading: document.getElementById('positionChartLoading')
     };
   }
 
@@ -166,6 +167,8 @@ class PositionsView {
     if (this.elements.chartClose) {
       this.elements.chartClose.addEventListener('click', () => this.closeChartModal());
     }
+
+   
 
     if (this.elements.chartOverlay) {
       this.elements.chartOverlay.addEventListener('click', () => this.closeChartModal());
@@ -449,19 +452,42 @@ closeDeleteConfirm() {
 
 
 
-  async openChartModal(tradeId) {
-    const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
-    if (!trade || !this.elements.chartModal) return;
+async openChartModal(tradeId) {
+  const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
+  if (!trade || !this.elements.chartModal) return;
 
-    
+  this.elements.chartModal.classList.add('open');
+  this.elements.chartModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 
-    await this.renderChartModal(trade);
-this.startLiveChartFeed(trade);
-
-    this.elements.chartModal.classList.add('open');
-    this.elements.chartModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+  if (this.elements.chartLoading) {
+    this.elements.chartLoading.classList.add('is-visible');
   }
+
+  if (this.elements.chartTitle) {
+    this.elements.chartTitle.textContent = `${trade.ticker} Chart`;
+  }
+
+  if (this.elements.chartSubtitle) {
+    this.elements.chartSubtitle.textContent = 'Loading chart...';
+  }
+
+  requestAnimationFrame(async () => {
+    try {
+      await this.renderChartModal(trade);
+      this.startLiveChartFeed(trade);
+    } catch (error) {
+      console.error('Chart load failed:', error);
+      if (this.elements.chartSubtitle) {
+        this.elements.chartSubtitle.textContent = 'Failed to load chart';
+      }
+    } finally {
+      if (this.elements.chartLoading) {
+        this.elements.chartLoading.classList.remove('is-visible');
+      }
+    }
+  });
+}
 
   closeChartModal() {
     if (!this.elements.chartModal) return;
@@ -699,6 +725,9 @@ chart.timeScale().fitContent();
 this.chart = chart;
 this.chartSeries = series;
 this.chartLastTime = candles.length ? candles[candles.length - 1].time : now;
+if (this.elements.chartLoading) {
+  this.elements.chartLoading.classList.remove('is-visible');
+}
 // this.chartMinVisiblePrice = visibleMin;
 // this.chartMaxVisiblePrice = visibleMax;
 
