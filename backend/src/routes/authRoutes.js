@@ -8,6 +8,7 @@ const {
   logout,
   getInviteByToken,
   signupWithInvite,
+  register,
 } = require('../controllers/authController');
 
 router.post('/login', login);
@@ -16,5 +17,6 @@ router.post('/logout', auth, logout);
 
 router.get('/invite/:token', getInviteByToken);
 router.post('/signup', signupWithInvite);
+router.post('/register', register);
 
 module.exports = router;

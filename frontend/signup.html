@@ -3,88 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ronin Charts Signup</title>
+  <title>Ronin Charts | Access</title>
+  <meta name="description" content="Ronin Charts account access. Sign in, create a new account, or complete an invited signup." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/variables.css" />
   <link rel="stylesheet" href="./css/base.css" />
   <link rel="stylesheet" href="./css/signup.css" />
 </head>
-<body>
-  <div class="signup-screen">
-    <div class="signup-shell">
-      <div class="signup-card">
-        <div class="signup-brand">
-          <div class="signup-brand__mark" aria-hidden="true">G</div>
+<body class="auth-page">
+  <main class="auth-shell">
+    <section class="auth-card" aria-labelledby="auth-title">
+      <a class="auth-brand" href="./home.html" aria-label="Ronin Charts home">
+        <img src="./assets/ronin-logo.png" alt="Ronin Charts" class="auth-brand__logo auth-brand__logo--desktop" />
+        <img src="./assets/ronin-logo-mobile.png" alt="Ronin Charts" class="auth-brand__logo auth-brand__logo--mobile" />
+      </a>
 
-          <div class="signup-brand__text">
-            <h1>Create Sccount</h1>
-            <p id="signup-subtitle">Checking your invitation...</p>
+      <div class="auth-copy">
+        <p class="auth-eyebrow">Disciplined access</p>
+        <h1 id="auth-title">Welcome to Ronin Charts</h1>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Authentication modes">
+        <button type="button" class="auth-tab is-active" id="login-tab" data-auth-tab="login" role="tab" aria-selected="true">Login</button>
+        <button type="button" class="auth-tab" id="signup-tab" data-auth-tab="signup" role="tab" aria-selected="false">Sign up</button>
+      </div>
+
+      <section class="auth-panel is-active" id="login-panel" data-auth-panel="login" role="tabpanel" aria-labelledby="login-tab">
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="form-group auth-form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" name="email" autocomplete="email" placeholder="you@example.com" required />
           </div>
-        </div>
 
-        <form id="signup-form" class="signup-form" style="display: none;" novalidate>
-          <div class="form-group signup-form-group">
-            <label for="signup-email">Invited email</label>
-            <input type="email" id="signup-email" readonly />
-          </div>
-
-          <div class="form-group signup-form-group">
-            <label for="signup-password">Password</label>
+          <div class="form-group auth-form-group">
+            <label for="login-password">Password</label>
             <div class="password-field">
-              <input
-                type="password"
-                id="signup-password"
-                placeholder="Minimum 8 characters"
-                autocomplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                class="password-toggle"
-                data-toggle-target="signup-password"
-                aria-label="Show password"
-              >
-                Show
-              </button>
+              <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password" required />
+              <button type="button" class="password-toggle" data-toggle-target="login-password" aria-label="Show password">Show</button>
             </div>
           </div>
 
-          <div class="form-group signup-form-group">
-            <label for="signup-confirm-password">Confirm password</label>
-            <div class="password-field">
-              <input
-                type="password"
-                id="signup-confirm-password"
-                placeholder="Re-enter your password"
-                autocomplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                class="password-toggle"
-                data-toggle-target="signup-confirm-password"
-                aria-label="Show password"
-              >
-                Show
-              </button>
-            </div>
-          </div>
-
-          <button id="signup-submit" class="signup-btn" type="submit">
-            <span class="signup-btn__text">Complete signup</span>
-            <span class="signup-btn__spinner" aria-hidden="true"></span>
+          <button id="login-submit" class="auth-btn" type="submit">
+            <span class="auth-btn__text">Sign in</span>
+            <span class="auth-btn__spinner" aria-hidden="true"></span>
           </button>
 
-          <p id="signup-message" class="signup-message" role="alert" aria-live="polite"></p>
+          <p id="login-message" class="auth-message" role="alert" aria-live="polite"></p>
         </form>
+      </section>
 
-        <div class="signup-footer">
-          <span>Invite-only access</span>
-          <span class="signup-footer__dot"></span>
-          <span>Secure one-time account activation</span>
+      <section class="auth-panel" id="signup-panel" data-auth-panel="signup" role="tabpanel" aria-labelledby="signup-tab">
+        <div class="auth-banner" id="invite-banner" hidden>
+          <span class="auth-banner__label">Invite detected</span>
+          <p id="invite-status">Validating invite...</p>
         </div>
-      </div>
-    </div>
-  </div>
+
+        <form id="signup-form" class="auth-form" novalidate>
+          <div class="form-group auth-form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" name="email" autocomplete="email" placeholder="you@example.com" required />
+          </div>
+
+         
+
+          <div class="form-group auth-form-group">
+            <label for="signup-password">Password</label>
+            <div class="password-field">
+              <input type="password" id="signup-password" name="password" autocomplete="new-password" placeholder="Minimum 8 characters" required />
+              <button type="button" class="password-toggle" data-toggle-target="signup-password" aria-label="Show password">Show</button>
+            </div>
+          </div>
+
+          <div class="form-group auth-form-group">
+            <label for="signup-confirm-password">Confirm password</label>
+            <div class="password-field">
+              <input type="password" id="signup-confirm-password" name="confirmPassword" autocomplete="new-password" placeholder="Re-enter your password" required />
+              <button type="button" class="password-toggle" data-toggle-target="signup-confirm-password" aria-label="Show password">Show</button>
+            </div>
+          </div>
+
+          <button id="signup-submit" class="auth-btn" type="submit">
+            <span class="auth-btn__text">Create account</span>
+            <span class="auth-btn__spinner" aria-hidden="true"></span>
+          </button>
+
+          <p id="signup-message" class="auth-message" role="alert" aria-live="polite"></p>
+        </form>
+      </section>
+
+     
+    </section>
+  </main>
 
   <script type="module" src="./js/signup.js"></script>
 </body>

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1b1916" />
+    <meta name="description"
+        content="Ronin Charts is a disciplined trading workspace with a free position-size calculator, trading journal, and market trend map." />
+    <title>Ronin Charts — Strength First. Structure Second. Risk Always.</title>
+  <link rel="icon" type="image/svg+xml" href="assets/small-ronin.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/home.css" />
+</head>
+
+<body class="home-page">
+
+    <header class="home-header" data-header>
+        <div class="home-container home-header__inner">
+           <a class="home-brand" href="#top" aria-label="Ronin Charts home">
+  <img src="assets/ronin-logo.png" alt="Ronin Charts" class="home-brand__logo home-brand__logo--desktop" />
+  <img src="assets/ronin-logo-mobile.png" alt="Ronin Charts" class="home-brand__logo home-brand__logo--mobile" />
+</a>
+
+            <button class="home-menu-button" type="button" aria-expanded="false" aria-controls="home-primary-navigation"
+                data-menu-button>
+                <span class="home-sr-only">Open navigation</span>
+                <span></span><span></span><span></span>
+            </button>
+
+            <nav class="home-nav" id="home-primary-navigation" aria-label="Primary navigation" data-nav>
+                <a href="#system">System</a>
+                <a href="#journal">Journal</a>
+                <a href="#trend-map">Trend Map</a>
+                <a href="#pricing">Pricing</a>
+                <a href="/signup.html">Login</a>
+                <a class="home-button home-button--small home-button--gold" href="/signup.html">Free Registration</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main" class="home-main">
+        <section class="home-hero" id="top" aria-labelledby="home-hero-title">
+            <div class="home-hero__art" aria-hidden="true"></div>
+            <div class="home-container home-hero__layout">
+                <div class="home-hero__copy">
+                    <p class="home-eyebrow">A disciplined workspace for swing traders</p>
+                    <h1 id="home-hero-title">Strength first.<br />Structure second.<br />Risk always.</h1>
+                    <div class="home-brush-rule" aria-hidden="true"></div>
+                    <p class="home-hero__lead">
+                        Journal your trades, calculate position size, and stay aligned with the market through a clean,
+                        process-first system.
+                    </p>
+                    <div class="home-hero__actions">
+                        <a class="home-button home-button--gold home-button--large" href="/signup.html">Free
+                            Registration</a>
+                        <a class="home-text-link" href="#system">Explore the System <span
+                                aria-hidden="true">→</span></a>
+                    </div>
+                    <ul class="home-hero__proof" aria-label="Free access benefits">
+                        <li><span class="home-proof-icon">✓</span>No credit card required</li>
+                        <li><span class="home-proof-icon">✓</span>Free calculator</li>
+                        <li><span class="home-proof-icon">✓</span>Free journal</li>
+                        <li><span class="home-proof-icon">✓</span>Free trend map</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-tools" id="free-tools" aria-label="Free trading tools">
+            <div class="home-container">
+                <div class="home-tool-grid">
+                    <article class="home-tool-card" id="calculator">
+                        <div class="home-icon-ring" aria-hidden="true">
+                            <svg viewBox="0 0 48 48">
+                                <rect x="12" y="7" width="24" height="34" rx="3" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" />
+                                <rect x="16" y="12" width="16" height="7" rx="1" fill="currentColor" opacity=".18" />
+                                <path d="M17 25h3m5 0h3m5 0h-1M17 31h3m5 0h3m5 0h-1M17 36h3m5 0h3m5-5v5"
+                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>Free Calculator</h2>
+                            <p>Position size with precision. Risk only what your plan allows.</p>
+                            <a href="/signup.html">Open Calculator <span aria-hidden="true">→</span></a>
+                        </div>
+                    </article>
+
+                    <article class="home-tool-card" id="journal">
+                        <div class="home-icon-ring" aria-hidden="true">
+                            <svg viewBox="0 0 48 48">
+                                <path
+                                    d="M8 11c7-2 12 0 16 4v25c-4-4-9-6-16-4V11Zm32 0c-7-2-12 0-16 4v25c4-4 9-6 16-4V11Z"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" />
+                                <path d="M24 15v25" stroke="currentColor" stroke-width="2.5" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>Free Journal</h2>
+                            <p>Track trades. Learn from execution. Build long-term consistency.</p>
+                            <a href="/signup.html">Open Journal <span aria-hidden="true">→</span></a>
+                        </div>
+                    </article>
+
+                    <article class="home-tool-card" id="trend-map">
+                        <div class="home-icon-ring" aria-hidden="true">
+                            <svg viewBox="0 0 48 48">
+                                <path d="M7 37 21 11l8 14 5-8 7 20H7Z" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linejoin="round" />
+                                <path d="m16 29 5-6 4 5 4-5 5 8" fill="none" stroke="currentColor" stroke-width="2.5"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>Free Trend Map</h2>
+                            <p>See the big picture. Stay aligned with strength across markets.</p>
+                            <a href="/signup.html">Open Trend Map <span aria-hidden="true">→</span></a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-workspace" aria-labelledby="home-workspace-title">
+            <div class="home-container home-workspace__grid">
+                <div class="home-section-intro">
+                    <p class="home-kicker">The workspace</p>
+                    <h2 id="home-workspace-title">Built for disciplined traders.</h2>
+                    <p>Everything you need to plan, execute, and review your trades in one focused workspace.</p>
+                    <div class="home-mini-brush" aria-hidden="true"></div>
+                </div>
+
+                <div class="home-dashboard-preview" role="img"
+                    aria-label="Ronin Charts dashboard preview showing trading statistics, an equity curve, recent trades, and a market trend map">
+                    <aside class="home-dashboard-preview__sidebar">
+                        <div class="home-dashboard-preview__brand"><span
+                                class="home-mini-enso"></span><strong>Ronin</strong></div>
+                        <nav aria-label="Dashboard preview navigation">
+                            <span class="home-dashboard-preview__active">▦ Dashboard</span>
+                            <span>▤ Journal</span>
+                            <span>▦ Calculator</span>
+                            <span>△ Trend Map</span>
+                            <span>☆ Watchlist</span>
+                            <span>⌁ Reports</span>
+                        </nav>
+                        <div class="home-dashboard-preview__user"><span>浪</span><small>Ronin Trader<br />Discipline.
+                                Process.</small></div>
+                    </aside>
+
+                    <div class="home-dashboard-preview__main">
+                        <div class="home-dashboard-preview__topline">
+                            <strong>Dashboard</strong>
+                            <span>May 1 – May 31, 2026⌄</span>
+                        </div>
+
+                        <div class="home-metric-grid">
+                            <div><small>Net P&amp;L</small><strong
+                                    class="home-positive">+$4,287.50</strong><em>+8.62%</em></div>
+                            <div><small>Win Rate</small><strong>61.48%</strong><em>+5.12%</em></div>
+                            <div><small>Expectancy</small><strong>+1.27R</strong><em>+12.37%</em></div>
+                            <div><small>Profit Factor</small><strong>1.82</strong><em>+0.28</em></div>
+                            <div><small>Trades</small><strong>48</strong><em>This month</em></div>
+                        </div>
+
+                        <div class="home-dashboard-preview__content-grid">
+                            <div class="home-panel home-panel--equity">
+                                <div class="home-panel__heading"><strong>Equity Curve</strong><span>May</span></div>
+                                <svg class="home-equity-chart" viewBox="0 0 520 210" preserveAspectRatio="none"
+                                    aria-hidden="true">
+                                    <defs>
+                                        <linearGradient id="homeEquityFill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#52745a" stop-opacity=".34" />
+                                            <stop offset="100%" stop-color="#52745a" stop-opacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path
+                                        d="M0 184 L32 170 L59 175 L87 145 L117 151 L145 124 L171 131 L198 103 L226 112 L253 84 L282 94 L312 73 L338 84 L366 57 L394 64 L423 35 L452 46 L482 17 L520 29 L520 210 L0 210 Z"
+                                        fill="url(#homeEquityFill)" />
+                                    <path
+                                        d="M0 184 L32 170 L59 175 L87 145 L117 151 L145 124 L171 131 L198 103 L226 112 L253 84 L282 94 L312 73 L338 84 L366 57 L394 64 L423 35 L452 46 L482 17 L520 29"
+                                        fill="none" stroke="#47684f" stroke-width="5" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <g stroke="#d8c8aa" stroke-width="1">
+                                        <path d="M0 40H520M0 90H520M0 140H520M0 190H520" />
+                                    </g>
+                                </svg>
+                            </div>
+
+                            <div class="home-panel home-panel--trades">
+                                <div class="home-panel__heading"><strong>Recent Trades</strong><span>Result</span></div>
+                                <div class="home-trade-row"><span>SPY</span><span>Breakout</span><strong
+                                        class="home-positive">+2.31R</strong></div>
+                                <div class="home-trade-row"><span>AAPL</span><span>Pullback</span><strong
+                                        class="home-negative">−1.12R</strong></div>
+                                <div class="home-trade-row"><span>NVDA</span><span>Breakout</span><strong
+                                        class="home-positive">+1.85R</strong></div>
+                                <div class="home-trade-row"><span>QQQ</span><span>Review</span><strong>+1.02R</strong>
+                                </div>
+                                <div class="home-trade-row"><span>AMZN</span><span>Flat Base</span><strong
+                                        class="home-positive">+2.05R</strong></div>
+                            </div>
+
+                            <div class="home-panel home-panel--trend">
+                                <div class="home-panel__heading"><strong>Trend Map</strong><span>Daily</span></div>
+                                <div class="home-trend-tabs"><span
+                                        class="home-trend-tabs__selected">Daily</span><span>Weekly</span><span>Monthly</span>
+                                </div>
+                                <div class="home-trend-grid" aria-hidden="true">
+                                    <span class="home-strong">SPY</span><span class="home-strong">QQQ</span><span
+                                        class="home-strong">DIA</span><span class="home-strong">IWM</span>
+                                    <span class="home-strong">AAPL</span><span class="home-strong">MSFT</span><span
+                                        class="home-strong">NVDA</span><span class="home-neutral">AMZN</span>
+                                    <span class="home-neutral">META</span><span class="home-neutral">TSLA</span><span
+                                        class="home-neutral">GOOGL</span><span class="home-weak">NFLX</span>
+                                    <span class="home-neutral">XLF</span><span class="home-weak">XLE</span><span
+                                        class="home-weak">XLV</span><span class="home-weak">XLI</span>
+                                </div>
+                                <div class="home-trend-legend">
+                                    <span><i class="home-strong-dot"></i>Strong</span>
+                                    <span><i class="home-neutral-dot"></i>Neutral</span>
+                                    <span><i class="home-weak-dot"></i>Weak</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-process" aria-labelledby="home-process-title">
+            <div class="home-container">
+                <div class="home-section-divider">
+                    <span></span>
+                    <h2 id="home-process-title">How it works</h2>
+                    <span></span>
+                </div>
+
+                <div class="home-process-grid">
+                    <article class="home-process-step">
+                        <div class="home-process-step__icon">1</div>
+                        <div>
+                            <h3>Find strength</h3>
+                            <p>Use the Trend Map to identify stocks and sectors aligned with the market.</p>
+                        </div>
+                    </article>
+                    <article class="home-process-step">
+                        <div class="home-process-step__icon">2</div>
+                        <div>
+                            <h3>Wait for structure</h3>
+                            <p>Look for high-probability flat bases, breakouts, or controlled pullbacks.</p>
+                        </div>
+                    </article>
+                    <article class="home-process-step">
+                        <div class="home-process-step__icon">3</div>
+                        <div>
+                            <h3>Define the risk</h3>
+                            <p>Calculate position size before entry and protect capital first.</p>
+                        </div>
+                    </article>
+                    <article class="home-process-step">
+                        <div class="home-process-step__icon">4</div>
+                        <div>
+                            <h3>Review and improve</h3>
+                            <p>Journal every trade, study results, and refine the process over time.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-system" id="system" aria-labelledby="system-title">
+            <div class="home-container">
+                <div class="home-section-divider">
+                    <span></span>
+                    <h2 id="system-title">The Ronin System</h2>
+                    <span></span>
+                </div>
+                <div class="home-system-grid">
+
+                <article class="home-system-card">
+                    <div class="home-system-card__copy">
+                        <h3>Flat Base Breakout</h3>
+                        <p>Buy strength as price clears a tight base with trend alignment and clear confirmation.</p>
+                        <a href="/system#flat-base">Learn more <span aria-hidden="true">→</span></a>
+                    </div>
+                    <svg viewBox="0 0 430 230" class="home-pattern-chart"
+                        aria-label="Illustration of a flat base breakout">
+                        <rect x="88" y="93" width="211" height="75" fill="#b9965c" opacity=".12" stroke="#725d3e"
+                            stroke-width="2" />
+                        <path
+                            d="M35 177 C73 166 80 145 105 138 C150 126 198 142 232 132 C262 124 285 126 302 113 C325 96 346 83 380 43"
+                            fill="none" stroke="#a27a2e" stroke-width="4" />
+                        <path d="M35 187 C90 174 123 164 161 160 C216 153 255 151 303 131 C338 116 357 94 392 62"
+                            fill="none" stroke="#51483c" stroke-width="2.5" opacity=".65" />
+                        <g stroke="#29251f" stroke-width="2">
+                            <path
+                                d="M98 139v18M112 132v23M126 136v20M140 129v27M154 137v21M168 131v25M182 135v20M196 128v29M210 136v20M224 131v24M238 135v20M252 128v28M266 134v20M280 126v27M294 132v20M308 111v31M322 95v30M338 81v31M354 64v30M371 44v31" />
+                        </g>
+                        <g fill="#f5ecdc" stroke="#29251f" stroke-width="1.8">
+                            <rect x="93" y="144" width="10" height="8" />
+                            <rect x="107" y="139" width="10" height="10" />
+                            <rect x="121" y="141" width="10" height="9" />
+                            <rect x="135" y="135" width="10" height="13" />
+                            <rect x="149" y="142" width="10" height="9" />
+                            <rect x="163" y="137" width="10" height="10" />
+                            <rect x="177" y="141" width="10" height="8" />
+                            <rect x="191" y="134" width="10" height="13" />
+                            <rect x="205" y="141" width="10" height="9" />
+                            <rect x="219" y="136" width="10" height="11" />
+                            <rect x="233" y="141" width="10" height="8" />
+                            <rect x="247" y="134" width="10" height="13" />
+                            <rect x="261" y="140" width="10" height="8" />
+                            <rect x="275" y="133" width="10" height="12" />
+                            <rect x="289" y="139" width="10" height="8" />
+                            <rect x="303" y="119" width="10" height="17" fill="#45684f" />
+                            <rect x="317" y="102" width="10" height="18" fill="#45684f" />
+                            <rect x="333" y="87" width="10" height="18" fill="#45684f" />
+                            <rect x="349" y="69" width="10" height="19" fill="#45684f" />
+                            <rect x="366" y="51" width="10" height="20" fill="#45684f" />
+                        </g>
+                        <path d="M298 73 318 103" stroke="#5f4a33" stroke-width="2" marker-end="url(#arrow1)" />
+                        <defs>
+                            <marker id="arrow1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0 0 8 4 0 8Z" fill="#5f4a33" />
+                            </marker>
+                        </defs>
+                        <text x="246" y="61" fill="#4b4033" font-size="16"
+                            font-family="Inter, sans-serif">BREAKOUT</text>
+                        <text x="165" y="191" fill="#4b4033" font-size="15" font-family="Inter, sans-serif">BASE</text>
+                    </svg>
+                </article>
+
+                <article class="home-system-card">
+                    <div class="home-system-card__copy">
+                        <h3>Controlled Pullback</h3>
+                        <p>Buy constructive pullbacks toward key support inside a strong, established trend.</p>
+                        <a href="/system#controlled-pullback">Learn more <span aria-hidden="true">→</span></a>
+                    </div>
+                    <svg viewBox="0 0 430 230" class="home-pattern-chart"
+                        aria-label="Illustration of a controlled pullback">
+                        <path
+                            d="M28 189 C70 177 98 143 128 129 C164 112 179 92 209 77 C247 58 269 48 300 58 C330 66 338 95 319 114 C304 129 301 143 326 137 C351 130 366 94 401 49"
+                            fill="none" stroke="#a27a2e" stroke-width="4" />
+                        <path
+                            d="M24 199 C72 185 105 164 140 145 C190 120 225 101 268 95 C307 90 330 108 348 111 C370 115 388 97 409 75"
+                            fill="none" stroke="#51483c" stroke-width="2.5" opacity=".65" />
+                        <g stroke="#29251f" stroke-width="2" fill="#f5ecdc">
+                            <path
+                                d="M48 169v25M67 154v27M86 140v24M105 128v25M124 113v25M143 98v25M162 84v25M181 70v24M200 61v25M219 49v25M238 44v25M257 47v26M276 58v25M295 76v27M314 103v27M333 115v25M352 102v27M371 83v25M390 56v27" />
+                            <rect x="42" y="174" width="11" height="13" fill="#45684f" />
+                            <rect x="61" y="159" width="11" height="14" fill="#45684f" />
+                            <rect x="80" y="145" width="11" height="13" fill="#45684f" />
+                            <rect x="99" y="133" width="11" height="14" fill="#45684f" />
+                            <rect x="118" y="118" width="11" height="14" fill="#45684f" />
+                            <rect x="137" y="103" width="11" height="14" fill="#45684f" />
+                            <rect x="156" y="89" width="11" height="14" fill="#45684f" />
+                            <rect x="175" y="75" width="11" height="13" fill="#45684f" />
+                            <rect x="194" y="66" width="11" height="13" fill="#45684f" />
+                            <rect x="213" y="54" width="11" height="14" fill="#45684f" />
+                            <rect x="232" y="49" width="11" height="14" fill="#45684f" />
+                            <rect x="251" y="52" width="11" height="14" fill="#8b3b35" />
+                            <rect x="270" y="63" width="11" height="14" fill="#8b3b35" />
+                            <rect x="289" y="82" width="11" height="14" fill="#8b3b35" />
+                            <rect x="308" y="108" width="11" height="14" fill="#8b3b35" />
+                            <rect x="327" y="120" width="11" height="14" fill="#45684f" />
+                            <rect x="346" y="107" width="11" height="14" fill="#45684f" />
+                            <rect x="365" y="88" width="11" height="14" fill="#45684f" />
+                            <rect x="384" y="61" width="11" height="14" fill="#45684f" />
+                        </g>
+                        <circle cx="325" cy="133" r="16" fill="none" stroke="#8b6a3c" stroke-width="2" />
+                        <path d="M309 168 322 147" stroke="#5f4a33" stroke-width="2" marker-end="url(#arrow2)" />
+                        <defs>
+                            <marker id="arrow2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0 0 8 4 0 8Z" fill="#5f4a33" />
+                            </marker>
+                        </defs>
+                        <text x="233" y="192" fill="#4b4033" font-size="15"
+                            font-family="Inter, sans-serif">PULLBACK</text>
+                    </svg>
+                </article>
+                </div>
+            </div>
+            </div>
+        </section>
+
+        <section class="home-platform" aria-labelledby="platform-title">
+            <div class="home-container">
+                <div class="home-section-divider">
+                    <span></span>
+                    <h2 id="platform-title">The Platform</h2><span></span>
+                </div>
+
+                <div class="home-feature-grid">
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">▤</div>
+                        <div>
+                            <h3>Trade Journal</h3>
+                            <p>Log every trade, track context, and capture lessons that compound your edge.</p>
+                        </div>
+                    </article>
+
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">▦</div>
+                        <div>
+                            <h3>Position Size Calculator</h3>
+                            <p>Determine position size from account risk, stop distance, and market conditions.</p>
+                        </div>
+                    </article>
+
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">△</div>
+                        <div>
+                            <h3>Trend Map</h3>
+                            <p>Scan markets across timeframes to find the strongest trends and opportunities.</p>
+                        </div>
+                    </article>
+
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">▥</div>
+                        <div>
+                            <h3>Performance Analytics</h3>
+                            <p>Study expectancy, drawdowns, consistency, and setup performance.</p>
+                        </div>
+                    </article>
+
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">☷</div>
+                        <div>
+                            <h3>Watchlist Workflow</h3>
+                            <p>Organize your best ideas with levels, notes, tags, and setup tracking.</p>
+                        </div>
+                    </article>
+
+                    <article class="home-feature-card">
+                        <div class="home-feature-icon">✓</div>
+                        <div>
+                            <h3>Rule-Based Review</h3>
+                            <p>Review every trade against your system and reinforce disciplined execution.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-quote" aria-label="Ronin philosophy">
+            <div class="home-quote__art" aria-hidden="true"></div>
+            <div class="home-container home-quote__inner">
+                <blockquote>
+                    <span class="home-quote__mark" aria-hidden="true">“</span>
+                    <p>I don’t predict.<br />I prepare, execute and manage risk.</p>
+                    <cite>— The Ronin Mindset</cite>
+                </blockquote>
+            </div>
+        </section>
+
+        <section class="home-cta" id="pricing" aria-labelledby="cta-title">
+            <div class="home-cta__art" aria-hidden="true"></div>
+            <div class="home-container home-cta__inner">
+                <h2 id="cta-title">Start building your edge.</h2>
+                <p>Use the free calculator, free journal, and free trend map.</p>
+                <a class="home-button home-button--gold home-button--large" href="/signup.html">Free Registration</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="home-footer">
+        <div class="home-container home-footer__grid">
+            <div class="home-footer__brand">
+                <a class="home-brand home-brand--inverse" href="#top">
+  <img src="assets/ronin-logo.png" alt="Ronin Charts" class="home-brand__logo home-brand__logo--desktop" />
+  <img src="assets/ronin-logo-mobile.png" alt="Ronin Charts" class="home-brand__logo home-brand__logo--mobile" />
+</a>
+                <p>A disciplined trading workspace for swing traders who value strength, structure, and risk.</p>
+                <div class="home-social-row" aria-label="Social links">
+                    <a href="#" aria-label="X">𝕏</a>
+                    <a href="#" aria-label="YouTube">▶</a>
+                    <a href="mailto:hello@ronincharts.com" aria-label="Email">✉</a>
+                </div>
+            </div>
+
+            <div class="home-footer__column">
+                <h2>Product</h2>
+                <a href="/system">System</a>
+                <a href="/journal">Journal</a>
+                <a href="/calculator">Calculator</a>
+                <a href="/trend-map">Trend Map</a>
+                <a href="/reports">Reports</a>
+            </div>
+
+            <div class="home-footer__column">
+                <h2>Company</h2>
+                <a href="/pricing">Pricing</a>
+                <a href="/about">About</a>
+                <a href="/blog">Blog</a>
+                <a href="/resources">Resources</a>
+                <a href="/contact">Contact</a>
+            </div>
+
+            <div class="home-footer__column">
+                <h2>Support</h2>
+                <a href="/help">Help Center</a>
+                <a href="/faq">FAQs</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+            </div>
+
+            <div class="home-footer__disclaimer">
+                <h2>Disclaimer</h2>
+                <p>
+                    Ronin Charts is an educational platform designed to help traders track, analyze, and improve their
+                    process. Nothing on this site constitutes financial advice. Trading involves risk, and past
+                    performance does not guarantee future results.
+                </p>
+            </div>
+        </div>
+        <div class="home-container home-footer__bottom">© <span data-year></span> Ronin Charts. All rights reserved.
+        </div>
+    </footer>
+    <script type="module" src="./js/home.js"></script>
+</body>
+
+</html>

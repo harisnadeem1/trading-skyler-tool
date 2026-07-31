@@ -666,10 +666,9 @@ async function mountApp() {
   }
 
   await state.hydrate();
-  showApp();
 
-  appInstance = new App();
-  await appInstance.init();
+appInstance = new App();
+await appInstance.init();
   return appInstance;
 }
 
@@ -678,67 +677,118 @@ async function bootstrapApp() {
     const user = await authManager.checkAuth();
 
     if (!user) {
-      showAuthScreen();
+      window.location.replace('/home.html');
       return;
     }
 
     if (user.role === 'admin') {
-      window.location.href = './admin.html';
+      window.location.replace('/admin.html');
       return;
     }
 
     await mountApp();
   } catch (error) {
     console.error('Bootstrap failed:', error);
-    showAuthScreen();
+    window.location.replace('/home.html');
   }
 }
 
-async function handleLoginSubmit(event) {
-  event.preventDefault();
+// async function handleLoginSubmit(event) {
+//   event.preventDefault();
 
-  const emailInput = document.getElementById('login-email');
-  const passwordInput = document.getElementById('login-password');
-  const errorBox = document.getElementById('login-error');
-  const submitBtn = document.getElementById('login-submit');
+//   const emailInput = document.getElementById('login-email');
+//   const passwordInput = document.getElementById('login-password');
+//   const errorBox = document.getElementById('login-error');
+//   const submitBtn = document.getElementById('login-submit');
 
-  const email = emailInput?.value.trim();
-  const password = passwordInput?.value;
+//   const email = emailInput?.value.trim();
+//   const password = passwordInput?.value;
 
-  if (errorBox) errorBox.textContent = '';
-  submitBtn?.classList.add('is-loading');
-  if (submitBtn) submitBtn.disabled = true;
+//   if (errorBox) errorBox.textContent = '';
+//   submitBtn?.classList.add('is-loading');
+//   if (submitBtn) submitBtn.disabled = true;
 
-  try {
-    const user = await authManager.login(email, password);
+//   try {
+//     const user = await authManager.login(email, password);
 
-    if (user.role === 'admin') {
-      window.location.href = './admin.html';
-      return;
-    }
+//     if (user.role === 'admin') {
+//       window.location.href = './admin.html';
+//       return;
+//     }
 
-    await mountApp();
-  } catch (error) {
-    if (errorBox) {
-      errorBox.textContent =
-        error.message || 'Unable to sign in. Please check your credentials.';
-    }
-  } finally {
-    submitBtn?.classList.remove('is-loading');
-    if (submitBtn) submitBtn.disabled = false;
-  }
-}
+//     await mountApp();
+//   } catch (error) {
+//     if (errorBox) {
+//       errorBox.textContent =
+//         error.message || 'Unable to sign in. Please check your credentials.';
+//     }
+//   } finally {
+//     submitBtn?.classList.remove('is-loading');
+//     if (submitBtn) submitBtn.disabled = false;
+//   }
+// }
 
-function setupAuthUI() {
-  const loginForm = document.getElementById('login-form');
+// function setupAuthUI() {
+//   const loginForm = document.getElementById('login-form');
+//   const logoutBtn = document.getElementById('logout-btn');
+//   const togglePasswordBtn = document.getElementById('toggle-password');
+//   const passwordInput = document.getElementById('login-password');
+//   const themeBtn = document.getElementById('themeBtn');
+
+//   if (loginForm) {
+//     loginForm.addEventListener('submit', handleLoginSubmit);
+//   }
+
+//   if (logoutBtn) {
+//     logoutBtn.addEventListener('click', async () => {
+//       try {
+//         await authManager.logout();
+//       } finally {
+//         if (appInstance && typeof appInstance.teardownLiveNotifications === 'function') {
+//           appInstance.teardownLiveNotifications();
+//         }
+//         closeMarketStream();
+//         if (state && typeof state.reset === 'function') {
+//           state.reset();
+//         }
+//         appInstance = null;
+//         window.location.reload();
+//       }
+//     });
+//   }
+
+//   if (togglePasswordBtn && passwordInput) {
+//     togglePasswordBtn.addEventListener('click', () => {
+//       const isPassword = passwordInput.type === 'password';
+//       passwordInput.type = isPassword ? 'text' : 'password';
+//       togglePasswordBtn.textContent = isPassword ? 'Hide' : 'Show';
+//       togglePasswordBtn.setAttribute(
+//         'aria-label',
+//         isPassword ? 'Hide password' : 'Show password'
+//       );
+//     });
+//   }
+
+//   if (themeBtn) {
+//     themeBtn.addEventListener('click', async () => {
+//       const currentTheme = state.settings?.theme || 'dark';
+
+//       let nextTheme = 'dark';
+//       if (currentTheme === 'dark') nextTheme = 'light';
+//       else if (currentTheme === 'light') nextTheme = 'system';
+//       else nextTheme = 'dark';
+
+//       try {
+//         await state.updateSettings({ theme: nextTheme });
+//       } catch (error) {
+//         console.error('Theme update failed:', error);
+//       }
+//     });
+//   }
+// }
+
+function setupShellUI() {
   const logoutBtn = document.getElementById('logout-btn');
-  const togglePasswordBtn = document.getElementById('toggle-password');
-  const passwordInput = document.getElementById('login-password');
-  const themeBtn = document.getElementById('themeBtn');
-
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleLoginSubmit);
-  }
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
@@ -753,43 +803,14 @@ function setupAuthUI() {
           state.reset();
         }
         appInstance = null;
-        window.location.reload();
-      }
-    });
-  }
-
-  if (togglePasswordBtn && passwordInput) {
-    togglePasswordBtn.addEventListener('click', () => {
-      const isPassword = passwordInput.type === 'password';
-      passwordInput.type = isPassword ? 'text' : 'password';
-      togglePasswordBtn.textContent = isPassword ? 'Hide' : 'Show';
-      togglePasswordBtn.setAttribute(
-        'aria-label',
-        isPassword ? 'Hide password' : 'Show password'
-      );
-    });
-  }
-
-  if (themeBtn) {
-    themeBtn.addEventListener('click', async () => {
-      const currentTheme = state.settings?.theme || 'dark';
-
-      let nextTheme = 'dark';
-      if (currentTheme === 'dark') nextTheme = 'light';
-      else if (currentTheme === 'light') nextTheme = 'system';
-      else nextTheme = 'dark';
-
-      try {
-        await state.updateSettings({ theme: nextTheme });
-      } catch (error) {
-        console.error('Theme update failed:', error);
+        window.location.replace('/home.html');
       }
     });
   }
 }
 
 function start() {
-  setupAuthUI();
+  setupShellUI();
   bootstrapApp();
 }
 

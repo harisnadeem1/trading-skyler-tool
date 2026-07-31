@@ -197,3 +197,48 @@ exports.signupWithInvite = async (req, res) => {
     client.release();
   }
 };
+
+exports.register = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ message: 'User already exists for this email' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const userResult = await pool.query(
+      `INSERT INTO users (email, password_hash, role, is_active)
+       VALUES ($1, $2, 'user', true)
+       RETURNING id, email, role, is_active`,
+      [email, passwordHash]
+    );
+
+    const user = userResult.rows[0];
+    const authToken = generateToken(user);
+
+    res.cookie('token', authToken, getAuthCookieOptions());
+
+    return res.status(201).json({
+      message: 'Registration completed successfully',
+      user,
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};

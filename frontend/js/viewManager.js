@@ -1,8 +1,19 @@
 import { state } from './state.js';
+import { authManager } from './auth.js';
 
 class ViewManager {
   constructor() {
     this.currentView = 'dashboard';
+    
+    this.protectedViews = new Set([
+  'dashboard',
+  'positions',
+  'journal',
+  'stats',
+  'compound',
+  'trend-map',
+  'ronin-system',
+]);
 
     this.views = {
       dashboard: null,
@@ -45,6 +56,8 @@ class ViewManager {
   }
 
   async init() {
+    const user = await this.ensureAuthenticated();
+  if (!user) return;
     this.dashboardMount = document.getElementById('dashboardMount');
     this.positionsMount = document.getElementById('positionsMount');
     this.journalMount = document.getElementById('journalMount');
@@ -55,16 +68,17 @@ class ViewManager {
     this.globalPartialsMount = document.getElementById('globalPartialsMount');
 
     if (
-      !this.dashboardMount ||
-      !this.positionsMount ||
-      !this.journalMount ||
-      !this.statsMount ||
-      !this.compoundMount ||
-      !this.trendMapMount
-    ) {
-      console.warn('ViewManager: One or more view mount elements not found');
-      return;
-    }
+  !this.dashboardMount ||
+  !this.positionsMount ||
+  !this.journalMount ||
+  !this.statsMount ||
+  !this.compoundMount ||
+  !this.trendMapMount ||
+  !this.roninSystemMount
+) {
+  console.warn('ViewManager: One or more view mount elements not found');
+  return;
+}
 
     await this.loadGlobalPartials();
     await this.loadAllViews();
@@ -111,6 +125,15 @@ class ViewManager {
     }
     return response.text();
   }
+
+  async ensureAuthenticated() {
+  const user = await authManager.checkAuth();
+  if (!user) {
+    window.location.replace('/home.html');
+    return null;
+  }
+  return user;
+}
 
   async loadViewIntoMount(path, mountEl, rootSelector) {
     const html = await this.fetchHtml(path);
@@ -183,16 +206,20 @@ this.views['ronin-system'] = await this.loadViewIntoMount(
 
   }
 
-  async initDeepLink() {
-    const hash = window.location.hash.slice(1);
-    if (hash && this.views[hash]) {
-      await this.switchTo(hash, { animate: false });
-    }
+ async initDeepLink() {
+  const hash = window.location.hash.slice(1);
+  if (hash && this.views[hash]) {
+    await this.switchTo(hash, { animate: false });
+  } else {
+    await this.switchTo('dashboard', { animate: false });
   }
+}
 
   async switchTo(view, options = { animate: true }) {
-    if (view === this.currentView) return;
-    if (!this.views[view]) return;
+  const user = await this.ensureAuthenticated();
+  if (!user) return;
+
+  if (!this.views[view]) return;
     window.scrollTo(0, 0);
 
     const previousView = this.currentView;
@@ -283,11 +310,14 @@ this.views['ronin-system'] = await this.loadViewIntoMount(
     return this.currentView === 'trend-map';
   }
 
-  navigateTo(view) {
-    if (this.views[view] !== undefined) {
-      this.switchTo(view);
-    }
+ async navigateTo(view) {
+  const user = await this.ensureAuthenticated();
+  if (!user) return;
+
+  if (this.views[view] !== undefined) {
+    this.switchTo(view);
   }
+}
 }
 
 export const viewManager = new ViewManager();
