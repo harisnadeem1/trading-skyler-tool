@@ -32,6 +32,7 @@ import {
   closeMarketStream,
 } from './marketStream.js';
 import { trendMapView } from './trendMap.js';
+import { roninSystemView } from './ronin-system.js';
 
 let appInstance = null;
 const taglineMap = {
@@ -83,6 +84,7 @@ settings.init();
     journalView.init();
     compoundView.init();
     trendMapView.init();
+    roninSystemView.init();
 
     keyboard.init();
     settingsToggle.init();
@@ -278,6 +280,12 @@ settings.init();
     });
 
     this.syncNavigationState(this.currentView);
+
+if (this.currentView === 'ronin-system') {
+  roninSystemView.activate();
+} else {
+  roninSystemView.deactivate();
+}
   }
 
   setupMobileNavVisibility() {
@@ -368,15 +376,21 @@ settings.init();
     this.navigateToView(view);
   }
 
-  navigateToView(view) {
-    this.currentView = view;
-    this.syncNavigationState(view);
-    this.closeMobileMoreSheet();
+navigateToView(view) {
+  this.currentView = view;
+  this.syncNavigationState(view);
+  this.closeMobileMoreSheet();
 
-    if (viewManager && typeof viewManager.navigateTo === 'function') {
-      viewManager.navigateTo(view);
-    }
+  if (view === 'ronin-system') {
+    roninSystemView.activate();
+  } else {
+    roninSystemView.deactivate();
   }
+
+  if (viewManager && typeof viewManager.navigateTo === 'function') {
+    viewManager.navigateTo(view);
+  }
+}
 
   syncNavigationState(view) {
     const labelMap = {
@@ -417,12 +431,26 @@ settings.init();
 }
   }
 
+
+    syncRouteLayout(view) {
+    const isRoninSystem = view === 'ronin-system';
+
+    document.body.classList.toggle('route-ronin-system', isRoninSystem);
+    document.documentElement.classList.toggle('route-ronin-system', isRoninSystem);
+  }
+
   setupGlobalEvents() {
     state.on('viewChanged', ({ to }) => {
-  if (!to) return;
-  this.currentView = to;
-  this.syncNavigationState(to);
-});
+    if (!to) return;
+    this.currentView = to;
+    this.syncNavigationState(to);
+
+    if (to === 'ronin-system') {
+      roninSystemView.activate();
+    } else {
+      roninSystemView.deactivate();
+    }
+  });
     state.on('accountChanged', () => {
       settingsToggle.updateSummary(
         state.account.currentSize,

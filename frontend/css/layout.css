@@ -1060,3 +1060,34 @@
 .view--hidden {
   display: none !important;
 }
+
+
+body.route-ronin-system .topbar {
+  display: none;
+}
+
+body.route-ronin-system .app-content {
+  padding: 0;
+}
+
+body.route-ronin-system .app-main-shell {
+  padding-top: 0;
+}
+
+body.route-ronin-system #roninSystemMount,
+body.route-ronin-system #roninSystemView {
+  margin: 0;
+  padding: 0;
+}
+
+body.route-ronin-system .ronin-system-view {
+  min-height: 100vh;
+}
+
+body.route-ronin-system .ronin-system-view__inner {
+  padding: 0;
+}
+
+body.route-ronin-system .ronin-system-page {
+  margin-top: 0;
+}
