@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1c1a17" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="description" content="The protected Ronin Trading System Academy: progressive training, psychology, practice, quizzes, milestones, TradingView setup, and premium Discord access." />
+  <title>Ronin Academy — Ronin Trading System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/academy.css" />
+  <link rel="icon" href="./assets/favicon.png" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+</head>
+<body>
+  <div class="academy-shell" data-academy-shell>
+    <header class="academy-header">
+      <a class="academy-brand" href="/" aria-label="Ronin Charts home">
+        <span class="academy-enso" aria-hidden="true"></span>
+        <span><strong>RONIN</strong><small>ACADEMY</small></span>
+      </a>
+
+      <button class="academy-mobile-menu" type="button" data-course-menu aria-expanded="false">
+        <span class="sr-only">Open course navigation</span>☰
+      </button>
+
+      <div class="academy-search-wrap">
+        <label class="sr-only" for="course-search">Search course lessons</label>
+        <input id="course-search" type="search" placeholder="Search the complete course…" data-course-search autocomplete="off" />
+        <div class="academy-search-results" data-search-results hidden></div>
+      </div>
+
+      <div class="academy-progress-summary" aria-label="Overall course progress">
+        <span><strong data-completed-count>0</strong>/<span data-total-count>0</span> core lessons</span>
+        <div class="academy-progress-track" aria-hidden="true"><span data-progress-bar></span></div>
+      </div>
+
+      <div class="academy-user">
+        <button type="button" data-user-button aria-haspopup="menu" aria-expanded="false"><span data-user-initial>R</span><span data-user-name>Ronin Trader</span>⌄</button>
+        <div class="academy-user-menu" data-user-menu hidden>
+          <a href="/#ronin-system">Course overview</a>
+          <button type="button" data-open-view="course">Course &amp; progress</button>
+          <button type="button" data-open-view="tradingview">TradingView setup</button>
+          <button type="button" data-open-view="discord">Discord community</button>
+          <a href="/">Ronin Charts home</a>
+          <button type="button" data-logout>Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <aside class="academy-sidebar" data-course-sidebar>
+      <div class="academy-course-title">
+        <p>Progressive mastery training</p>
+        <h1>Ronin Trading System</h1>
+        <span data-course-version>Version 2.1</span>
+      </div>
+      <nav class="academy-module-list" aria-label="Course levels and modules" data-course-nav></nav>
+      <div class="academy-sidebar-footer">
+        <p>Strength first.<br />Structure second.<br />Discipline always.</p>
+      </div>
+    </aside>
+
+    <main class="academy-main" id="academy-main">
+      <nav class="academy-view-tabs" aria-label="Academy sections" data-academy-tabs hidden>
+        <button type="button" data-view-tab="course" class="is-active"><span>01</span> Course</button>
+        <button type="button" data-view-tab="tradingview"><span>02</span> TradingView Setup</button>
+        <button type="button" data-view-tab="discord"><span>03</span> Discord Community</button>
+      </nav>
+
+      <div class="academy-loading" data-loading>
+        <span class="academy-loader" aria-hidden="true"></span>
+        <p>Preparing the Ronin Academy…</p>
+      </div>
+
+      <section class="academy-error" data-academy-error hidden>
+        <div class="academy-seal">浪</div>
+        <h1 data-academy-error-title>Course access required</h1>
+        <p data-academy-error-message>Log in with the account that purchased the Ronin Trading System.</p>
+        <div>
+          <a href="/login.html?return=/academy.html" class="academy-button academy-button-gold" data-academy-primary-action>Log in</a>
+          <a href="/ronin-trading-system.html" class="academy-button" data-academy-secondary-action>View the course</a>
+        </div>
+      </section>
+
+      <section class="academy-course-view" data-view-panel="course">
+        <section class="mastery-dashboard" data-mastery-dashboard hidden aria-labelledby="mastery-title">
+          <div class="mastery-heading">
+            <div>
+              <p class="resource-kicker">Your learning path</p>
+              <h1 id="mastery-title">Build mastery in the correct order.</h1>
+              <p>Complete each level, finish the required practice, and pass its checkpoint before the next level unlocks.</p>
+            </div>
+            <div class="mastery-overall-card">
+              <span>Core mastery</span>
+              <strong data-overall-percent>0%</strong>
+              <div class="mastery-meter"><i data-overall-bar></i></div>
+              <small data-certification-status>Foundation in progress</small>
+            </div>
+          </div>
+          <div class="mastery-level-grid" data-level-grid></div>
+          <div class="mastery-actions">
+            <button type="button" class="academy-button academy-button-gold" data-resume-course>Resume current lesson</button>
+            <span data-mastery-message>Progress is saved to your account.</span>
+          </div>
+        </section>
+
+        <article class="academy-lesson" data-lesson hidden>
+          <div class="lesson-breadcrumb" data-lesson-breadcrumb></div>
+          <header class="lesson-header">
+            <div>
+              <div class="lesson-meta-row">
+                <span class="lesson-level-pill" data-lesson-level></span>
+                <span class="lesson-type-pill" data-lesson-type></span>
+              </div>
+              <p class="lesson-eyebrow" data-lesson-module></p>
+              <h1 data-lesson-title></h1>
+              <p data-lesson-summary></p>
+            </div>
+            <div class="lesson-status-card">
+              <span data-lesson-duration></span>
+              <span class="lesson-status-label" data-lesson-status>Not started</span>
+              <button type="button" data-complete-lesson>Mark complete</button>
+            </div>
+          </header>
+
+          <section class="module-objectives" data-module-objectives-card>
+            <div>
+              <span>Module learning objectives</span>
+              <h2 data-module-objectives-title></h2>
+            </div>
+            <ul data-module-objectives></ul>
+          </section>
+
+          <div class="lesson-layout">
+            <div class="lesson-column">
+              <div class="lesson-content" data-lesson-content></div>
+
+              <section class="lesson-practice" data-practice-section>
+                <div class="lesson-section-title"><span>Required application</span><h2>Complete the practice.</h2></div>
+                <p>Do the exercise described in this lesson before marking it complete. This keeps progress tied to demonstrated work rather than passive reading.</p>
+                <label class="practice-confirmation">
+                  <input type="checkbox" data-practice-checkbox />
+                  <span>I completed the lesson exercise and reviewed my work honestly.</span>
+                </label>
+                <label class="reflection-field">
+                  <span>Reflection</span>
+                  <textarea data-lesson-reflection placeholder="What did you learn? What was difficult? Which rule or emotional pressure needs more work?"></textarea>
+                </label>
+                <button type="button" class="academy-button" data-save-practice>Save practice &amp; reflection</button>
+                <p class="practice-status" data-practice-status aria-live="polite"></p>
+              </section>
+
+              <section class="lesson-quiz" data-quiz-section hidden>
+                <div class="lesson-section-title"><span data-quiz-label>Knowledge checkpoint</span><h2 data-quiz-title>Module Quiz</h2></div>
+                <p class="quiz-requirement" data-quiz-requirement></p>
+                <form data-quiz-form></form>
+                <div class="quiz-result" data-quiz-result hidden></div>
+              </section>
+
+              <nav class="lesson-navigation" aria-label="Lesson navigation">
+                <button type="button" data-previous-lesson>← Previous lesson</button>
+                <button type="button" data-next-lesson>Next lesson →</button>
+              </nav>
+            </div>
+
+            <aside class="lesson-rail">
+              <section class="lesson-level-card">
+                <span data-current-level-label>Current level</span>
+                <h2 data-current-level-title>Beginner Foundations</h2>
+                <div class="lesson-level-meter"><i data-current-level-bar></i></div>
+                <p><strong data-current-level-percent>0%</strong> complete</p>
+                <small data-current-level-message>Complete the required lessons and checkpoint to advance.</small>
+              </section>
+
+              <section class="lesson-notes-card">
+                <div><p>Private notes</p><span>Saved to your account</span></div>
+                <textarea data-lesson-notes placeholder="Write chart examples, observations, questions, and execution notes…"></textarea>
+                <button type="button" data-save-notes>Save notes</button>
+                <p class="notes-status" data-notes-status aria-live="polite"></p>
+              </section>
+
+              <section class="lesson-principles-card">
+                <div class="lesson-enso"></div>
+                <h2>The Ronin standard</h2>
+                <ul>
+                  <li>Master one level before advancing.</li>
+                  <li>Study the chart before the outcome.</li>
+                  <li>Reject what does not fit.</li>
+                  <li>Review without excuses.</li>
+                </ul>
+              </section>
+
+              <section class="lesson-disclaimer-card">
+                <strong>Educational content</strong>
+                <p>This course and community are not financial advice, signals, or a guarantee of results. Test every rule independently.</p>
+              </section>
+            </aside>
+          </div>
+        </article>
+      </section>
+
+      <section class="academy-resource-view" data-view-panel="tradingview" hidden>
+        <header class="resource-hero resource-hero-tradingview">
+          <div>
+            <p class="resource-kicker">Premium workspace guide</p>
+            <h1>Build the Ronin Full TradingView layout.</h1>
+            <p>A clean chart is part of execution. This section gives members the exact palette, four required community scripts, and the workflow for using them without allowing indicators to replace price structure.</p>
+            <div class="resource-actions">
+              <button type="button" class="academy-button academy-button-gold" data-open-lesson="15-01-workspace">Start Module 15</button>
+              <div academy-button data-resource-actions-button></div>
+            </div>
+          </div>
+          <div class="resource-enso-mark" aria-hidden="true"><span>道</span></div>
+        </header>
+
+        <section class="resource-section">
+          <div class="resource-section-heading">
+            <p>Required tools</p>
+            <h2>Four indicators. Four separate jobs.</h2>
+            <span>Install each script from its original TradingView page. The scripts are third-party tools and may be changed, protected, or removed by their authors.</span>
+          </div>
+          <div class="indicator-card-grid">
+            <article class="indicator-card">
+              <span class="indicator-number">01</span>
+              <h3>ATR% Multiple from 50-MA</h3>
+              <p><strong>Why:</strong> measures extension from the 50-MA relative to normal volatility.</p>
+              <p><strong>Ronin use:</strong> extension and trade-management context. It is not an entry signal and not a top predictor.</p>
+              <a href="https://www.tradingview.com/script/oimVgV7e-ATR-multiple-from-50-MA/" target="_blank" rel="noopener noreferrer">Install on TradingView ↗</a>
+            </article>
+            <article class="indicator-card">
+              <span class="indicator-number">02</span>
+              <h3>MarketSmith Volumes</h3>
+              <p><strong>Why:</strong> makes expansion, dry-up, HVE/HV1 events, liquidity, and volume averages easy to read.</p>
+              <p><strong>Ronin use:</strong> strong volume into expansion, quieter volume during contraction, and renewed participation at confirmation.</p>
+              <a href="https://www.tradingview.com/script/DRT8QZSp/" target="_blank" rel="noopener noreferrer">Install on TradingView ↗</a>
+            </article>
+            <article class="indicator-card">
+              <span class="indicator-number">03</span>
+              <h3>Moving Averages for All Timeframes</h3>
+              <p><strong>Why:</strong> displays daily and weekly trend references inside one controlled indicator.</p>
+              <p><strong>Ronin use:</strong> daily 8 EMA, 21 EMA, 50 EMA, 200 SMA, and the weekly 8 EMA on the daily chart.</p>
+              <a href="https://www.tradingview.com/script/fxAXf8hu-Moving-Averages-For-All-Timeframes-LevelUp/" target="_blank" rel="noopener noreferrer">Install on TradingView ↗</a>
+            </article>
+            <article class="indicator-card">
+              <span class="indicator-number">04</span>
+              <h3>Swing Data</h3>
+              <p><strong>Why:</strong> puts ADR%, RVol/PVol, float, liquidity, RS, ATR%, and Low-of-Day distance in one compact table.</p>
+              <p><strong>Ronin use:</strong> stock selection, liquidity checks, leadership context, and entry-efficiency review.</p>
+              <a href="https://www.tradingview.com/script/uloAa2EI-Swing-Data-ADR-RVol-PVol-Float-Avg-Vol/" target="_blank" rel="noopener noreferrer">Install on TradingView ↗</a>
+            </article>
+          </div>
+        </section>
+
+        <section class="resource-section palette-section">
+          <div class="resource-section-heading">
+            <p>Definitive visual identity</p>
+            <h2>Ronin Full palette</h2>
+            <span>Green and oxblood belong to price and volume. Gold belongs to the daily 8 EMA and important active levels. Dark neutral tones belong to larger trend structure.</span>
+          </div>
+
+          <div class="palette-layout">
+            <figure class="palette-preview">
+              <img data-palette-image alt="Ronin Charts TradingView color palette with exact HEX codes" loading="lazy" />
+              <figcaption>Save the completed TradingView indicator template as <strong>Ronin Full</strong>.</figcaption>
+            </figure>
+
+            <div class="palette-groups">
+              <section class="palette-group">
+                <h3>Canvas</h3>
+                <button type="button" class="color-row" data-copy-color="#E9DDCA"><i style="--swatch:#E9DDCA"></i><span>Background</span><code>#E9DDCA</code></button>
+                <button type="button" class="color-row" data-copy-color="#D4C4A8"><i style="--swatch:#D4C4A8"></i><span>Grid · 30% opacity</span><code>#D4C4A8</code></button>
+                <button type="button" class="color-row" data-copy-color="#5D4037"><i style="--swatch:#5D4037"></i><span>Crosshair</span><code>#5D4037</code></button>
+                <button type="button" class="color-row" data-copy-color="#2F2F2F"><i style="--swatch:#2F2F2F"></i><span>Scale text</span><code>#2F2F2F</code></button>
+              </section>
+
+              <section class="palette-group">
+                <h3>Price</h3>
+                <button type="button" class="color-row" data-copy-color="#3D6B4F"><i style="--swatch:#3D6B4F"></i><span>Up body</span><code>#3D6B4F</code></button>
+                <button type="button" class="color-row" data-copy-color="#2A4A38"><i style="--swatch:#2A4A38"></i><span>Up border / wick</span><code>#2A4A38</code></button>
+                <button type="button" class="color-row" data-copy-color="#8B2E2E"><i style="--swatch:#8B2E2E"></i><span>Down body</span><code>#8B2E2E</code></button>
+                <button type="button" class="color-row" data-copy-color="#5C1F1F"><i style="--swatch:#5C1F1F"></i><span>Down border / wick</span><code>#5C1F1F</code></button>
+              </section>
+
+              <section class="palette-group">
+                <h3>Moving averages</h3>
+                <button type="button" class="color-row" data-copy-color="#B8860B"><i style="--swatch:#B8860B"></i><span>Daily 8 EMA</span><code>#B8860B</code></button>
+                <button type="button" class="color-row" data-copy-color="#6E7F68"><i style="--swatch:#6E7F68"></i><span>Weekly 8 EMA</span><code>#6E7F68</code></button>
+                <button type="button" class="color-row" data-copy-color="#2A4A38"><i style="--swatch:#2A4A38"></i><span>21 EMA</span><code>#2A4A38</code></button>
+                <button type="button" class="color-row" data-copy-color="#2F2F2F"><i style="--swatch:#2F2F2F"></i><span>50 EMA</span><code>#2F2F2F</code></button>
+                <button type="button" class="color-row" data-copy-color="#5D4037"><i style="--swatch:#5D4037"></i><span>200 SMA</span><code>#5D4037</code></button>
+              </section>
+
+              <section class="palette-group">
+                <h3>Markup</h3>
+                <button type="button" class="color-row" data-copy-color="#7A674B"><i style="--swatch:#7A674B"></i><span>Flat-base border</span><code>#7A674B</code></button>
+                <button type="button" class="color-row" data-copy-color="#B79C6A"><i style="--swatch:#B79C6A"></i><span>Flat-base fill</span><code>#B79C6A</code></button>
+                <button type="button" class="color-row" data-copy-color="#6E7F68"><i style="--swatch:#6E7F68"></i><span>Pullback border</span><code>#6E7F68</code></button>
+                <button type="button" class="color-row" data-copy-color="#9CAF8B"><i style="--swatch:#9CAF8B"></i><span>Pullback fill</span><code>#9CAF8B</code></button>
+              </section>
+            </div>
+          </div>
+          <p class="copy-status" data-copy-status aria-live="polite">Select any color row to copy its HEX code.</p>
+        </section>
+
+        <section class="resource-section workflow-callout">
+          <div><p>Use the tools in order</p><h2>Weekly context → Daily setup → 30-minute trigger.</h2></div>
+          <ol><li>Confirm the larger trend and overhead supply.</li><li>Classify the daily chart as Flat Base Breakout, Controlled Pullback, or No Setup.</li><li>Read volume, RS, ADR%, liquidity, and key levels.</li><li>Use the 30-minute chart only to refine a valid daily setup.</li><li>Reject an entry that has become late, extended, or structurally unclear.</li></ol>
+        </section>
+      </section>
+
+      <section class="academy-resource-view" data-view-panel="discord" hidden>
+        <header class="resource-hero resource-hero-discord">
+          <div>
+            <p class="resource-kicker">Included with premium access</p>
+            <h1>Ronin Charts Private Discord</h1>
+            <p>A structured study room for members using the same framework. Share chart reasoning, ask course questions, review trades, and improve through disciplined feedback. It is not a signal room.</p>
+            <button type="button" class="academy-button academy-button-gold" data-open-lesson="16-01-purpose">Start Module 16</button>
+          </div>
+          <div class="discord-mon" aria-hidden="true"><span>浪</span></div>
+        </header>
+
+        <section class="discord-connect-card" data-discord-card>
+          <div class="discord-status-icon" aria-hidden="true">#</div>
+          <div class="discord-status-copy">
+            <p>Account connection</p>
+            <h2 data-discord-title>Checking Discord access…</h2>
+            <span data-discord-message>The Academy is checking whether your Discord account is linked.</span>
+            <dl data-discord-details hidden>
+              <div><dt>Discord account</dt><dd data-discord-user>—</dd></div>
+              <div><dt>Premium role</dt><dd data-discord-role>—</dd></div>
+              <div><dt>Status</dt><dd data-discord-state>—</dd></div>
+            </dl>
+          </div>
+          <div class="discord-actions">
+            <button type="button" class="academy-button academy-button-gold" data-discord-connect>Connect Discord</button>
+            <button type="button" class="academy-button" data-discord-sync hidden>Sync Premium Role</button>
+            <a class="academy-button" data-discord-open href="#" target="_blank" rel="noopener" hidden>Open Discord</a>
+            <button type="button" class="academy-button academy-button-danger" data-discord-disconnect hidden>Disconnect</button>
+          </div>
+        </section>
+        <p class="discord-feedback" data-discord-feedback aria-live="polite"></p>
+
+        <div class="discord-benefit-grid">
+          <article><span>01</span><h2>Ask better questions</h2><p>Post the market condition, leadership evidence, parent setup, key level, confirmation required, and invalidation. Ask for feedback on reasoning—not permission to enter.</p></article>
+          <article><span>02</span><h2>Study both setups</h2><p>Use dedicated discussions for Flat Base Breakouts and Controlled Pullbacks. Include rejected setups, failed patterns, and examples where waiting was the correct decision.</p></article>
+          <article><span>03</span><h2>Review without ego</h2><p>Share what was planned, what happened, whether the rules were followed, and what needs to change. A profitable rule break is still poor execution.</p></article>
+        </div>
+
+        <section class="discord-rules-panel">
+          <div>
+            <p class="resource-kicker">Community standard</p>
+            <h2>Independence before imitation.</h2>
+            <p>The group exists to strengthen observation, preparation, and review. Every member remains fully responsible for every trading decision.</p>
+          </div>
+          <ul>
+            <li>No “buy this now” or guaranteed-return posts.</li>
+            <li>No pumping illiquid stocks or copying another member’s size.</li>
+            <li>No sharing premium course material outside the group.</li>
+            <li>Refer to a chart rule when offering feedback.</li>
+            <li>Respect privacy, uncertainty, and different experience levels.</li>
+          </ul>
+        </section>
+
+        <section class="discord-steps">
+          <div class="resource-section-heading"><p>Connection steps</p><h2>One account. One premium role.</h2></div>
+          <ol>
+            <li><strong>Select Connect Discord.</strong><span>You will be sent to Discord’s own authorization page.</span></li>
+            <li><strong>Approve identify and guilds.join.</strong><span>Ronin Charts never receives your Discord password or private messages.</span></li>
+            <li><strong>Return automatically.</strong><span>The server adds the authorized account and assigns the configured premium role.</span></li>
+            <li><strong>Complete membership screening.</strong><span>If Discord asks you to accept server rules, complete that step before channels appear.</span></li>
+          </ol>
+        </section>
+      </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="/js/academy.js"></script>
+</body>
+</html>

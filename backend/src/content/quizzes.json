@@ -1,0 +1,1109 @@
+{
+  "00-03-learning-process": [
+    {
+      "question": "Which sequence best represents the Ronin framework?",
+      "options": [
+        "Prediction \u2192 entry \u2192 hope",
+        "Strength \u2192 expansion \u2192 contraction \u2192 support \u2192 confirmation \u2192 continuation",
+        "Indicator crossover \u2192 target \u2192 stop",
+        "Low price \u2192 rebound \u2192 add"
+      ],
+      "correctIndex": 1,
+      "explanation": "The system waits for proven demand, contraction, a logical support area, and renewed confirmation."
+    },
+    {
+      "question": "What should happen when one critical decision gate fails?",
+      "options": [
+        "Increase conviction",
+        "Use a tighter stop",
+        "Stop and wait",
+        "Switch to a lower timeframe"
+      ],
+      "correctIndex": 2,
+      "explanation": "The framework depends on alignment. A lower timeframe cannot repair weak context."
+    },
+    {
+      "question": "Why keep a rejected-examples library?",
+      "options": [
+        "To predict failures",
+        "To learn selectivity and recognize disqualifying conditions",
+        "To avoid journaling",
+        "To find cheap stocks"
+      ],
+      "correctIndex": 1,
+      "explanation": "Rejected examples teach the visual differences between clean and poor structures."
+    },
+    {
+      "question": "What is the most professional way to evaluate one trade?",
+      "options": [
+        "Only by profit or loss",
+        "By decision quality first and outcome second",
+        "By how confident it felt",
+        "By whether others agreed"
+      ],
+      "correctIndex": 1,
+      "explanation": "A valid process can lose, so execution quality must be reviewed separately from one outcome."
+    }
+  ],
+  "01-03-daily-trend-map": [
+    {
+      "question": "Which regime describes a market where some breakouts work but leadership is narrow?",
+      "options": [
+        "Aggressive",
+        "Constructive",
+        "No Trade",
+        "Guaranteed Bull"
+      ],
+      "correctIndex": 1,
+      "explanation": "Constructive conditions remain tradable but require selectivity."
+    },
+    {
+      "question": "What is the best use of portfolio feedback?",
+      "options": [
+        "React to every single loss",
+        "Ignore it completely",
+        "Look for repeated behavior across several high-quality positions",
+        "Replace market analysis"
+      ],
+      "correctIndex": 2,
+      "explanation": "Multiple independent failures can indicate weakening demand."
+    },
+    {
+      "question": "What should the daily Trend Map produce?",
+      "options": [
+        "A price prediction",
+        "A regime, confidence, preferred exposure, and conditions that change the view",
+        "Only an index score",
+        "A list of every stock"
+      ],
+      "correctIndex": 1,
+      "explanation": "The output is a decision framework, not a forecast."
+    },
+    {
+      "question": "What is activity bias?",
+      "options": [
+        "The belief that more trades mean more productivity",
+        "A volume indicator",
+        "A trend-map score",
+        "A position-size rule"
+      ],
+      "correctIndex": 0,
+      "explanation": "Activity bias pushes traders to act when the market or watchlist offers no qualified opportunity."
+    }
+  ],
+  "02-03-watchlists": [
+    {
+      "question": "Why is average dollar volume useful?",
+      "options": [
+        "It predicts earnings",
+        "It better represents liquidity across different stock prices",
+        "It measures relative strength",
+        "It replaces ATR"
+      ],
+      "correctIndex": 1,
+      "explanation": "Share volume alone is not comparable across very different prices."
+    },
+    {
+      "question": "What are the only two actionable parent setup labels?",
+      "options": [
+        "Gap and reversal",
+        "Flag and cup",
+        "Flat Base Breakout and Controlled Pullback",
+        "Scalp and swing"
+      ],
+      "correctIndex": 2,
+      "explanation": "All subtypes must fit one of the two parent setups."
+    },
+    {
+      "question": "What should happen when an alert fires?",
+      "options": [
+        "Enter automatically",
+        "Re-evaluate the complete setup",
+        "Increase size",
+        "Ignore market context"
+      ],
+      "correctIndex": 1,
+      "explanation": "An alert identifies location; it is not confirmation by itself."
+    },
+    {
+      "question": "How should a random mover outside the prepared list be handled?",
+      "options": [
+        "Chase it immediately",
+        "Review it calmly and require the same full process",
+        "Ignore liquidity",
+        "Use a lower timeframe"
+      ],
+      "correctIndex": 1,
+      "explanation": "Prepared standards must remain unchanged when urgency appears."
+    }
+  ],
+  "03-03-rs-checklist": [
+    {
+      "question": "What does a rising RS line generally indicate?",
+      "options": [
+        "The stock is cheaper",
+        "The stock is outperforming the benchmark",
+        "Volume is falling",
+        "The market is bullish"
+      ],
+      "correctIndex": 1,
+      "explanation": "The ratio rises when the stock performs better than the benchmark."
+    },
+    {
+      "question": "Why can sideways price action be strong during a market decline?",
+      "options": [
+        "It guarantees a breakout",
+        "It shows relative outperformance",
+        "It removes earnings risk",
+        "It lowers ATR"
+      ],
+      "correctIndex": 1,
+      "explanation": "Holding flat while the benchmark falls indicates hidden demand."
+    },
+    {
+      "question": "What determines the trade after RS identifies a leader?",
+      "options": [
+        "The RS rating alone",
+        "Price structure and confirmation",
+        "The company story",
+        "The stock price"
+      ],
+      "correctIndex": 1,
+      "explanation": "RS is a leadership filter; the setup and trigger come from price structure."
+    },
+    {
+      "question": "What helps control confirmation bias?",
+      "options": [
+        "Reading only bullish opinions",
+        "Writing disqualifying evidence before entry",
+        "Ignoring RS deterioration",
+        "Adding more indicators"
+      ],
+      "correctIndex": 1,
+      "explanation": "A written rejection case forces the trader to consider evidence that challenges the thesis."
+    }
+  ],
+  "04-03-digestion": [
+    {
+      "question": "What is the best initial response to a high-quality HVE event?",
+      "options": [
+        "Always buy the close",
+        "Add it to the priority list and wait for structure",
+        "Short it",
+        "Ignore volume"
+      ],
+      "correctIndex": 1,
+      "explanation": "The event proves urgency; the later structure creates an efficient entry."
+    },
+    {
+      "question": "Which post-gap behavior is most constructive?",
+      "options": [
+        "Full gap retracement on heavy volume",
+        "Tight action above the breakout with declining volume",
+        "Repeated wide reversals",
+        "RS collapse"
+      ],
+      "correctIndex": 1,
+      "explanation": "Holding gains with contraction suggests supply is being absorbed."
+    },
+    {
+      "question": "Why mark the gap-day high, low, and midpoint?",
+      "options": [
+        "They guarantee targets",
+        "They often become future structural reference levels",
+        "They calculate RS",
+        "They replace moving averages"
+      ],
+      "correctIndex": 1,
+      "explanation": "Event-day levels can later act as support, resistance, or invalidation context."
+    },
+    {
+      "question": "What is the correct response to FOMO after a major earnings gap?",
+      "options": [
+        "Buy at any price",
+        "Map the event and wait for a parent setup",
+        "Use a tighter stop",
+        "Ignore the daily chart"
+      ],
+      "correctIndex": 1,
+      "explanation": "The event proves demand; a later structure creates the trade."
+    }
+  ],
+  "05-04-failures": [
+    {
+      "question": "What must normally exist before a valid flat base?",
+      "options": [
+        "A long decline",
+        "A meaningful expansion and proven demand",
+        "A low stock price",
+        "A moving-average crossover"
+      ],
+      "correctIndex": 1,
+      "explanation": "The base is a continuation pattern and should follow strength."
+    },
+    {
+      "question": "What makes a pivot high quality?",
+      "options": [
+        "It changes every day",
+        "It is obvious, tested, and supported by tight action",
+        "It is far above price",
+        "It is based only on a round number"
+      ],
+      "correctIndex": 1,
+      "explanation": "A clear boundary reflects real supply and supports efficient execution."
+    },
+    {
+      "question": "Which behavior most strongly warns of chop?",
+      "options": [
+        "Narrowing ranges",
+        "Dry volume",
+        "Repeated wide reversals through moving averages",
+        "Stable lows"
+      ],
+      "correctIndex": 2,
+      "explanation": "Wide reversals and unstable support are the opposite of contraction."
+    },
+    {
+      "question": "What should happen after a valid breakout is missed?",
+      "options": [
+        "Enter late",
+        "Wait for new structure or let it go",
+        "Increase size on the next candle",
+        "Move the pivot"
+      ],
+      "correctIndex": 1,
+      "explanation": "A missed entry does not justify abandoning the no-chase rule."
+    }
+  ],
+  "06-04-failures": [
+    {
+      "question": "What makes a pullback controlled?",
+      "options": [
+        "Any decline to an EMA",
+        "A low-supply retreat to meaningful support in a proven leader",
+        "A large gap down",
+        "A stock below declining averages"
+      ],
+      "correctIndex": 1,
+      "explanation": "Context, volume, support, and confirmation are all required."
+    },
+    {
+      "question": "Why is the first pullback after an earnings gap prioritized?",
+      "options": [
+        "It always wins",
+        "The institutional move is often still young",
+        "It has no risk",
+        "It is always shallow"
+      ],
+      "correctIndex": 1,
+      "explanation": "The first continuation structure often occurs before the trend becomes mature."
+    },
+    {
+      "question": "What is the correct interpretation of the weekly 8 EMA?",
+      "options": [
+        "Automatic buy line",
+        "Area of interest that requires structural confluence and rejection",
+        "Guaranteed support",
+        "Exit target"
+      ],
+      "correctIndex": 1,
+      "explanation": "The average must align with price structure and confirmation."
+    },
+    {
+      "question": "What is the goal during a controlled pullback?",
+      "options": [
+        "Buy the exact low",
+        "Wait for support and returning demand",
+        "Avoid every red candle",
+        "Predict the next close"
+      ],
+      "correctIndex": 1,
+      "explanation": "The system does not require calling the bottom; it requires evidence."
+    }
+  ],
+  "07-03-reaction": [
+    {
+      "question": "When should a key level be identified?",
+      "options": [
+        "After the trade fails",
+        "Before price reaches it",
+        "Only after confirmation",
+        "Never"
+      ],
+      "correctIndex": 1,
+      "explanation": "Pre-marking prevents hindsight and emotional invention."
+    },
+    {
+      "question": "What creates high-quality confluence?",
+      "options": [
+        "Many similar indicators",
+        "Independent evidence such as horizontal support plus a rising average",
+        "More chart lines",
+        "A round number alone"
+      ],
+      "correctIndex": 1,
+      "explanation": "Independent evidence provides more meaningful confirmation."
+    },
+    {
+      "question": "What ultimately determines whether a key level matters?",
+      "options": [
+        "The color of the line",
+        "Price reaction",
+        "The stock price",
+        "The number of indicators"
+      ],
+      "correctIndex": 1,
+      "explanation": "The level is a hypothesis; reaction reveals actual demand or supply."
+    },
+    {
+      "question": "What psychological mistake occurs when a trader refuses to update a key level?",
+      "options": [
+        "Anchoring",
+        "Compounding",
+        "Diversification",
+        "Relative strength"
+      ],
+      "correctIndex": 0,
+      "explanation": "Anchoring turns an old price reference into hope even after the reaction fails."
+    }
+  ],
+  "08-03-breakout-volume": [
+    {
+      "question": "Which combination is usually constructive during a controlled pullback?",
+      "options": [
+        "Price down, volume down",
+        "Price down, volume up",
+        "Price up, volume down at breakout",
+        "Flat price, record selling"
+      ],
+      "correctIndex": 0,
+      "explanation": "Declining price on declining volume often indicates reduced supply."
+    },
+    {
+      "question": "What defines true volume dry-up?",
+      "options": [
+        "One tiny bar",
+        "A pattern of declining participation with tighter price action",
+        "No volume at all",
+        "Any holiday session"
+      ],
+      "correctIndex": 1,
+      "explanation": "Dry-up is a rhythm across several sessions, not one isolated print."
+    },
+    {
+      "question": "What can high volume with a weak close at breakout indicate?",
+      "options": [
+        "Guaranteed strength",
+        "Supply absorbed demand",
+        "Low liquidity only",
+        "A higher RS rating"
+      ],
+      "correctIndex": 1,
+      "explanation": "Poor price progress despite high participation can signal distribution."
+    },
+    {
+      "question": "Why is indicator fixation dangerous?",
+      "options": [
+        "It makes volume invisible",
+        "It lets one label override price and context",
+        "It reduces commissions",
+        "It changes ATR"
+      ],
+      "correctIndex": 1,
+      "explanation": "Volume is evidence, not a standalone decision."
+    }
+  ],
+  "09-03-alignment": [
+    {
+      "question": "What is the primary role of the weekly chart?",
+      "options": [
+        "Precise entry",
+        "Strategic trend and resistance context",
+        "Stop calculation only",
+        "Volume run rate"
+      ],
+      "correctIndex": 1,
+      "explanation": "The weekly chart determines whether the larger structure is suitable."
+    },
+    {
+      "question": "What does the daily chart decide?",
+      "options": [
+        "Whether a trade exists",
+        "Only the exact share size",
+        "Market news",
+        "The broker"
+      ],
+      "correctIndex": 0,
+      "explanation": "The daily chart defines the actual setup and invalidation."
+    },
+    {
+      "question": "What should happen when a lower timeframe conflicts with a damaged higher timeframe?",
+      "options": [
+        "Trust the lower timeframe",
+        "Give greater weight to the higher timeframe",
+        "Add more indicators",
+        "Increase size"
+      ],
+      "correctIndex": 1,
+      "explanation": "Lower-timeframe action cannot repair a poor higher-timeframe structure."
+    },
+    {
+      "question": "What is timeframe hopping?",
+      "options": [
+        "Using weekly, daily, and 30-minute charts in order",
+        "Changing timeframe to find reassurance after the original thesis weakens",
+        "Reviewing a weekly chart",
+        "Using alerts"
+      ],
+      "correctIndex": 1,
+      "explanation": "Each timeframe has one job; switching to defend a position corrupts the decision."
+    }
+  ],
+  "10-04-no-chase": [
+    {
+      "question": "What is the role of a 30-minute trigger?",
+      "options": [
+        "Create a setup from nothing",
+        "Confirm and refine a valid daily setup",
+        "Replace weekly analysis",
+        "Predict earnings"
+      ],
+      "correctIndex": 1,
+      "explanation": "The daily chart creates the opportunity; the 30-minute chart refines execution."
+    },
+    {
+      "question": "What is the preferred approximate maximum LOD ATR distance?",
+      "options": [
+        "20%",
+        "60%",
+        "150%",
+        "No limit"
+      ],
+      "correctIndex": 1,
+      "explanation": "The system generally prefers entries below roughly 60% of daily ATR from the low of day."
+    },
+    {
+      "question": "What should you do if the structural stop is more than one ATR away?",
+      "options": [
+        "Invent a tighter stop",
+        "Wait, reduce size, or skip",
+        "Ignore volatility",
+        "Chase quickly"
+      ],
+      "correctIndex": 1,
+      "explanation": "The structure should not be falsified to make the trade fit."
+    },
+    {
+      "question": "What should a trader do when fear causes a valid trigger to be missed?",
+      "options": [
+        "Chase later",
+        "Record the cause and wait for a new structure",
+        "Double the next position",
+        "Remove the stop"
+      ],
+      "correctIndex": 1,
+      "explanation": "A missed trigger becomes a review item, not permission for a late entry."
+    }
+  ],
+  "11-03-portfolio-risk": [
+    {
+      "question": "Where should a structural stop be placed?",
+      "options": [
+        "At a random percentage",
+        "Where the original setup is invalidated",
+        "Where position size is largest",
+        "At the nearest round number"
+      ],
+      "correctIndex": 1,
+      "explanation": "The chart thesis determines the stop."
+    },
+    {
+      "question": "What is the standard maximum planned risk per trade in this framework?",
+      "options": [
+        "0.5%",
+        "5%",
+        "15%",
+        "No limit"
+      ],
+      "correctIndex": 0,
+      "explanation": "The standard maximum is 0.5% of account equity."
+    },
+    {
+      "question": "Why must correlation be considered?",
+      "options": [
+        "It changes ATR",
+        "Several positions can fail together like one oversized trade",
+        "It guarantees profit",
+        "It removes gap risk"
+      ],
+      "correctIndex": 1,
+      "explanation": "Positions in the same group may share the same underlying risk."
+    },
+    {
+      "question": "How should position size change after a losing streak?",
+      "options": [
+        "Increase to recover",
+        "Follow the written drawdown protocol",
+        "Ignore the market regime",
+        "Remove allocation limits"
+      ],
+      "correctIndex": 1,
+      "explanation": "Risk changes must be predefined and evidence-based, never driven by recovery urgency."
+    }
+  ],
+  "12-04-adds-trims": [
+    {
+      "question": "What should happen when the original reason for entry is invalidated?",
+      "options": [
+        "Widen the stop",
+        "Exit according to the plan",
+        "Add more",
+        "Wait for hope"
+      ],
+      "correctIndex": 1,
+      "explanation": "The position should not outlive the thesis."
+    },
+    {
+      "question": "Is a profit by itself a sell signal?",
+      "options": [
+        "Yes",
+        "No, structure and extension matter",
+        "Only on Fridays",
+        "Only above 2R"
+      ],
+      "correctIndex": 1,
+      "explanation": "The framework manages the trend, not the emotional comfort of a profit."
+    },
+    {
+      "question": "When is an add most valid?",
+      "options": [
+        "After a vertical spike",
+        "When a new tight structure forms and total risk is recalculated",
+        "Whenever the stock is green",
+        "When the initial trade is losing"
+      ],
+      "correctIndex": 1,
+      "explanation": "An add is a new trade decision and requires new structure."
+    },
+    {
+      "question": "What is the best reason to move a stop to breakeven?",
+      "options": [
+        "Fear of losing profit",
+        "A new structural level created by price",
+        "A round R multiple alone",
+        "The entry price feels important"
+      ],
+      "correctIndex": 1,
+      "explanation": "Breakeven is not support unless the chart creates structure there."
+    }
+  ],
+  "13-03-review-cycle": [
+    {
+      "question": "Why preserve the original pre-trade plan?",
+      "options": [
+        "For decoration",
+        "To prevent hindsight from rewriting the decision",
+        "To calculate volume",
+        "To predict the next trade"
+      ],
+      "correctIndex": 1,
+      "explanation": "The journal must show what was known before the outcome."
+    },
+    {
+      "question": "Which category is especially dangerous?",
+      "options": [
+        "Good process, loss",
+        "Poor process, profit",
+        "Good process, profit",
+        "No trade"
+      ],
+      "correctIndex": 1,
+      "explanation": "Profit can reinforce a rule violation and make it repeat."
+    },
+    {
+      "question": "When should system rules be changed?",
+      "options": [
+        "After every loss",
+        "During a live trade",
+        "After evidence from a meaningful sample",
+        "When bored"
+      ],
+      "correctIndex": 2,
+      "explanation": "Rule changes should be based on review and sample size, not emotion."
+    },
+    {
+      "question": "What is the purpose of a reset protocol?",
+      "options": [
+        "To recover quickly",
+        "To interrupt revenge behavior and restore objectivity",
+        "To find more trades",
+        "To avoid journaling"
+      ],
+      "correctIndex": 1,
+      "explanation": "The reset prevents one emotional event from becoming a sequence of violations."
+    }
+  ],
+  "14-04-final-checklist": [
+    {
+      "question": "What is the first requirement of either playbook?",
+      "options": [
+        "A random trigger",
+        "Supportive context and a genuine leader",
+        "A low price",
+        "A social-media alert"
+      ],
+      "correctIndex": 1,
+      "explanation": "Market and stock quality come before the pattern."
+    },
+    {
+      "question": "What should happen before meaningful size is used?",
+      "options": [
+        "One winning trade",
+        "A sample of studied examples, replay, and journaled execution",
+        "A strong opinion",
+        "A higher subscription tier"
+      ],
+      "correctIndex": 1,
+      "explanation": "Pattern recognition and rule compliance must be demonstrated first."
+    },
+    {
+      "question": "Which final principle best summarizes the system?",
+      "options": [
+        "Predict first and manage later",
+        "Find the leader, wait for structure, demand confirmation, define risk, review",
+        "Trade every day",
+        "Buy every moving-average touch"
+      ],
+      "correctIndex": 1,
+      "explanation": "The complete process is selective, structured, and evidence-based."
+    },
+    {
+      "question": "What proves psychological mastery?",
+      "options": [
+        "Never feeling fear",
+        "Following the same rules while fear, greed, boredom, or frustration are present",
+        "Avoiding all losses",
+        "Trading every day"
+      ],
+      "correctIndex": 1,
+      "explanation": "Emotional control means behavior remains stable, not that emotion disappears."
+    }
+  ],
+  "15-04-workflow": [
+    {
+      "question": "What should be read first on a Ronin chart?",
+      "options": [
+        "The ATR multiple value",
+        "Price and structure",
+        "The Discord chat",
+        "The volume color only"
+      ],
+      "correctIndex": 1,
+      "explanation": "Price and structure define the setup. Indicators organize and measure evidence; they do not replace the chart."
+    },
+    {
+      "question": "What is the preferred role of Low-of-Day ATR distance?",
+      "options": [
+        "It predicts the closing price",
+        "It measures entry efficiency relative to normal range",
+        "It replaces the stop",
+        "It guarantees a breakout"
+      ],
+      "correctIndex": 1,
+      "explanation": "Low-of-Day ATR distance helps determine whether an entry has already moved too far from the day\u2019s risk anchor."
+    },
+    {
+      "question": "How is ATR% multiple from 50-MA used?",
+      "options": [
+        "As an automatic buy signal",
+        "As an extension and management reference",
+        "As a market-cap filter",
+        "As a replacement for volume"
+      ],
+      "correctIndex": 1,
+      "explanation": "It measures extension from the 50-MA relative to volatility and is used as context, not as an automatic instruction."
+    },
+    {
+      "question": "When may a 30-minute trigger be used?",
+      "options": [
+        "Whenever price is green",
+        "Only after the daily setup qualifies",
+        "Only after Discord approval",
+        "Whenever RVOL is above average"
+      ],
+      "correctIndex": 1,
+      "explanation": "The 30-minute trigger refines a valid daily setup; it cannot create a missing daily structure."
+    },
+    {
+      "question": "What is the main psychological risk of a complex chart workspace?",
+      "options": [
+        "It can encourage tool dependency and override price",
+        "It removes volume",
+        "It changes the market",
+        "It prevents screenshots"
+      ],
+      "correctIndex": 0,
+      "explanation": "The workspace should organize evidence, not make the decision for the trader."
+    }
+  ],
+  "16-03-use-community": [
+    {
+      "question": "What is the primary purpose of the private Discord?",
+      "options": [
+        "To distribute guaranteed signals",
+        "To improve study, preparation, and review",
+        "To copy the largest position",
+        "To replace the course"
+      ],
+      "correctIndex": 1,
+      "explanation": "The community extends the educational process and should strengthen independent analysis."
+    },
+    {
+      "question": "Which is the better community question?",
+      "options": [
+        "Is this a buy?",
+        "What rule is missing before this flat base is actionable?",
+        "How much should I risk because someone else entered?",
+        "Can someone guarantee the target?"
+      ],
+      "correctIndex": 1,
+      "explanation": "Questions tied to rules create reusable understanding instead of dependence."
+    },
+    {
+      "question": "What should a member do before reading other opinions?",
+      "options": [
+        "Copy the first posted chart",
+        "Explain their own plan and reasoning",
+        "Increase position size",
+        "Ignore invalidation"
+      ],
+      "correctIndex": 1,
+      "explanation": "Independent analysis should exist before community feedback is used."
+    },
+    {
+      "question": "What should be written before reading other members\u2019 opinions?",
+      "options": [
+        "Your own chart thesis and invalidation",
+        "A request for a signal",
+        "A profit target copied from chat",
+        "Nothing"
+      ],
+      "correctIndex": 0,
+      "explanation": "Independent analysis should exist before community feedback is used."
+    }
+  ],
+  "04-05-foundation-checkpoint": [
+    {
+      "question": "What is the correct order before studying an entry trigger?",
+      "options": [
+        "Trigger \u2192 story \u2192 market",
+        "Market condition \u2192 leadership \u2192 setup classification",
+        "Position size \u2192 target \u2192 indicator",
+        "Social sentiment \u2192 entry \u2192 stop"
+      ],
+      "correctIndex": 1,
+      "explanation": "The Ronin process begins with market context and leadership before a setup or trigger is considered."
+    },
+    {
+      "question": "Which chart labels are valid at the daily setup stage?",
+      "options": [
+        "Flat Base Breakout, Controlled Pullback, or No Setup",
+        "Any bullish pattern",
+        "Earnings gap or HVE only",
+        "Cheap, expensive, or neutral"
+      ],
+      "correctIndex": 0,
+      "explanation": "The system has only two parent setups. Everything else is context, a subtype, or no trade."
+    },
+    {
+      "question": "What does an HVE or HV1 event prove by itself?",
+      "options": [
+        "A guaranteed entry",
+        "Institutional urgency or unusual participation",
+        "A precise stop",
+        "The next target"
+      ],
+      "correctIndex": 1,
+      "explanation": "Abnormal volume earns attention, but a later structure and confirmation are still required."
+    },
+    {
+      "question": "Which behavior best demonstrates hidden relative strength?",
+      "options": [
+        "Falling faster than the index",
+        "Holding near highs while the market weakens",
+        "Trading below declining averages",
+        "Rising only after social-media attention"
+      ],
+      "correctIndex": 1,
+      "explanation": "A stock that resists broad weakness may be showing persistent demand."
+    },
+    {
+      "question": "What is the professional response when no candidate meets the full process?",
+      "options": [
+        "Lower the standard",
+        "Trade a smaller random setup",
+        "Stay in cash and continue preparation",
+        "Switch to scalping"
+      ],
+      "correctIndex": 2,
+      "explanation": "No trade is a valid decision when opportunity is absent."
+    },
+    {
+      "question": "What should happen when a random stock begins moving outside the prepared list?",
+      "options": [
+        "Enter immediately",
+        "Save it, review the full context, and wait for a valid structure",
+        "Ignore liquidity",
+        "Use a tighter stop"
+      ],
+      "correctIndex": 1,
+      "explanation": "Urgency cannot replace preparation and setup quality."
+    },
+    {
+      "question": "Why write disqualifying evidence before entry?",
+      "options": [
+        "To become pessimistic",
+        "To prevent confirmation bias after capital is committed",
+        "To predict every loss",
+        "To avoid using RS"
+      ],
+      "correctIndex": 1,
+      "explanation": "A written rejection case makes it harder to explain away deterioration later."
+    },
+    {
+      "question": "Which statement best reflects the professional mindset?",
+      "options": [
+        "A valid setup must win",
+        "Confidence means certainty",
+        "I control the decision, not the outcome",
+        "Losses prove the method is broken"
+      ],
+      "correctIndex": 2,
+      "explanation": "The trader owns preparation and execution while accepting uncertainty."
+    }
+  ],
+  "10-06-structure-checkpoint": [
+    {
+      "question": "What must normally precede a valid Flat Base?",
+      "options": [
+        "A long decline",
+        "Proven demand and a meaningful advance",
+        "A low stock price",
+        "A random moving-average crossover"
+      ],
+      "correctIndex": 1,
+      "explanation": "The Flat Base is a continuation structure after strength."
+    },
+    {
+      "question": "What makes a pullback controlled?",
+      "options": [
+        "Any touch of the 8 EMA",
+        "A low-supply retreat toward meaningful support in a proven leader",
+        "A large selloff",
+        "A stock below declining averages"
+      ],
+      "correctIndex": 1,
+      "explanation": "Prior demand, controlled price action, support, and returning confirmation are required."
+    },
+    {
+      "question": "What is the role of a key level?",
+      "options": [
+        "It guarantees a reversal",
+        "It defines a location where a reaction should be evaluated",
+        "It replaces volume",
+        "It creates a target"
+      ],
+      "correctIndex": 1,
+      "explanation": "The level is a hypothesis until price shows that buyers are defending it."
+    },
+    {
+      "question": "What volume sequence is most constructive?",
+      "options": [
+        "Low on expansion, high on decline",
+        "Expansion on strength, contraction during rest, renewed participation at confirmation",
+        "Constant high volume",
+        "Volume ignored"
+      ],
+      "correctIndex": 1,
+      "explanation": "The sequence reflects demand, reduced supply, and renewed demand."
+    },
+    {
+      "question": "What is the weekly chart used for?",
+      "options": [
+        "Exact intraday timing",
+        "Strategic trend, maturity, and overhead supply",
+        "Replacing the daily setup",
+        "Calculating position size only"
+      ],
+      "correctIndex": 1,
+      "explanation": "The weekly chart provides larger context, while the daily defines the setup."
+    },
+    {
+      "question": "What is the preferred Low-of-Day ATR distance?",
+      "options": [
+        "Below approximately 60% of daily ATR",
+        "Exactly 100%",
+        "Any distance if volume is high",
+        "Below 60% of weekly ATR"
+      ],
+      "correctIndex": 0,
+      "explanation": "The filter measures entry efficiency relative to the stock\u2019s normal daily movement."
+    },
+    {
+      "question": "What should happen after the planned trigger becomes late?",
+      "options": [
+        "Use a tighter stop",
+        "Increase size",
+        "Wait for a new structure or let the trade go",
+        "Change the pivot"
+      ],
+      "correctIndex": 2,
+      "explanation": "The old entry plan expires when location and asymmetry are no longer acceptable."
+    },
+    {
+      "question": "Which action best controls trigger-related FOMO?",
+      "options": [
+        "Entering before confirmation",
+        "Writing the trigger and maximum entry before the alert fires",
+        "Watching more timeframes",
+        "Following another trader"
+      ],
+      "correctIndex": 1,
+      "explanation": "A rehearsed plan reduces both hesitation and impulsive chasing."
+    },
+    {
+      "question": "Can a 30-minute trigger create a missing daily setup?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with HVE",
+        "Only in an Aggressive market"
+      ],
+      "correctIndex": 1,
+      "explanation": "The intraday chart refines execution; it cannot repair invalid higher-timeframe structure."
+    },
+    {
+      "question": "What is the best description of confirmation?",
+      "options": [
+        "A prediction of the exact low",
+        "Evidence that demand is returning at the planned location",
+        "Any green candle",
+        "A moving-average touch"
+      ],
+      "correctIndex": 1,
+      "explanation": "Location creates interest; returning demand creates the trade."
+    }
+  ],
+  "14-05-final-mastery": [
+    {
+      "question": "What determines the final position size?",
+      "options": [
+        "Confidence",
+        "The smaller of risk-based shares and allocation-based shares",
+        "The number of shares desired",
+        "The target price"
+      ],
+      "correctIndex": 1,
+      "explanation": "The 0.5% risk rule and 15% allocation cap must both be respected."
+    },
+    {
+      "question": "Where should the initial stop be placed?",
+      "options": [
+        "At a random percentage",
+        "At structural invalidation",
+        "At breakeven",
+        "Where the position size becomes largest"
+      ],
+      "correctIndex": 1,
+      "explanation": "The stop belongs where the thesis is objectively wrong."
+    },
+    {
+      "question": "What is the correct response to a valid planned loss?",
+      "options": [
+        "Revenge trade",
+        "Treat it as a business expense and review execution",
+        "Widen the next stop",
+        "Change the system immediately"
+      ],
+      "correctIndex": 1,
+      "explanation": "One valid loss does not justify emotional or methodological changes."
+    },
+    {
+      "question": "When is an add valid?",
+      "options": [
+        "Whenever price rises",
+        "After a new qualified structure with recalculated total risk",
+        "When the first entry loses",
+        "After a social-media post"
+      ],
+      "correctIndex": 1,
+      "explanation": "An add is a new decision and requires new structure."
+    },
+    {
+      "question": "Why can an automatic breakeven stop be harmful?",
+      "options": [
+        "Breakeven is always too far",
+        "The entry price may not be structural support",
+        "It increases commission",
+        "It changes RS"
+      ],
+      "correctIndex": 1,
+      "explanation": "Stops should move only when the chart creates a justified structural level."
+    },
+    {
+      "question": "Which trade category is psychologically dangerous?",
+      "options": [
+        "Good process, planned loss",
+        "Poor process, profitable outcome",
+        "Good process, profitable outcome",
+        "Correct no-trade decision"
+      ],
+      "correctIndex": 1,
+      "explanation": "Profit can reinforce a violation and make the mistake more likely to repeat."
+    },
+    {
+      "question": "What is the purpose of the drawdown protocol?",
+      "options": [
+        "Recover losses faster",
+        "Reduce emotional freedom and restore process control",
+        "Increase trade frequency",
+        "Change setups"
+      ],
+      "correctIndex": 1,
+      "explanation": "Predefined thresholds prevent frustration from changing risk and selection."
+    },
+    {
+      "question": "What is the correct use of the Discord community?",
+      "options": [
+        "Copy signals",
+        "Improve reasoning, study, and accountability while remaining independent",
+        "Replace the course",
+        "Share guaranteed targets"
+      ],
+      "correctIndex": 1,
+      "explanation": "The community supports the process but does not make decisions for the member."
+    },
+    {
+      "question": "What should be read first on the Ronin TradingView chart?",
+      "options": [
+        "Indicator labels",
+        "Price and structure",
+        "Discord opinions",
+        "ATR extension alone"
+      ],
+      "correctIndex": 1,
+      "explanation": "Indicators organize evidence; price and structure define the setup."
+    },
+    {
+      "question": "Which sentence best summarizes mastery?",
+      "options": [
+        "Trade often and predict correctly",
+        "Repeat the complete process under uncertainty and emotional pressure",
+        "Avoid all losses",
+        "Use more indicators"
+      ],
+      "correctIndex": 1,
+      "explanation": "Mastery is stable technical and psychological execution, not certainty or constant activity."
+    }
+  ]
+}

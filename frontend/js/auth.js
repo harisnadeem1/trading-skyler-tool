@@ -5,6 +5,10 @@ class AuthManager {
     this.currentUser = null;
   }
 
+  hasAcademyAccess() {
+  return Boolean(this.currentUser?.hasAcademyAccess);
+}
+
   async checkAuth() {
     try {
       const result = await api.get('/auth/me');

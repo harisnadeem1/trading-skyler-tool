@@ -62,7 +62,30 @@ exports.login = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  return res.json({ user: req.user });
+  try {
+    const userId = req.user.id;
+
+    const entitlementResult = await pool.query(
+      `SELECT 1
+       FROM entitlements
+       WHERE user_id = $1
+         AND product_key = 'ronin_academy'
+         AND active = true
+         AND (expires_at IS NULL OR expires_at > NOW())
+       LIMIT 1`,
+      [userId]
+    );
+
+    return res.json({
+      user: {
+        ...req.user,
+        hasAcademyAccess: entitlementResult.rows.length > 0,
+      },
+    });
+  } catch (error) {
+    console.error('Me error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 };
 
 exports.logout = async (req, res) => {

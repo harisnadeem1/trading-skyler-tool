@@ -1,0 +1,1165 @@
+{
+  "course": {
+    "id": "ronin-trading-system-v2",
+    "title": "Ronin Trading System",
+    "subtitle": "A coach-led structural momentum course for US stock swing trading, professional execution, and trader psychology.",
+    "version": "2.1",
+    "estimatedHours": 18,
+    "levelCount": 3,
+    "moduleCount": 17,
+    "lessonCount": 71,
+    "quizCount": 20,
+    "milestoneCount": 3,
+    "disclaimer": "Educational content only. No lesson, example, tool, or community discussion is financial advice, a signal, or a guarantee of results.",
+    "communityIncluded": true,
+    "communityName": "Ronin Charts Private Discord",
+    "masteryRules": {
+      "moduleQuizMinimum": 80,
+      "beginnerMilestoneMinimum": 80,
+      "intermediateMilestoneMinimum": 80,
+      "finalMilestoneMinimum": 85,
+      "levelUnlockRequiresAllLessons": true,
+      "levelUnlockRequiresMilestonePass": true
+    },
+    "writingEdition": "Coach + Mentor"
+  },
+  "levels": [
+    {
+      "id": "beginner",
+      "order": 1,
+      "title": "Level 1 — Beginner Foundations",
+      "shortTitle": "Beginner",
+      "description": "Learn the system boundaries, market regimes, leadership, watchlists, relative strength, catalysts, and the mental discipline to wait.",
+      "moduleIds": [
+        "orientation",
+        "market-context",
+        "stock-selection",
+        "relative-strength",
+        "catalyst-volume-events"
+      ],
+      "milestoneLessonId": "04-05-foundation-checkpoint",
+      "requiredScore": 80,
+      "badge": "Foundation"
+    },
+    {
+      "id": "intermediate",
+      "order": 2,
+      "title": "Level 2 — Intermediate Structure and Execution",
+      "shortTitle": "Intermediate",
+      "description": "Master the two parent setups, key levels, volume, timeframe alignment, 30-minute triggers, and entry efficiency.",
+      "moduleIds": [
+        "flat-base",
+        "controlled-pullback",
+        "key-levels",
+        "volume",
+        "timeframes",
+        "execution"
+      ],
+      "milestoneLessonId": "10-06-structure-checkpoint",
+      "requiredScore": 80,
+      "prerequisiteLevelId": "beginner",
+      "badge": "Structure"
+    },
+    {
+      "id": "advanced",
+      "order": 3,
+      "title": "Level 3 — Advanced Professional Execution",
+      "shortTitle": "Advanced",
+      "description": "Integrate risk, portfolio heat, trade management, psychology, journaling, review, and the complete playbooks.",
+      "moduleIds": [
+        "risk",
+        "management",
+        "journal",
+        "playbook"
+      ],
+      "milestoneLessonId": "14-05-final-mastery",
+      "requiredScore": 85,
+      "prerequisiteLevelId": "intermediate",
+      "badge": "Mastery"
+    },
+    {
+      "id": "resources",
+      "order": 4,
+      "title": "Member Resources",
+      "shortTitle": "Resources",
+      "description": "Build the TradingView workspace and join the private Discord community after the core training.",
+      "moduleIds": [
+        "tradingview-setup",
+        "discord-community"
+      ],
+      "prerequisiteLevelId": "advanced",
+      "badge": "Member"
+    }
+  ],
+  "modules": [
+    {
+      "id": "orientation",
+      "number": 0,
+      "title": "Orientation: The Ronin Framework",
+      "description": "Build the correct mental model for the course, understand the two parent setups, and learn the decision sequence before studying individual patterns.",
+      "levelId": "beginner",
+      "objectives": [
+        "Explain the boundaries of the Ronin Trading System and its two parent setups.",
+        "Use the complete decision sequence from market condition to post-trade review.",
+        "Study charts with a deliberate-practice process instead of memorizing isolated rules.",
+        "Adopt a professional mindset based on responsibility, uncertainty, and process."
+      ],
+      "lessons": [
+        {
+          "id": "00-01-welcome",
+          "title": "Welcome to the Ronin Trading System",
+          "duration": "8 min",
+          "summary": "The purpose of the system and the difference between prediction and preparation.",
+          "file": "00-01-welcome.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "00-02-system-map",
+          "title": "The Complete Decision Map",
+          "duration": "10 min",
+          "summary": "A top-down map from market regime to post-trade review.",
+          "file": "00-02-system-map.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "00-04-professional-mindset",
+          "title": "Responsibility, Uncertainty, and the Professional Mindset",
+          "duration": "9 min",
+          "summary": "Build the mental foundation required to follow a rule-based system when outcomes remain uncertain.",
+          "file": "00-04-professional-mindset.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "00-03-learning-process",
+          "title": "How to Study and Build Pattern Recognition",
+          "duration": "10 min",
+          "summary": "A practical study method for turning rules into visual skill.",
+          "file": "00-03-learning-process.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "market-context",
+      "number": 1,
+      "title": "Market Conditions, Patience, and Exposure",
+      "description": "Learn when the environment supports long swing trades, how leaders provide market feedback, and why waiting is a professional action.",
+      "levelId": "beginner",
+      "objectives": [
+        "Classify the market as Aggressive, Constructive, Defensive, or No Trade.",
+        "Use the behavior of leading stocks as real-time evidence about market quality.",
+        "Build and update the Ronin Trend Map at the close and after the open.",
+        "Control overtrading by matching activity to opportunity rather than emotion."
+      ],
+      "lessons": [
+        {
+          "id": "01-01-regimes",
+          "title": "The Four Ronin Market Regimes",
+          "duration": "11 min",
+          "summary": "A practical regime model: Aggressive, Constructive, Defensive, and No Trade.",
+          "file": "01-01-regimes.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "01-02-leader-feedback",
+          "title": "Let Leading Stocks Tell You the Truth",
+          "duration": "10 min",
+          "summary": "Why the behavior of elite stocks often matters more than index headlines.",
+          "file": "01-02-leader-feedback.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "01-04-patience-overtrading",
+          "title": "Patience and the Urge to Overtrade",
+          "duration": "10 min",
+          "summary": "Recognize the emotional need for action and build rules that keep activity aligned with opportunity.",
+          "file": "01-04-patience-overtrading.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "01-03-daily-trend-map",
+          "title": "Build the Daily Trend Map",
+          "duration": "12 min",
+          "summary": "A repeatable premarket and end-of-day process for classifying the environment.",
+          "file": "01-03-daily-trend-map.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "stock-selection",
+      "number": 2,
+      "title": "Stock Selection, Focus, and Watchlists",
+      "description": "Reduce thousands of stocks to a focused list of liquid leaders with sufficient movement, real catalysts, and clear structural potential.",
+      "levelId": "beginner",
+      "objectives": [
+        "Define a practical universe of liquid US-listed stocks with sufficient movement.",
+        "Separate genuine leaders from temporary momentum and weak rebounds.",
+        "Convert scanner output into weekly, developing, and actionable watchlists.",
+        "Protect attention from noise, novelty, and fear of missing out."
+      ],
+      "lessons": [
+        {
+          "id": "02-01-universe",
+          "title": "Define the Trading Universe",
+          "duration": "9 min",
+          "summary": "Liquidity, price, movement, and why not every stock deserves attention.",
+          "file": "02-01-universe.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "02-02-leadership",
+          "title": "Identify Genuine Market Leaders",
+          "duration": "12 min",
+          "summary": "Price leadership, group leadership, and the difference between strength and temporary excitement.",
+          "file": "02-02-leadership.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "02-04-focus-fomo-noise",
+          "title": "Focus, FOMO, and Information Noise",
+          "duration": "10 min",
+          "summary": "Protect attention, avoid novelty bias, and stop abandoning prepared watchlists for random movers.",
+          "file": "02-04-focus-fomo-noise.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "02-03-watchlists",
+          "title": "Build Weekly and Daily Watchlists",
+          "duration": "12 min",
+          "summary": "Turn scanner results into a small, prioritized list with preplanned levels.",
+          "file": "02-03-watchlists.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "relative-strength",
+      "number": 3,
+      "title": "Relative Strength and Evidence-Based Thinking",
+      "description": "Use relative strength to identify leadership early while avoiding confirmation bias and attachment to a stock story.",
+      "levelId": "beginner",
+      "objectives": [
+        "Distinguish the RS line, RS Rating, and price leadership.",
+        "Recognize hidden strength when a stock resists broad-market weakness.",
+        "Apply a consistent RS checklist before studying an entry.",
+        "Use disconfirming evidence to prevent bias from replacing chart analysis."
+      ],
+      "lessons": [
+        {
+          "id": "03-01-rs-basics",
+          "title": "RS Line, RS Rating, and Price Leadership",
+          "duration": "10 min",
+          "summary": "Understand what each relative-strength tool measures and how they work together.",
+          "file": "03-01-rs-basics.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "03-02-weak-market",
+          "title": "Read RS During Market Weakness",
+          "duration": "10 min",
+          "summary": "How hidden leadership appears when indexes are under pressure.",
+          "file": "03-02-weak-market.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "03-04-confirmation-bias",
+          "title": "Confirmation Bias and Story Attachment",
+          "duration": "10 min",
+          "summary": "Use relative-strength evidence without searching only for reasons that support an existing opinion.",
+          "file": "03-04-confirmation-bias.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "03-03-rs-checklist",
+          "title": "The Ronin RS Checklist",
+          "duration": "8 min",
+          "summary": "Turn relative strength into a consistent pre-trade filter.",
+          "file": "03-03-rs-checklist.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "catalyst-volume-events",
+      "number": 4,
+      "title": "Earnings Gaps, HVE, and Institutional Urgency",
+      "description": "Recognize meaningful institutional events, map their levels, and wait for constructive digestion instead of chasing expansion.",
+      "levelId": "beginner",
+      "objectives": [
+        "Identify the structural qualities of a meaningful earnings gap.",
+        "Use HVE and HV1 as evidence of urgency, not as automatic entry signals.",
+        "Evaluate post-event digestion and the first actionable continuation structure.",
+        "Control FOMO after large expansion days and wait for efficient structure."
+      ],
+      "lessons": [
+        {
+          "id": "04-01-earnings-gaps",
+          "title": "Anatomy of a Quality Earnings Gap",
+          "duration": "12 min",
+          "summary": "What makes an earnings gap structurally important rather than a one-day reaction.",
+          "file": "04-01-earnings-gaps.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "04-02-hve",
+          "title": "HVE, HV1, and Institutional Urgency",
+          "duration": "11 min",
+          "summary": "Use abnormal volume as context without turning it into a standalone signal.",
+          "file": "04-02-hve.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "04-04-expansion-fomo",
+          "title": "Chasing Expansion and the Fear of Missing Out",
+          "duration": "10 min",
+          "summary": "Stay disciplined after earnings gaps and high-volume moves by separating proof of demand from entry location.",
+          "file": "04-04-expansion-fomo.md",
+          "hasQuiz": false,
+          "levelId": "beginner",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "04-03-digestion",
+          "title": "Post-Event Digestion and the First Setup",
+          "duration": "12 min",
+          "summary": "How to recognize when a high-volume event is being absorbed constructively.",
+          "file": "04-03-digestion.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "04-05-foundation-checkpoint",
+          "title": "Foundation Milestone: Market, Leaders, and Mindset",
+          "duration": "15 min",
+          "summary": "Demonstrate mastery of the Beginner level before unlocking structure and execution.",
+          "file": "04-05-foundation-checkpoint.md",
+          "hasQuiz": true,
+          "levelId": "beginner",
+          "lessonType": "checkpoint",
+          "practiceRequired": true,
+          "isCheckpoint": true,
+          "requiredScore": 80
+        }
+      ]
+    },
+    {
+      "id": "flat-base",
+      "number": 5,
+      "title": "Flat Base Breakout",
+      "description": "Master the prior expansion, location, tightness, volume dry-up, pivot, confirmation, and failure conditions of the core breakout setup.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Recognize a valid flat base as contraction after proven strength.",
+        "Judge location, depth, tightness, and the quality of the final contraction.",
+        "Map a clear pivot and require meaningful confirmation through it.",
+        "Reject loose bases, repeated failures, and late entries.",
+        "Remain emotionally neutral when a breakout is missed or fails."
+      ],
+      "lessons": [
+        {
+          "id": "05-01-anatomy",
+          "title": "Anatomy of the Ronin Flat Base",
+          "duration": "12 min",
+          "summary": "The prior move, location, depth, tightness, and final contraction.",
+          "file": "05-01-anatomy.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "05-02-volume-pivot",
+          "title": "Volume Dry-Up and the Breakout Pivot",
+          "duration": "12 min",
+          "summary": "How declining supply and a clear upper boundary create the setup.",
+          "file": "05-02-volume-pivot.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "05-03-confirmation",
+          "title": "Breakout Confirmation and Entry Quality",
+          "duration": "12 min",
+          "summary": "What a valid breakout should look like and why one cent above the pivot is not enough.",
+          "file": "05-03-confirmation.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "05-05-breakout-fomo",
+          "title": "Breakout FOMO, Missed Trades, and Emotional Neutrality",
+          "duration": "10 min",
+          "summary": "Handle anticipation, missed breakouts, and failed attempts without abandoning the flat-base rules.",
+          "file": "05-05-breakout-fomo.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "05-04-failures",
+          "title": "Failed Breakouts and Base Disqualifiers",
+          "duration": "11 min",
+          "summary": "Recognize when the structure is chop, distribution, or no longer actionable.",
+          "file": "05-04-failures.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "controlled-pullback",
+      "number": 6,
+      "title": "Controlled Pullback",
+      "description": "Master first and later pullbacks in proven leaders, including 8 EMA, 21 EMA, prior-breakout, and weekly 8 EMA continuation structures.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Distinguish a low-supply pullback from technical deterioration.",
+        "Prioritize the first pullback after an earnings or institutional expansion.",
+        "Evaluate later pullbacks and weekly 8 EMA reactions with a higher standard.",
+        "Wait for the return of demand instead of buying a moving-average touch.",
+        "Manage fear and the need to call the exact bottom."
+      ],
+      "lessons": [
+        {
+          "id": "06-01-anatomy",
+          "title": "Anatomy of a Controlled Pullback",
+          "duration": "12 min",
+          "summary": "The prior trend, quality of decline, support, and return of strength.",
+          "file": "06-01-anatomy.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "06-02-first-pullback",
+          "title": "The First Pullback After an Earnings Gap",
+          "duration": "12 min",
+          "summary": "Why the first continuation structure after institutional expansion receives priority.",
+          "file": "06-02-first-pullback.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "06-03-second-pullback",
+          "title": "Second Pullback and Weekly 8 EMA Rejection",
+          "duration": "12 min",
+          "summary": "When a later pullback remains valid and why it requires stronger evidence.",
+          "file": "06-03-second-pullback.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "06-05-pullback-fear",
+          "title": "Fear During Pullbacks and the Need to Be Right",
+          "duration": "10 min",
+          "summary": "Read controlled weakness objectively without trying to catch the exact low or defend a prediction.",
+          "file": "06-05-pullback-fear.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "06-04-failures",
+          "title": "Pullback Failure and Deterioration",
+          "duration": "11 min",
+          "summary": "Distinguish normal profit-taking from institutional selling.",
+          "file": "06-04-failures.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "key-levels",
+      "number": 7,
+      "title": "Key Levels and Structural Confluence",
+      "description": "Map important price levels before the stock reaches them and judge the reaction rather than predicting support.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Map prior pivots, earnings-gap levels, HVE lows, and major daily or weekly support.",
+        "Use confluence to improve location without cluttering the chart.",
+        "Separate a planned level from proof that buyers are defending it.",
+        "Avoid anchoring, hope, and moving levels after the trade begins."
+      ],
+      "lessons": [
+        {
+          "id": "07-01-map-levels",
+          "title": "How to Map Key Levels",
+          "duration": "11 min",
+          "summary": "Prior pivots, gap levels, high-volume lows, and former resistance.",
+          "file": "07-01-map-levels.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "07-02-confluence",
+          "title": "Confluence Without Clutter",
+          "duration": "10 min",
+          "summary": "Combine horizontal structure, moving averages, and volume intelligently.",
+          "file": "07-02-confluence.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "07-03-reaction",
+          "title": "The Reaction Is the Signal",
+          "duration": "10 min",
+          "summary": "Judge the stock by how it behaves at the level, not by the existence of the level.",
+          "file": "07-03-reaction.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "volume",
+      "number": 8,
+      "title": "Volume Contraction and Expansion",
+      "description": "Read volume as evidence of participation and supply, then combine it with price instead of treating it as a standalone signal.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Interpret expansion volume, dry-up, relative volume, and abnormal selling.",
+        "Recognize genuine volume contraction inside bases and pullbacks.",
+        "Judge breakout and reversal volume in the context of price and time of day.",
+        "Avoid indicator fixation and confirmation bias."
+      ],
+      "lessons": [
+        {
+          "id": "08-01-language",
+          "title": "The Language of Volume",
+          "duration": "11 min",
+          "summary": "Interpret volume only in relation to price, location, and the stage of the pattern.",
+          "file": "08-01-language.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "08-02-dry-up",
+          "title": "Recognize True Volume Dry-Up",
+          "duration": "10 min",
+          "summary": "How declining activity reveals supply contraction inside bases and pullbacks.",
+          "file": "08-02-dry-up.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "08-03-breakout-volume",
+          "title": "Breakout Volume, Reversal Volume, and Failure",
+          "duration": "12 min",
+          "summary": "What volume should do when the stock attempts to resume its trend.",
+          "file": "08-03-breakout-volume.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "timeframes",
+      "number": 9,
+      "title": "Weekly, Daily, and 30-Minute Structure",
+      "description": "Give each timeframe one job: weekly context, daily setup, and 30-minute execution.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Use the weekly chart to judge trend, maturity, and overhead supply.",
+        "Use the daily chart to define the setup, key level, and invalidation.",
+        "Use the 30-minute chart only to refine an already valid daily setup.",
+        "Prevent timeframe hopping when a trade becomes uncomfortable."
+      ],
+      "lessons": [
+        {
+          "id": "09-01-weekly",
+          "title": "The Weekly Chart: Strategic Context",
+          "duration": "11 min",
+          "summary": "Stage, overhead supply, weekly 8 EMA, and trend maturity.",
+          "file": "09-01-weekly.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "09-02-daily",
+          "title": "The Daily Chart: Setup and Invalidation",
+          "duration": "12 min",
+          "summary": "Classify the pattern, mark levels, and determine what must happen next.",
+          "file": "09-02-daily.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "09-03-alignment",
+          "title": "Multi-Timeframe Alignment",
+          "duration": "10 min",
+          "summary": "Combine strategic context, daily structure, and tactical timing without contradiction.",
+          "file": "09-03-alignment.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "execution",
+      "number": 10,
+      "title": "30-Minute Triggers and Entry Efficiency",
+      "description": "Use four repeatable intraday triggers, Low-of-Day ATR distance, structural stop distance, and a no-chase protocol.",
+      "levelId": "intermediate",
+      "objectives": [
+        "Recognize the higher-low, reclaim, pivot-breakout, and opening-compression triggers.",
+        "Calculate Low-of-Day distance as a percentage of daily ATR.",
+        "Keep entry-to-stop distance generally within approximately one daily ATR.",
+        "Reject late entries even when the stock remains strong.",
+        "Control hesitation, impulse, and trigger-related FOMO."
+      ],
+      "lessons": [
+        {
+          "id": "10-01-trigger-types",
+          "title": "The Four Primary 30-Minute Triggers",
+          "duration": "12 min",
+          "summary": "Higher low, pivot breakout, reclaim, and opening-range compression.",
+          "file": "10-01-trigger-types.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "10-02-lod-atr",
+          "title": "Low-of-Day ATR Efficiency",
+          "duration": "11 min",
+          "summary": "Measure whether the entry is still close enough to the day’s risk anchor.",
+          "file": "10-02-lod-atr.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "10-03-stop-atr",
+          "title": "Entry-to-Stop ATR and Structural Distance",
+          "duration": "10 min",
+          "summary": "Prevent artificial stops and reject trades whose structure is too wide.",
+          "file": "10-03-stop-atr.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "10-05-trigger-discipline",
+          "title": "Hesitation, Impulse, and Trigger Discipline",
+          "duration": "11 min",
+          "summary": "Execute a valid trigger without freezing, anticipating, or chasing after the planned entry is gone.",
+          "file": "10-05-trigger-discipline.md",
+          "hasQuiz": false,
+          "levelId": "intermediate",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "10-04-no-chase",
+          "title": "The No-Chase Protocol",
+          "duration": "9 min",
+          "summary": "A decision tree for handling a stock that moves without you.",
+          "file": "10-04-no-chase.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "10-06-structure-checkpoint",
+          "title": "Structure Milestone: Setups, Volume, and Execution",
+          "duration": "18 min",
+          "summary": "Demonstrate mastery of Flat Bases, Controlled Pullbacks, key levels, volume, timeframes, and entries.",
+          "file": "10-06-structure-checkpoint.md",
+          "hasQuiz": true,
+          "levelId": "intermediate",
+          "lessonType": "checkpoint",
+          "practiceRequired": true,
+          "isCheckpoint": true,
+          "requiredScore": 80
+        }
+      ]
+    },
+    {
+      "id": "risk",
+      "number": 11,
+      "title": "Risk, Position Sizing, and Drawdown Control",
+      "description": "Place structural stops, size positions mathematically, manage correlated exposure, and remain consistent through losses and drawdowns.",
+      "levelId": "advanced",
+      "objectives": [
+        "Place the stop where the trade thesis is structurally invalid.",
+        "Apply the 0.5% account-risk rule and 15% maximum-position rule correctly.",
+        "Measure portfolio heat and correlated exposure.",
+        "Follow a drawdown protocol instead of changing size emotionally."
+      ],
+      "lessons": [
+        {
+          "id": "11-01-structural-stop",
+          "title": "Structural Stop Placement",
+          "duration": "12 min",
+          "summary": "Place the stop where the setup is wrong, not at an arbitrary percentage.",
+          "file": "11-01-structural-stop.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "11-02-position-size",
+          "title": "Position Size Formula",
+          "duration": "11 min",
+          "summary": "Calculate shares from account risk and apply the maximum allocation cap.",
+          "file": "11-02-position-size.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "11-04-losses-drawdowns",
+          "title": "Handling Losses, Losing Streaks, and Drawdowns",
+          "duration": "12 min",
+          "summary": "Use a written protocol to protect decision quality when recent results create fear, frustration, or urgency.",
+          "file": "11-04-losses-drawdowns.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "11-03-portfolio-risk",
+          "title": "Portfolio Heat and Correlation",
+          "duration": "10 min",
+          "summary": "Control the combined risk of several positions that may behave like one trade.",
+          "file": "11-03-portfolio-risk.md",
+          "hasQuiz": true,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "management",
+      "number": 12,
+      "title": "Trade Management and Emotional Discipline",
+      "description": "Recognize failure quickly, allow healthy trends to work, trail structurally, and manage adds and trims without fear or greed.",
+      "levelId": "advanced",
+      "objectives": [
+        "Separate a thesis failure from normal price movement.",
+        "Manage a working position while its trend and structure remain healthy.",
+        "Trail stops using price structure and the appropriate moving average.",
+        "Add only after a new qualified structure and track maximum committed risk.",
+        "Avoid automatic breakeven stops, premature selling, and greed-driven holding."
+      ],
+      "lessons": [
+        {
+          "id": "12-01-not-working",
+          "title": "When the Trade Is Not Working",
+          "duration": "11 min",
+          "summary": "Recognize failed breakouts, failed reclaims, and loss of structure.",
+          "file": "12-01-not-working.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "12-02-working",
+          "title": "When the Trade Is Working",
+          "duration": "12 min",
+          "summary": "Use structure, not the profit amount, to decide whether to remain.",
+          "file": "12-02-working.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "12-03-trailing",
+          "title": "Trailing the Trend",
+          "duration": "12 min",
+          "summary": "Choose the trailing method that matches the speed and maturity of the stock.",
+          "file": "12-03-trailing.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "12-05-greed-fear-breakeven",
+          "title": "Greed, Fear, Breakeven Stops, and the Disposition Effect",
+          "duration": "12 min",
+          "summary": "Manage open profit and loss from structure rather than emotional comfort.",
+          "file": "12-05-greed-fear-breakeven.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "12-04-adds-trims",
+          "title": "Adds, Trims, and Maximum Committed Risk",
+          "duration": "11 min",
+          "summary": "Scale only when the stock creates new structure and track the real risk of the complete position.",
+          "file": "12-04-adds-trims.md",
+          "hasQuiz": true,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "journal",
+      "number": 13,
+      "title": "Journaling, Psychology, and Continuous Improvement",
+      "description": "Build an evidence-based review process that separates outcome from execution and turns emotional mistakes into specific rules.",
+      "levelId": "advanced",
+      "objectives": [
+        "Record the complete context, plan, execution, management, and result of each trade.",
+        "Grade process separately from profit and loss.",
+        "Track emotional states, triggers, and rule violations without excuses.",
+        "Use daily, weekly, and monthly reviews to improve one behavior at a time.",
+        "Apply a reset protocol after revenge impulses, losses, or emotional overload."
+      ],
+      "lessons": [
+        {
+          "id": "13-01-trade-record",
+          "title": "The Complete Trade Record",
+          "duration": "10 min",
+          "summary": "What to record before, during, and after every position.",
+          "file": "13-01-trade-record.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "13-02-process-outcome",
+          "title": "Separate Process From Outcome",
+          "duration": "10 min",
+          "summary": "Why a winning violation is dangerous and a disciplined loss can be valuable.",
+          "file": "13-02-process-outcome.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "13-04-revenge-consistency",
+          "title": "Revenge Trading, Consistency, and the Reset Protocol",
+          "duration": "11 min",
+          "summary": "Recognize emotional escalation early and return to the process before another trade is considered.",
+          "file": "13-04-revenge-consistency.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "psychology",
+          "practiceRequired": true,
+          "isCheckpoint": false,
+          "requiredScore": null
+        },
+        {
+          "id": "13-03-review-cycle",
+          "title": "Daily, Weekly, and Monthly Review Cycle",
+          "duration": "12 min",
+          "summary": "Turn individual trades into a reliable feedback loop.",
+          "file": "13-03-review-cycle.md",
+          "hasQuiz": true,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "playbook",
+      "number": 14,
+      "title": "Integrated Playbooks and Final Certification",
+      "description": "Combine the entire system into two complete playbooks, a weekly and daily workflow, and a final mastery assessment.",
+      "levelId": "advanced",
+      "objectives": [
+        "Execute the Flat Base Breakout playbook from market context through review.",
+        "Execute the Controlled Pullback playbook from market context through review.",
+        "Follow the complete weekend, premarket, intraday, and end-of-day workflow.",
+        "Demonstrate technical and psychological mastery before increasing responsibility."
+      ],
+      "lessons": [
+        {
+          "id": "14-01-flat-base-playbook",
+          "title": "Flat Base Playbook",
+          "duration": "12 min",
+          "summary": "The complete qualification, trigger, management, and rejection checklist.",
+          "file": "14-01-flat-base-playbook.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "14-02-pullback-playbook",
+          "title": "Controlled Pullback Playbook",
+          "duration": "12 min",
+          "summary": "The complete qualification, support, confirmation, and rejection checklist.",
+          "file": "14-02-pullback-playbook.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "14-03-workflow",
+          "title": "The Complete Weekly and Daily Workflow",
+          "duration": "12 min",
+          "summary": "A repeatable operating routine from weekend scans to post-market review.",
+          "file": "14-03-workflow.md",
+          "hasQuiz": false,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "14-04-final-checklist",
+          "title": "Final Ronin Checklist and Certification",
+          "duration": "12 min",
+          "summary": "Demonstrate mastery of the framework before trading it with meaningful size.",
+          "file": "14-04-final-checklist.md",
+          "hasQuiz": true,
+          "levelId": "advanced",
+          "lessonType": "core",
+          "practiceRequired": true
+        },
+        {
+          "id": "14-05-final-mastery",
+          "title": "Advanced Milestone: Final Ronin Mastery Assessment",
+          "duration": "25 min",
+          "summary": "Prove that technical skill, risk discipline, and psychological control operate as one complete process.",
+          "file": "14-05-final-mastery.md",
+          "hasQuiz": true,
+          "levelId": "advanced",
+          "lessonType": "checkpoint",
+          "practiceRequired": true,
+          "isCheckpoint": true,
+          "requiredScore": 85
+        }
+      ]
+    },
+    {
+      "id": "tradingview-setup",
+      "number": 15,
+      "title": "TradingView Workspace Setup",
+      "description": "Build the Ronin Full chart workspace, install the required indicators, and read the chart in a fixed order.",
+      "levelId": "resources",
+      "objectives": [
+        "Install and configure the four required TradingView scripts.",
+        "Apply the complete Ronin Full color palette.",
+        "Build a clean weekly, daily, and 30-minute chart workflow.",
+        "Use indicators as measurements and context rather than decision substitutes."
+      ],
+      "lessons": [
+        {
+          "id": "15-01-workspace",
+          "title": "Build the Ronin TradingView Workspace",
+          "duration": "11 min",
+          "summary": "Create a clean chart where price, structure, volume, relative strength, and entry efficiency each have one clear job.",
+          "file": "15-01-workspace.md",
+          "hasQuiz": false,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        },
+        {
+          "id": "15-02-indicators",
+          "title": "Install the Four Required Indicators",
+          "duration": "12 min",
+          "summary": "Install the official scripts and understand why the system uses each one.",
+          "file": "15-02-indicators.md",
+          "hasQuiz": false,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        },
+        {
+          "id": "15-03-palette",
+          "title": "Apply the Ronin Full Color Palette",
+          "duration": "12 min",
+          "summary": "Configure the exact parchment, candle, volume, moving-average, and markup colors used throughout the course.",
+          "file": "15-03-palette.md",
+          "hasQuiz": false,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        },
+        {
+          "id": "15-04-workflow",
+          "title": "Read the Complete Ronin Chart",
+          "duration": "12 min",
+          "summary": "Combine the indicators into one repeatable weekly, daily, and 30-minute workflow without turning them into automatic signals.",
+          "file": "15-04-workflow.md",
+          "hasQuiz": true,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        }
+      ]
+    },
+    {
+      "id": "discord-community",
+      "number": 16,
+      "title": "Premium Discord Community",
+      "description": "Connect to the private community and use it for study, feedback, and accountability without outsourcing decisions.",
+      "levelId": "resources",
+      "objectives": [
+        "Connect the Ronin Charts account to Discord securely.",
+        "Use the community for chart study, course questions, and process review.",
+        "Post plans using the Ronin decision framework.",
+        "Avoid herd behavior, signals, and dependence on other members."
+      ],
+      "lessons": [
+        {
+          "id": "16-01-purpose",
+          "title": "What the Ronin Discord Is For",
+          "duration": "8 min",
+          "summary": "Understand the purpose, channels, standards, and behavior expected inside the premium community.",
+          "file": "16-01-purpose.md",
+          "hasQuiz": false,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        },
+        {
+          "id": "16-02-connect",
+          "title": "Connect Your Discord Account",
+          "duration": "7 min",
+          "summary": "Authorize Discord securely, join the private server, receive the premium role, and solve common connection problems.",
+          "file": "16-02-connect.md",
+          "hasQuiz": false,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        },
+        {
+          "id": "16-03-use-community",
+          "title": "Use the Community Without Losing Independence",
+          "duration": "10 min",
+          "summary": "A practical posting and review routine that uses feedback to improve skill rather than copy trades.",
+          "file": "16-03-use-community.md",
+          "hasQuiz": true,
+          "levelId": "resources",
+          "lessonType": "resource",
+          "practiceRequired": true
+        }
+      ]
+    }
+  ]
+}

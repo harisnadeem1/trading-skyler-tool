@@ -1,3 +1,6 @@
+import { authManager } from './auth.js';
+
+
 class RoninSystemView {
   constructor() {
     this.root = null;
@@ -9,9 +12,10 @@ class RoninSystemView {
     this.observer = null;
     this.initialized = false;
     this.currentView = null;
+    this.hasAcademyAccess = false;
   }
 
-  init() {
+ async init() {
     this.root = document.getElementById('roninSystemView');
     if (!this.root) return;
 
@@ -21,7 +25,15 @@ class RoninSystemView {
     this.checkoutButtons = Array.from(this.root.querySelectorAll('[data-checkout-button]'));
     this.subnavLinks = Array.from(this.root.querySelectorAll('.system-subnav a'));
 
+     try {
+    await authManager.checkAuth();
+    this.hasAcademyAccess = Boolean(authManager.getUser()?.hasAcademyAccess);
+  } catch {
+    this.hasAcademyAccess = false;
+  }
+
     this.bindCheckoutButtons();
+    this.setCheckoutButtonState();
     this.bindSubnavLinks();
     this.setupStickyCTA();
 
@@ -34,19 +46,46 @@ class RoninSystemView {
     this.updateStickyCTA(true);
   }
 
+   setCheckoutButtonState() {
+  const label = this.hasAcademyAccess
+    ? 'Open the Ronin Academy'
+    : 'Unlock the Ronin Trading System';
+
+  const href = this.hasAcademyAccess ? '/academy.html' : '#';
+
+  this.checkoutButtons.forEach((button) => {
+    button.textContent = label;
+
+    if (button.tagName === 'A') {
+      button.href = href;
+    } else {
+      button.dataset.href = href;
+    }
+  });
+}
+
   deactivate() {
     this.currentView = null;
     document.body.classList.remove('route-ronin-system');
     this.updateStickyCTA(false);
   }
 
-  bindCheckoutButtons() {
-    this.checkoutButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        console.log('Ronin checkout clicked');
-      });
+  
+bindCheckoutButtons() {
+  this.checkoutButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      if (this.hasAcademyAccess) {
+        window.location.assign('/academy.html');
+        return;
+      }
+
+      event.preventDefault();
+      window.location.hash = '#';
     });
-  }
+  });
+}
+
+ 
 
   bindSubnavLinks() {
     this.subnavLinks.forEach((link) => {
