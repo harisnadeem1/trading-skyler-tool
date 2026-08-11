@@ -20,8 +20,8 @@ const marketService = require('../services/marketService');
 async function getHistory(req, res) {
   try {
     const symbol = String(req.query.symbol || '').toUpperCase();
-    const range = String(req.query.range || '24h');
-    const interval = String(req.query.interval || '1m');
+    const range = String(req.query.range || '1y');
+const interval = String(req.query.interval || '1d');
 
     if (!symbol) {
       return res.status(400).json({ message: 'Symbol is required' });

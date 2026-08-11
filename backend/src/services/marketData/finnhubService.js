@@ -461,25 +461,55 @@ function isConnected() {
   return connected;
 }
 
-async function fetchHistory(symbol, range = '24h', interval = '1m') {
+async function fetchHistory(symbol, range = '1y', interval = '1d') {
   const normalized = normalizeSymbol(symbol);
 
   const end = Math.floor(Date.now() / 1000);
-  let start;
 
-  if (range === '24h') {
-    start = end - (24 * 60 * 60);
-  } else {
-    start = end - (24 * 60 * 60);
-  }
+  const RANGE_SECONDS = {
+    '24h': 24 * 60 * 60,
+    '7d': 7 * 24 * 60 * 60,
+    '1m': 30 * 24 * 60 * 60,
+    '3m': 90 * 24 * 60 * 60,
+    '6m': 180 * 24 * 60 * 60,
+    '1y': 365 * 24 * 60 * 60,
+    '2y': 2 * 365 * 24 * 60 * 60,
+    '5y': 5 * 365 * 24 * 60 * 60,
+  };
 
-  const resolution = interval === '1m' ? '1' : interval === '5m' ? '5' : '1';
+  const RESOLUTION_MAP = {
+    '1m': '1',
+    '5m': '5',
+    '15m': '15',
+    '30m': '30',
+    '1h': '60',
+    '1d': 'D',
+    '1w': 'W',
+    '1mo': 'M',
+  };
+
+  const start = end - (RANGE_SECONDS[range] || RANGE_SECONDS['1y']);
+  const resolution = RESOLUTION_MAP[interval] || 'D';
 
   const url =
-    `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(normalized)}` +
-    `&resolution=${resolution}&from=${start}&to=${end}&token=${FINNHUB_API_KEY}`;
+    `https://finnhub.io/api/v1/stock/candle` +
+    `?symbol=${encodeURIComponent(normalized)}` +
+    `&resolution=${resolution}` +
+    `&from=${start}` +
+    `&to=${end}` +
+    `&token=${FINNHUB_API_KEY}`;
+
+  console.log('Finnhub history request:', {
+    symbol: normalized,
+    range,
+    interval,
+    resolution,
+    start,
+    end,
+  });
 
   const response = await fetch(url);
+
   if (!response.ok) {
     throw new Error(`Finnhub history failed with status ${response.status}`);
   }
@@ -487,16 +517,17 @@ async function fetchHistory(symbol, range = '24h', interval = '1m') {
   const data = await response.json();
 
   if (data.s !== 'ok' || !Array.isArray(data.t)) {
+    console.warn('Finnhub returned no candle data:', data);
     return [];
   }
 
   return data.t.map((time, i) => ({
     time,
-    open: data.o[i],
-    high: data.h[i],
-    low: data.l[i],
-    close: data.c[i],
-    volume: data.v?.[i] ?? 0,
+    open: Number(data.o[i]),
+    high: Number(data.h[i]),
+    low: Number(data.l[i]),
+    close: Number(data.c[i]),
+    volume: Number(data.v?.[i] ?? 0),
   }));
 }
 

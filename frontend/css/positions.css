@@ -818,5 +818,17 @@
   display: inline-block;
   margin-right: 6px;
   border-radius: 50%;
-  background-color: #22c55e; /* green */
+  background-color: #3d6b4f; /* green */
+}
+
+.position-card__risk-value--profit {
+  color: #3d6b4f !important;
+}
+
+.position-card__risk-value--loss {
+  color: #8b2e2e !important;
+}
+
+.position-card__risk-value--neutral {
+  color: var(--text-muted);
 }

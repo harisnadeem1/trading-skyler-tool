@@ -271,8 +271,12 @@ patchLiveTradeCard(tradeId, liveTrade) {
     : '—';
 
   const pnlClass = Number.isFinite(unrealizedPnL)
-    ? (unrealizedPnL >= 0 ? 'text-success' : 'text-danger')
-    : '';
+  ? unrealizedPnL > 0
+    ? 'position-card__risk-value--profit'
+    : unrealizedPnL < 0
+      ? 'position-card__risk-value--loss'
+      : 'position-card__risk-value--neutral'
+  : '';
 
   const liveValueEl = card.querySelector('[data-role="live-price"]');
   const livePnlEl = card.querySelector('[data-role="live-pnl"]');
@@ -598,15 +602,17 @@ rightPriceScale: {
 },
 timeScale: {
   borderColor: 'rgba(157, 147, 132, 0.22)',
-  timeVisible: true,
+  timeVisible: false,
   secondsVisible: false,
-  tickMarkFormatter: (time) => {
-    const date = new Date(time * 1000);
-    return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  },
+ tickMarkFormatter: (time) => {
+  const date = new Date(time * 1000);
+
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: '2-digit',
+  });
+},
 },
 crosshair: {
   vertLine: { color: 'rgba(158, 123, 59, 0.28)' },
@@ -620,21 +626,20 @@ crosshair: {
    const { CandlestickSeries } = window.LightweightCharts;
 
 const series = chart.addSeries(CandlestickSeries, {
-  // Bullish candle — near black
-  upColor: '#151515',
-  borderUpColor: '#151515',
-  wickUpColor: '#151515',
+  /* Bullish candles */
+  upColor: '#3d6b4f',
+  borderUpColor: '#3d6b4f',
+  wickUpColor: '#3d6b4f',
 
-  // Bearish candle — medium gray
-  downColor: '#8A8A8A',
-  borderDownColor: '#8A8A8A',
-  wickDownColor: '#6B6B6B',
+  /* Bearish candles */
+  downColor: '#8b2e2e',
+  borderDownColor: '#8b2e2e',
+  wickDownColor: '#8b2e2e',
 
   borderVisible: true,
   priceLineVisible: false,
   lastValueVisible: true,
 });
-
     const seedPrice = Number(
   livePrice ??
   trade.currentPrice ??
@@ -647,7 +652,7 @@ const series = chart.addSeries(CandlestickSeries, {
 const now = Math.floor(Date.now() / 1000);
 const initialPrice = seedPrice > 0 ? seedPrice : entry;
 
-const data = await api.getMarketHistory(trade.ticker, '24h', '1m');
+const data = await api.getMarketHistory(trade.ticker, '1y', '1d');
 const candles = Array.isArray(data?.candles) ? data.candles : [];
 
 // If using line chart, convert candles to close values
