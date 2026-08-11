@@ -7,8 +7,8 @@ class TrendMapView {
       loading: false,
       error: '',
       data: null,
-      signal5Mode: 'AUTO',
-      signal5Value: 'YES',
+     signal5Mode: 'MANUAL',
+signal5Value: 'YES',
     };
   }
 
@@ -105,6 +105,7 @@ class TrendMapView {
   }
 
   formatNumber(value, digits = 2) {
+    if (value === null || value === undefined || value === '') return '—';
     const n = Number(value);
     if (!Number.isFinite(n)) return '—';
     return n.toFixed(digits);
@@ -137,18 +138,17 @@ class TrendMapView {
     return map[regime] || 'trend-regime--gray';
   }
 
-  getSignalClass(colorKey) {
-    const map = {
-      GREEN: 'trend-signal--green',
-      YELLOW: 'trend-signal--yellow',
-      AMBER: 'trend-signal--amber',
-      ORANGE: 'trend-signal--orange',
-      RED: 'trend-signal--red',
-      GRAY: 'trend-signal--gray',
-    };
+  getSignalClass(value) {
+  const normalizedValue = String(value || '').trim().toUpperCase();
 
-    return map[colorKey] || 'trend-signal--gray';
-  }
+  const map = {
+    YES: 'trend-signal--green',
+    NO: 'trend-signal--red',
+    ATTEMPT: 'trend-signal--orange',
+  };
+
+  return map[normalizedValue] || 'trend-signal--gray';
+}
 
   renderStatus() {
     if (!this.els.status) return;
@@ -210,7 +210,7 @@ class TrendMapView {
       ['WMA10', this.formatNumber(metrics.wma10)],
       ['WMA20', this.formatNumber(metrics.wma20)],
       ['Pct Above 20MA', this.formatNumber(metrics.latestPctAbove20MA)],
-      ['NHNL', this.formatNumber(metrics.latestNHNLFromSheet, 0)],
+      ['NHNL', this.formatNumber(metrics.latestNHNL, 0)],
       ['MCSI', this.formatNumber(metrics.mcClellanSummationIndex)],
       ['MCO', this.formatNumber(metrics.mcClellanOscillator)],
       ['Components Used', this.formatNumber(metrics.componentCountUsed, 0)],
@@ -239,7 +239,7 @@ class TrendMapView {
     this.els.signalsGrid.innerHTML = signals
       .map(
         (signal) => `
-          <article class="trend-signal ${this.getSignalClass(signal.colorKey)}">
+          <article class="trend-signal ${this.getSignalClass(signal.value)}">
             <div class="trend-signal__top">
               <span class="trend-signal__name">${signal.key.toUpperCase()}</span>
               <span class="trend-signal__value">${signal.value}</span>

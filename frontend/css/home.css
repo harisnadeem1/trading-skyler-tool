@@ -104,6 +104,10 @@ textarea {
 }
 
 .brand-inverse { color: #d5b66f; }
+.brand-inverse .brand-mark {
+  color: #d5b66f;
+}
+
 .brand-inverse .brand-copy span { color: #c2ad81; }
 
 .home-skip-link:focus {

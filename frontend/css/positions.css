@@ -809,3 +809,14 @@
     transform: rotate(360deg);
   }
 }
+
+
+.position-card__status--open::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  margin-right: 6px;
+  border-radius: 50%;
+  background-color: #22c55e; /* green */
+}

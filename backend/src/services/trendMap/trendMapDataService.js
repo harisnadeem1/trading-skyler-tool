@@ -14,13 +14,24 @@ const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 const QQQE_TICKER = 'QQQE';
 const HOLDINGS_FILE = path.join(__dirname, 'qqqe_holdings.csv');
 
-const MAX_COMPONENTS = 20;
-const MIN_HOLDINGS_REQUIRED = 12;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_COMPONENTS = 120;
+const MIN_HOLDINGS_REQUIRED = 80;
 const RECENT_TRADES_LIMIT = 5;
 
-const snapshotCache = new Map();
-const inFlightPromises = new Map();
+// -----------------------------------------------------------------------
+// Layer 1: global market snapshot cache.
+//
+// Signals 1, 2, 3, 4, 6, 7 and all breadth metrics (Pct Above 20MA, NHNL,
+// MCSI, MCO, etc.) are derived purely from QQQE + QQQE-component Finnhub
+// candles, which are identical for every user. This cache is keyed by a
+// single fixed key -- NOT by userId or Signal 5 -- so it is shared across
+// all requests and only ever rebuilt on TTL expiry or a forced refresh.
+// -----------------------------------------------------------------------
+const MARKET_CACHE_KEY = 'trend-map:market';
+const MARKET_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const marketSnapshotCache = new Map();
+let marketSnapshotInFlight = null;
 
 function assertApiKey() {
   if (!FINNHUB_API_KEY) {
@@ -45,11 +56,6 @@ function normalizeSignal5Override(value) {
   if (!normalized || normalized === 'AUTO') return null;
   if (['YES', 'NO', 'ATTEMPT'].includes(normalized)) return normalized;
   return null;
-}
-
-function getCacheKey({ userId, signal5Override }) {
-  const overrideKey = normalizeSignal5Override(signal5Override) || 'AUTO';
-  return `${userId || 'anonymous'}::${overrideKey}`;
 }
 
 async function finnhubGet(pathname, params = {}) {
@@ -199,6 +205,115 @@ async function getBulkDailyCloseHistory(symbols, monthsBack = 18) {
   return result;
 }
 
+// -----------------------------------------------------------------------
+// Builds the shared, user-agnostic market snapshot: QQQE bars + the full
+// component breadth model (pctAbove20MA, NHNL, MCSI, MCO, signals 1/6/7,
+// etc). Throws on failure -- callers decide whether to fall back to a
+// stale cached snapshot or surface an error.
+// -----------------------------------------------------------------------
+async function buildMarketSnapshot() {
+  const now = new Date();
+  const dailyFrom = new Date();
+  dailyFrom.setFullYear(dailyFrom.getFullYear() - 1);
+
+  const qqqeDailyBars = await getStockCandles(QQQE_TICKER, {
+    resolution: 'D',
+    from: toUnix(dailyFrom),
+    to: toUnix(now),
+  });
+
+  if (!qqqeDailyBars.length) {
+    throw new Error('QQQE daily candles unavailable from Finnhub');
+  }
+
+  const qqqeWeeklyBars = buildWeeklyBarsFromDaily(qqqeDailyBars);
+  const holdings = loadHoldingsFromCsv();
+  const componentHistoryMap = await getBulkDailyCloseHistory(holdings, 18);
+
+  // computeComponentBreadthModel already handles the "coverage too low"
+  // case internally and returns a well-formed INVALID model (all breadth
+  // fields null) rather than throwing, so the dashboard can still render
+  // QQQE-only signals with a visible warning instead of hard-failing.
+  const componentModel = computeComponentBreadthModel(componentHistoryMap, MIN_HOLDINGS_REQUIRED);
+
+  const createdAtDate = new Date();
+  const createdAtMs = createdAtDate.getTime();
+  const expiresAtMs = createdAtMs + MARKET_CACHE_TTL_MS;
+  const latestDailyBar = qqqeDailyBars[qqqeDailyBars.length - 1];
+
+  return {
+    qqqeDailyBars,
+    qqqeWeeklyBars,
+    componentModel,
+    createdAtMs,
+    expiresAtMs,
+    createdAt: createdAtDate.toISOString(),
+    expiresAt: new Date(expiresAtMs).toISOString(),
+    marketDataAsOf: latestDailyBar?.date || createdAtDate.toISOString(),
+  };
+}
+
+// -----------------------------------------------------------------------
+// getGlobalMarketSnapshot: the single entry point every request goes
+// through to get shared market data.
+//
+// - Serves the cached snapshot while it is within MARKET_CACHE_TTL_MS.
+// - On expiry (or forceRefresh), rebuilds from Finnhub.
+// - Concurrent callers during a rebuild share one in-flight Promise, so
+//   a burst of requests never triggers more than one 100+ symbol fetch.
+// - If a rebuild fails and a previous snapshot exists, that snapshot is
+//   returned marked `stale: true` with the failure reason attached,
+//   rather than surfacing an error to users who don't need one.
+// - If a rebuild fails and there is no previous snapshot to fall back
+//   on, the error propagates -- callers must not fabricate zero values.
+// -----------------------------------------------------------------------
+async function getGlobalMarketSnapshot({ forceRefresh = false } = {}) {
+  const nowMs = Date.now();
+
+  if (!forceRefresh) {
+    const cached = marketSnapshotCache.get(MARKET_CACHE_KEY);
+    if (cached && nowMs < cached.expiresAtMs) {
+      return cached;
+    }
+  }
+
+  if (marketSnapshotInFlight) {
+    return marketSnapshotInFlight;
+  }
+
+  marketSnapshotInFlight = buildMarketSnapshot()
+    .then((snapshot) => {
+      marketSnapshotCache.set(MARKET_CACHE_KEY, snapshot);
+      return snapshot;
+    })
+    .catch((error) => {
+      const stale = marketSnapshotCache.get(MARKET_CACHE_KEY);
+
+      if (stale) {
+        console.warn('[TREND MAP] market snapshot refresh failed, serving stale snapshot:', error.message);
+        return {
+          ...stale,
+          stale: true,
+          staleError: error.message,
+        };
+      }
+
+      throw error;
+    })
+    .finally(() => {
+      marketSnapshotInFlight = null;
+    });
+
+  return marketSnapshotInFlight;
+}
+
+// -----------------------------------------------------------------------
+// Layer 2: per-user response composition.
+//
+// Cheap: no Finnhub calls, just Signal 5 resolution (DB lookup or manual
+// override) plus the existing signal-block math over already-cached
+// market data.
+// -----------------------------------------------------------------------
 async function getRecentClosedTrades(userId, limit = RECENT_TRADES_LIMIT) {
   if (!userId) return [];
 
@@ -244,102 +359,74 @@ async function resolveSignal5Value({ userId, signal5Override }) {
   return deriveSignal5FromTrades(trades);
 }
 
-async function buildSnapshot({ userId, signal5Override }) {
-  const now = new Date();
-  const dailyFrom = new Date();
-  dailyFrom.setFullYear(dailyFrom.getFullYear() - 1);
+function buildCacheMeta(marketSnapshot) {
+  const cacheAgeSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - marketSnapshot.createdAtMs) / 1000)
+  );
 
-  const qqqeDailyBars = await getStockCandles(QQQE_TICKER, {
-    resolution: 'D',
-    from: toUnix(dailyFrom),
-    to: toUnix(now),
-  });
-
-  const qqqeWeeklyBars = buildWeeklyBarsFromDaily(qqqeDailyBars);
-  const holdings = loadHoldingsFromCsv();
-  const componentHistoryMap = await getBulkDailyCloseHistory(holdings, 18);
-  const signal5Value = await resolveSignal5Value({ userId, signal5Override });
-
-  let componentModel = {
-    status: 'INVALID',
-    reason: 'Coverage too low',
-    symbols: [],
-    breadthSeries: [],
-    signal1: null,
-    signal6: null,
-    signal7: null,
-    msiLatest: null,
-    mcoLatest: null,
+  const cache = {
+    marketDataAsOf: marketSnapshot.marketDataAsOf,
+    calculatedAt: marketSnapshot.createdAt,
+    expiresAt: marketSnapshot.expiresAt,
+    cacheAgeSeconds,
   };
 
-  const coverage = Object.keys(componentHistoryMap).length;
-
-  if (coverage >= MIN_HOLDINGS_REQUIRED) {
-    componentModel = computeComponentBreadthModel(
-      componentHistoryMap,
-      MIN_HOLDINGS_REQUIRED
-    );
-  } else {
-    componentModel.reason = `Coverage too low: ${coverage}`;
+  if (marketSnapshot.stale) {
+    cache.stale = true;
+    cache.staleWarning = marketSnapshot.staleError
+      ? `Market data refresh failed; showing last known snapshot. (${marketSnapshot.staleError})`
+      : 'Market data refresh failed; showing last known snapshot.';
   }
 
-  const signalBlock = buildTrendMapSignalBlock({
-    qqqeDailyBars,
-    qqqeWeeklyBars,
-    breadthSheetRows: [],
-    componentModel,
+  return cache;
+}
+
+async function composeTrendMapResponse({ userId, signal5Override, marketSnapshot }) {
+  const signal5Value = await resolveSignal5Value({ userId, signal5Override });
+
+  const dashboard = buildTrendMapSignalBlock({
+    qqqeDailyBars: marketSnapshot.qqqeDailyBars,
+    qqqeWeeklyBars: marketSnapshot.qqqeWeeklyBars,
+    componentModel: marketSnapshot.componentModel,
     signal5Value,
     ticker: QQQE_TICKER,
   });
 
+  const normalizedOverride = normalizeSignal5Override(signal5Override);
+
   return {
-    ...signalBlock,
-    signal5Source: normalizeSignal5Override(signal5Override) ? 'MANUAL_OVERRIDE' : 'AUTO_RECENT_TRADES',
-    signal5RecentTradesCount: normalizeSignal5Override(signal5Override)
-      ? null
-      : RECENT_TRADES_LIMIT,
+    ...dashboard,
+    signal5Source: normalizedOverride ? 'MANUAL_OVERRIDE' : 'AUTO_RECENT_TRADES',
+    signal5RecentTradesCount: normalizedOverride ? null : RECENT_TRADES_LIMIT,
+    cache: buildCacheMeta(marketSnapshot),
   };
 }
 
+// GET /trend-map/current
+// forceRefresh defaults to false: reloading the page or flipping Signal 5
+// never re-fetches Finnhub data, it just re-reads the shared cache.
 async function getTrendMapSnapshot({
   userId,
   signal5Override,
   forceRefresh = false,
 } = {}) {
-  const cacheKey = getCacheKey({ userId, signal5Override });
-  const now = Date.now();
-  const useCache = !forceRefresh;
+  const marketSnapshot = await getGlobalMarketSnapshot({ forceRefresh });
+  return composeTrendMapResponse({ userId, signal5Override, marketSnapshot });
+}
 
-  if (useCache) {
-    const cached = snapshotCache.get(cacheKey);
-    if (cached && now < cached.expiresAt) {
-      return cached.value;
-    }
-  }
-
-  if (inFlightPromises.has(cacheKey)) {
-    return inFlightPromises.get(cacheKey);
-  }
-
-  const promise = buildSnapshot({ userId, signal5Override })
-    .then((snapshot) => {
-      snapshotCache.set(cacheKey, {
-        value: snapshot,
-        expiresAt: Date.now() + CACHE_TTL_MS,
-      });
-      return snapshot;
-    })
-    .finally(() => {
-      inFlightPromises.delete(cacheKey);
-    });
-
-  inFlightPromises.set(cacheKey, promise);
-
-  return promise;
+// POST /trend-map/refresh
+// Always forces a rebuild of the global market snapshot (benefits every
+// user), then composes the response for the requesting user's Signal 5.
+async function refreshTrendMapSnapshot({ userId, signal5Override } = {}) {
+  const marketSnapshot = await getGlobalMarketSnapshot({ forceRefresh: true });
+  return composeTrendMapResponse({ userId, signal5Override, marketSnapshot });
 }
 
 module.exports = {
   getTrendMapSnapshot,
+  refreshTrendMapSnapshot,
+  getGlobalMarketSnapshot,
   getRecentClosedTrades,
   deriveSignal5FromTrades,
   resolveSignal5Value,

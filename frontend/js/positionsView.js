@@ -1,6 +1,3 @@
-/**
- * Positions View - Full-fledged open positions manager
- */
 
 import { state } from './state.js';
 import { formatCurrency, formatPercent } from './utils.js';
@@ -134,8 +131,6 @@ class PositionsView {
       });
     }
 
-
-
     const numericInputs = [
       this.elements.addEntry,
       this.elements.addStop,
@@ -157,7 +152,6 @@ class PositionsView {
     e.target.value = e.target.value.replace(/[^A-Z0-9:.-]/gi, '').toUpperCase();
   });
 }
-
     if (this.elements.addSave) {
       this.elements.addSave.addEventListener('click', () => {
         this.startWizardFromPositions();
@@ -167,8 +161,6 @@ class PositionsView {
     if (this.elements.chartClose) {
       this.elements.chartClose.addEventListener('click', () => this.closeChartModal());
     }
-
-   
 
     if (this.elements.chartOverlay) {
       this.elements.chartOverlay.addEventListener('click', () => this.closeChartModal());
@@ -211,9 +203,6 @@ class PositionsView {
     });
   }
 
-
-
-
   setFilter(filter) {
     this.currentFilter = filter;
 
@@ -224,7 +213,6 @@ class PositionsView {
 
     this.render();
   }
-
 
  bindLiveTradeUpdates() {
   if (typeof this.tradeUpdatesUnsubscribe === 'function') {
@@ -243,8 +231,6 @@ class PositionsView {
     });
   });
 }
-
-
 patchLiveTradeCard(tradeId, liveTrade) {
   const card = this.elements.grid?.querySelector(`.position-card[data-id="${tradeId}"]`);
   if (!card) return;
@@ -309,21 +295,14 @@ patchLiveTradeCard(tradeId, liveTrade) {
   }
 }
 
-
-
   openAddTradeModal() {
     if (!this.elements.addModal) return;
-
     if (this.elements.addTicker) this.elements.addTicker.value = '';
     if (this.elements.addEntry) this.elements.addEntry.value = '';
     if (this.elements.addStop) this.elements.addStop.value = '';
     if (this.elements.addTarget) this.elements.addTarget.value = '';
     if (this.elements.addShares) this.elements.addShares.value = '';
-
-
-
     this.updateAddTradePreview();
-
     this.elements.addModal.classList.add('open');
     this.elements.addModal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -430,7 +409,6 @@ closeDeleteConfirm() {
     this.deleteConfirmEscHandler = null;
   }
 }
-
   getAddTradeFormData() {
     const entry = Number(this.elements.addEntry?.value || 0);
     const stop = Number(this.elements.addStop?.value || 0);
@@ -449,8 +427,6 @@ closeDeleteConfirm() {
       shares: Number(this.elements.addShares?.value || 0)
     };
   }
-
-
 
 async openChartModal(tradeId) {
   const trade = state.journal.entries.find(t => String(t.id) === String(tradeId));
@@ -491,15 +467,11 @@ async openChartModal(tradeId) {
 
   closeChartModal() {
     if (!this.elements.chartModal) return;
-
-    // stop live price updates
     this.stopLiveChartFeed();
-
     this.elements.chartModal.classList.remove('open');
     this.elements.chartModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
-
 
   getTradeChartLevels(trade) {
     const entry = Number(trade.entry ?? trade.entry_price ?? 0);
@@ -645,17 +617,23 @@ crosshair: {
       },
     });
 
-    const { LineSeries } = window.LightweightCharts;
+   const { CandlestickSeries } = window.LightweightCharts;
 
-    const series = chart.addSeries(LineSeries, {
-      color: '#2b2b2b',
-      lineWidth: 2,
-      lineVisible: true,
-      pointMarkersVisible: false,
-      crosshairMarkerVisible: true,
-      priceLineVisible: false,
-      lastValueVisible: true,
-    });
+const series = chart.addSeries(CandlestickSeries, {
+  // Bullish candle — near black
+  upColor: '#151515',
+  borderUpColor: '#151515',
+  wickUpColor: '#151515',
+
+  // Bearish candle — medium gray
+  downColor: '#8A8A8A',
+  borderDownColor: '#8A8A8A',
+  wickDownColor: '#6B6B6B',
+
+  borderVisible: true,
+  priceLineVisible: false,
+  lastValueVisible: true,
+});
 
     const seedPrice = Number(
   livePrice ??
@@ -675,8 +653,20 @@ const candles = Array.isArray(data?.candles) ? data.candles : [];
 // If using line chart, convert candles to close values
 series.setData(
   candles.length
-    ? candles.map((bar) => ({ time: bar.time, value: bar.close }))
-    : [{ time: now, value: initialPrice }]
+    ? candles.map((bar) => ({
+        time: bar.time,
+        open: Number(bar.open),
+        high: Number(bar.high),
+        low: Number(bar.low),
+        close: Number(bar.close),
+      }))
+    : [{
+        time: now,
+        open: initialPrice,
+        high: initialPrice,
+        low: initialPrice,
+        close: initialPrice,
+      }]
 );
 chart.priceScale('right').applyOptions({
   autoScale: false,
@@ -725,6 +715,9 @@ chart.timeScale().fitContent();
 this.chart = chart;
 this.chartSeries = series;
 this.chartLastTime = candles.length ? candles[candles.length - 1].time : now;
+this.chartLastClose = candles.length
+  ? Number(candles[candles.length - 1].close)
+  : initialPrice;
 if (this.elements.chartLoading) {
   this.elements.chartLoading.classList.remove('is-visible');
 }
@@ -739,7 +732,6 @@ if (this.elements.chartLoading) {
       });
     });
   }
-
 
   startLiveChartFeed(trade) {
     this.stopLiveChartFeed();
@@ -764,7 +756,6 @@ if (this.elements.chartLoading) {
     this.chartDirection = null;
   }
 
-
   handleLiveChartPrice(payload) {
     if (!this.chart || !this.chartSeries) return;
 
@@ -782,10 +773,22 @@ if (this.elements.chartLoading) {
     const now = Math.floor(Date.now() / 1000);
     const nextTime = Math.max(now, (this.chartLastTime || now - 1) + 1);
 
-    this.chartSeries.update({
-      time: nextTime,
-      value: price,
-    });
+    const previousClose = Number(
+  this.chartLastClose ??
+  this.chartLastPrice ??
+  price
+);
+
+this.chartSeries.update({
+  time: nextTime,
+  open: previousClose,
+  high: Math.max(previousClose, price),
+  low: Math.min(previousClose, price),
+  close: price,
+});
+
+this.chartLastTime = nextTime;
+this.chartLastClose = price;
 
     this.chartLastTime = nextTime;
 
@@ -938,17 +941,9 @@ if (this.elements.chartLoading) {
       actualRiskPercent
     });
 
-
-
     this.closeAddTradeModal();
     wizard.open();
   }
-
-
-
-
-
-
 
   getFilteredPositions() {
     const activeTrades = state.journal.entries.filter(
@@ -964,12 +959,6 @@ if (this.elements.chartLoading) {
         return activeTrades;
     }
   }
-
-
-
-
-
-
 
   render() {
     const positions = this.getFilteredPositions();
@@ -1210,7 +1199,6 @@ if (this.elements.chartLoading) {
       `;
     }).join('');
 
-    // Bind action buttons
   }
 
   bindCardActions() {

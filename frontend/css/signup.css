@@ -449,3 +449,104 @@
     padding: 18px;
   }
 }
+
+/* =========================================
+   Auth Page — Ronin Charts Brand
+   ========================================= */
+
+.auth-page .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: #d5b66f;
+  text-decoration: none;
+}
+
+.auth-page .brand-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 50px;
+  color: #d5b66f;
+}
+
+.auth-page .brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.auth-page .brand-copy {
+  display: grid;
+  line-height: 0.86;
+  letter-spacing: 0.12em;
+}
+
+.auth-page .brand-copy strong {
+  color: #d5b66f;
+  font-family: var(--serif, "Cormorant Garamond", serif);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.auth-page .brand-copy span {
+  margin-left: 2px;
+  color: #d5b66f;
+  font-family: var(--font-sans, "Inter", sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+}
+
+.auth-page .brand-seal {
+  display: grid;
+  width: 22px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #a54935;
+  border-radius: 2px;
+  color: #a54935;
+  font-family: serif;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Hover */
+.auth-page .brand:hover .brand-mark,
+.auth-page .brand:hover .brand-copy strong,
+.auth-page .brand:hover .brand-copy span {
+  color: #e5d39d;
+}
+
+.auth-page .brand:hover .brand-seal {
+  border-color: #c45a43;
+  color: #c45a43;
+}
+
+@media (max-width: 480px) {
+  .auth-page .brand {
+    gap: 8px;
+  }
+
+  .auth-page .brand-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .auth-page .brand-copy strong {
+    font-size: 25px;
+  }
+
+  .auth-page .brand-copy span {
+    font-size: 9px;
+    letter-spacing: 0.36em;
+  }
+
+  .auth-page .brand-seal {
+    width: 20px;
+    height: 28px;
+    font-size: 13px;
+  }
+}

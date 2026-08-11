@@ -181,8 +181,60 @@ function computeWeeklyMetrics(weeklyBars) {
   };
 }
 
+// Computes, for each component symbol, whether its own latest close sits
+// above its own trailing 20-day SMA, using that symbol's actual close
+// history (not the date-aligned/forward-filled breadth series). Returns
+// the pct of components above their 20MA plus the raw counts, so a
+// component with insufficient history is simply excluded from the
+// denominator rather than silently counted as "below".
+function computeComponentPctAbove20MA(componentHistoryMap) {
+  let componentsAbove20MALatest = 0;
+  let componentsWith20MALatest = 0;
+
+  for (const rows of Object.values(componentHistoryMap || {})) {
+    if (!Array.isArray(rows) || !rows.length) continue;
+
+    const sortedRows = [...rows].sort((a, b) => {
+      const ta = toNumber(a.timestamp) ?? 0;
+      const tb = toNumber(b.timestamp) ?? 0;
+      return ta - tb;
+    });
+
+    const closes = sortedRows.map((row) => toNumber(row.close)).filter((v) => v !== null);
+    if (!closes.length) continue;
+
+    const latestClose = closes[closes.length - 1];
+    const ma20 = sma(closes, 20);
+
+    if (latestClose === null || ma20 === null) continue;
+
+    componentsWith20MALatest += 1;
+    if (latestClose > ma20) componentsAbove20MALatest += 1;
+  }
+
+  const pctAbove20MALatest = componentsWith20MALatest > 0
+    ? (componentsAbove20MALatest / componentsWith20MALatest) * 100
+    : null;
+
+  return {
+    pctAbove20MALatest,
+    componentsAbove20MALatest,
+    componentsWith20MALatest,
+  };
+}
+
 function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired = 80) {
   const symbols = Object.keys(componentHistoryMap || {});
+
+  const emptyBreadthFields = {
+    pctAbove20MALatest: null,
+    nhnlLatest: null,
+    new52WkHighsLatest: null,
+    new52WkLowsLatest: null,
+    componentsAbove20MALatest: null,
+    componentsWith20MALatest: null,
+  };
+
   if (symbols.length < minHoldingsRequired) {
     return {
       status: 'INVALID',
@@ -194,6 +246,7 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
       signal7: null,
       msiLatest: null,
       mcoLatest: null,
+      ...emptyBreadthFields,
     };
   }
 
@@ -305,6 +358,7 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
       signal7: null,
       msiLatest: null,
       mcoLatest: null,
+      ...emptyBreadthFields,
     };
   }
 
@@ -349,6 +403,12 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
     latest.mcClellanOscillator < 100
   ) ? 'YES' : 'NO';
 
+  const {
+    pctAbove20MALatest,
+    componentsAbove20MALatest,
+    componentsWith20MALatest,
+  } = computeComponentPctAbove20MA(componentHistoryMap);
+
   return {
     status: 'OK',
     reason: '',
@@ -359,6 +419,12 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
     signal7,
     msiLatest: latest.mcClellanSummationIndex,
     mcoLatest: latest.mcClellanOscillator,
+    pctAbove20MALatest,
+    nhnlLatest: latest.nhnl,
+    new52WkHighsLatest: latest.new52WkHighs,
+    new52WkLowsLatest: latest.new52WkLows,
+    componentsAbove20MALatest,
+    componentsWith20MALatest,
   };
 }
 
@@ -374,7 +440,6 @@ function formatDashboardDate(date = new Date()) {
 function buildTrendMapSignalBlock({
   qqqeDailyBars,
   qqqeWeeklyBars,
-  breadthSheetRows = [],
   componentModel,
   signal5Value = 'YES',
   ticker = 'QQQE',
@@ -383,14 +448,11 @@ function buildTrendMapSignalBlock({
   const metrics = computeDailyMetrics(qqqeDailyBars);
   const weekly = computeWeeklyMetrics(qqqeWeeklyBars);
 
-  let latestPctAbove20MA = null;
-  let latestNHNLFromSheet = null;
-
-  if (breadthSheetRows.length) {
-    const last = breadthSheetRows[breadthSheetRows.length - 1];
-    latestPctAbove20MA = toNumber(last.pctAbove20MA);
-    latestNHNLFromSheet = toNumber(last.nhnl);
-  }
+  // Both metrics now come directly from the component breadth model
+  // (derived from live Finnhub component candles), never from the
+  // legacy breadth sheet.
+  const latestPctAbove20MA = componentModel?.pctAbove20MALatest ?? null;
+  const latestNHNL = componentModel?.nhnlLatest ?? null;
 
   if (!metrics) {
     const regime = 'RED';
@@ -435,7 +497,7 @@ function buildTrendMapSignalBlock({
   const signal6 = (
     componentModel?.signal6 !== null && componentModel?.signal6 !== undefined
   ) ? componentModel.signal6 : (
-    latestNHNLFromSheet !== null && latestNHNLFromSheet > 0 ? 'YES' : 'NO'
+    latestNHNL !== null && latestNHNL > 0 ? 'YES' : 'NO'
   );
 
   const signal7 = (
@@ -507,42 +569,46 @@ function buildTrendMapSignalBlock({
     },
   ];
 
-    return {
-      asOf: now.toISOString(),
-      dashboardDate: formatDashboardDate(now),
-      ticker,
-      marketRegime,
-      regimeActionTitle,
-      exposureMessage,
-      metrics: {
-        latestClose: metrics.latestClose,
-        ma5: metrics.ma5,
-        ma10: metrics.ma10,
-        ma20: metrics.ma20,
-        weeklyClose: weekly.weeklyClose,
-        wma10: weekly.wma10,
-        wma20: weekly.wma20,
-        latestPctAbove20MA,
-        latestNHNLFromSheet,
-        componentCountUsed: componentModel?.symbols?.length || 0,
-        mcClellanSummationIndex: componentModel?.msiLatest ?? null,
-        mcClellanOscillator: componentModel?.mcoLatest ?? null,
-      },
-      signals,
-      breadthModelStatus: breadthStatus,
-      breadthModelReason: breadthReason,
-      dashboardWarning,
-      componentBreadthTail: (componentModel?.breadthSeries || []).slice(-30),
-    };
-  }
-
-  module.exports = {
-    statusColorKey,
-    deriveExposureMessage,
-    deriveRegimeActionTitle,
-    calculateTrendMapRegime,
-    computeDailyMetrics,
-    computeWeeklyMetrics,
-    computeComponentBreadthModel,
-    buildTrendMapSignalBlock,
+  return {
+    asOf: now.toISOString(),
+    dashboardDate: formatDashboardDate(now),
+    ticker,
+    marketRegime,
+    regimeActionTitle,
+    exposureMessage,
+    metrics: {
+      latestClose: metrics.latestClose,
+      ma5: metrics.ma5,
+      ma10: metrics.ma10,
+      ma20: metrics.ma20,
+      weeklyClose: weekly.weeklyClose,
+      wma10: weekly.wma10,
+      wma20: weekly.wma20,
+      latestPctAbove20MA,
+      latestNHNL,
+      new52WkHighsLatest: componentModel?.new52WkHighsLatest ?? null,
+      new52WkLowsLatest: componentModel?.new52WkLowsLatest ?? null,
+      componentsAbove20MALatest: componentModel?.componentsAbove20MALatest ?? null,
+      componentsWith20MALatest: componentModel?.componentsWith20MALatest ?? null,
+      componentCountUsed: componentModel?.symbols?.length || 0,
+      mcClellanSummationIndex: componentModel?.msiLatest ?? null,
+      mcClellanOscillator: componentModel?.mcoLatest ?? null,
+    },
+    signals,
+    breadthModelStatus: breadthStatus,
+    breadthModelReason: breadthReason,
+    dashboardWarning,
+    componentBreadthTail: (componentModel?.breadthSeries || []).slice(-30),
   };
+}
+
+module.exports = {
+  statusColorKey,
+  deriveExposureMessage,
+  deriveRegimeActionTitle,
+  calculateTrendMapRegime,
+  computeDailyMetrics,
+  computeWeeklyMetrics,
+  computeComponentBreadthModel,
+  buildTrendMapSignalBlock,
+};
