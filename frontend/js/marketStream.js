@@ -75,6 +75,7 @@ function ensureStream() {
   eventSource.addEventListener('trade-update', (event) => {
     const payload = parseEventData(event);
     if (!payload) return;
+    console.log('[marketStream] trade update received:', payload);
 
     const trades = Array.isArray(payload.trades) ? payload.trades : [];
     const receivedAt = Date.now();
