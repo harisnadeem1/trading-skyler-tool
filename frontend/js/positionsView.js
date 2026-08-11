@@ -587,32 +587,59 @@ async openChartModal(tradeId) {
     this.elements.chartCanvas.innerHTML = '';
 
     const chart = window.LightweightCharts.createChart(this.elements.chartCanvas, {
-      width: this.elements.chartCanvas.clientWidth || 700,
-      height: 360,
-      layout: {
-  background: { color: '#f6f1e7' },
-  textColor: '#1a1a1a',
+       width: this.elements.chartCanvas.clientWidth || 700,
+  height: this.elements.chartCanvas.clientHeight || 460,
+     layout: {
+  background: { color: '#E9DDCA' },
+  textColor: '#2F2F2F',
 },
+
 grid: {
-  vertLines: { color: 'rgba(157, 147, 132, 0.18)' },
-  horzLines: { color: 'rgba(157, 147, 132, 0.18)' },
+  vertLines: { color: 'rgba(212, 196, 168, 0.3)' },
+  horzLines: { color: 'rgba(212, 196, 168, 0.3)' },
 },
+
 rightPriceScale: {
-  borderColor: 'rgba(157, 147, 132, 0.22)',
+  borderColor: '#C8B89A',
+},
+
+crosshair: {
+  vertLine: { color: '#5D4037' },
+  horzLine: { color: '#5D4037' },
 },
 timeScale: {
-  borderColor: 'rgba(157, 147, 132, 0.22)',
+  borderColor: '#C8B89A',
+
+  /*
+   * Daily candles: show formatted dates, not an unnecessary time-of-day.
+   */
   timeVisible: false,
   secondsVisible: false,
- tickMarkFormatter: (time) => {
-  const date = new Date(time * 1000);
 
-  return date.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-    year: '2-digit',
-  });
-},
+  /*
+   * Prevent going left before the oldest candle loaded from history.
+   */
+  fixLeftEdge: true,
+
+  /*
+   * Still allow movement to the right after the current/latest candle.
+   */
+  fixRightEdge: false,
+
+  rightOffset: 5,
+
+  /*
+   * Force clear date labels instead of generic month-only labels.
+   */
+  tickMarkFormatter: (time) => {
+    const date = new Date(Number(time) * 1000);
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: '2-digit',
+    });
+  },
 },
 crosshair: {
   vertLine: { color: 'rgba(158, 123, 59, 0.28)' },
@@ -715,7 +742,12 @@ series.createPriceLine({
   title: '5R',
 });
 
-chart.timeScale().fitContent();
+const visibleBars = 80;
+
+chart.timeScale().setVisibleLogicalRange({
+  from: Math.max(0, candles.length - visibleBars),
+  to: candles.length + 5,
+});
 
 this.chart = chart;
 this.chartSeries = series;

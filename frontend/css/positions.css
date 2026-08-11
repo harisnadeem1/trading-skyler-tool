@@ -757,14 +757,30 @@
   z-index: 1;
 }
 
+/* Position chart: larger display area, matching Trend Map palette */
 .position-chart-canvas-wrap {
   position: relative;
-  min-height: 360px;
+  min-width: 0;
+  min-height: 460px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius);
+  background: #e9ddca;
 }
 
 .position-chart-canvas {
   width: 100%;
-  height: 360px;
+  height: 460px;
+}
+
+@media (max-width: 760px) {
+  .position-chart-canvas-wrap {
+    min-height: 340px;
+  }
+
+  .position-chart-canvas {
+    height: 340px;
+  }
 }
 
 /* Base overlay, hidden by default */
@@ -774,7 +790,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(246, 241, 231, 0.82);
+  background: rgba(233, 221, 202, 0.88);
   z-index: 20;
   opacity: 0;
   visibility: hidden;

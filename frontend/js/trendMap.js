@@ -640,10 +640,29 @@ class TrendMapView {
         borderColor: PALETTE.canvas.scalesLines,
       },
       timeScale: {
-        borderColor: PALETTE.canvas.scalesLines,
-        timeVisible: false,
-        secondsVisible: false,
-      },
+  borderColor: PALETTE.canvas.scalesLines,
+
+  timeVisible: true,
+  secondsVisible: false,
+
+  minBarSpacing: 4,
+  maxBarSpacing: 28,
+
+  /*
+   * Cannot scroll before the first candle returned by the 1-year API call.
+   */
+  fixLeftEdge: true,
+
+  /*
+   * Can scroll right into future/empty chart space.
+   */
+  fixRightEdge: false,
+
+  /*
+   * Initial breathing space after the newest candle.
+   */
+  rightOffset: 5,
+},
       crosshair: {
         vertLine: { color: PALETTE.canvas.crosshair },
         horzLine: { color: PALETTE.canvas.crosshair },
@@ -732,7 +751,12 @@ class TrendMapView {
 
     this.applyTrendRegime(symbol, fastMA, slowMA);
 
-    chart.timeScale().fitContent();
+    const visibleBars = symbol === 'QQQ' ? 140 : 110;
+
+chart.timeScale().setVisibleLogicalRange({
+  from: Math.max(0, candles.length - visibleBars),
+  to: candles.length + 5,
+});
 
     this.charts.set(symbol, chart);
     this.chartSeries.set(symbol, {

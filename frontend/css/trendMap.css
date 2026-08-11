@@ -459,7 +459,6 @@
   }
 }
 
-
 /* ========================================
    Live Trend Charts
    ======================================== */
@@ -529,7 +528,7 @@
 
 .trend-map-charts__legend-item--strong {
   border-color: rgba(61, 107, 79, 0.35);
-  background: rgba(61, 107, 79, 0.10);
+  background: rgba(61, 107, 79, 0.1);
   color: #3d6b4f;
 }
 
@@ -541,22 +540,35 @@
 
 .trend-map-charts__legend-item--weak {
   border-color: rgba(158, 123, 59, 0.35);
-  background: rgba(158, 123, 59, 0.10);
+  background: rgba(158, 123, 59, 0.1);
   color: var(--warning);
 }
 
-
-/* Chart grid */
+/* ========================================
+   Chart Grid
+   QQQ: Full width primary chart
+   SPY + NVDA: Secondary two-column charts
+   ======================================== */
 
 .trend-map-charts__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--space-4);
   min-width: 0;
 }
 
+.trend-chart-card[data-symbol="QQQ"] {
+  grid-column: span 12;
+}
 
-/* Chart card */
+.trend-chart-card[data-symbol="SPY"],
+.trend-chart-card[data-symbol="NVDA"] {
+  grid-column: span 6;
+}
+
+/* ========================================
+   Chart Cards
+   ======================================== */
 
 .trend-chart-card {
   position: relative;
@@ -580,45 +592,44 @@
   box-shadow: var(--shadow-md);
 }
 
-
-/* Trend-state treatments */
+/* ========================================
+   Trend-State Card Treatments
+   ======================================== */
 
 .trend-chart-card--strong {
   border-color: rgba(61, 107, 79, 0.38);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(61, 107, 79, 0.08) 0%,
-      var(--bg-surface) 34%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(61, 107, 79, 0.08) 0%,
+    var(--bg-surface) 34%
+  );
 }
 
 .trend-chart-card--early {
   border-color: rgba(61, 107, 79, 0.24);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(61, 107, 79, 0.045) 0%,
-      var(--bg-surface) 34%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(61, 107, 79, 0.045) 0%,
+    var(--bg-surface) 34%
+  );
 }
 
 .trend-chart-card--weak {
   border-color: rgba(158, 123, 59, 0.34);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(158, 123, 59, 0.08) 0%,
-      var(--bg-surface) 34%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(158, 123, 59, 0.08) 0%,
+    var(--bg-surface) 34%
+  );
 }
 
 .trend-chart-card--neutral {
   border-color: var(--border-subtle);
 }
 
-
-/* Chart header */
+/* ========================================
+   Chart Header
+   ======================================== */
 
 .trend-chart-card__header {
   display: flex;
@@ -651,8 +662,9 @@
   line-height: 1.4;
 }
 
-
-/* Trend-status badge */
+/* ========================================
+   Regime Badge
+   ======================================== */
 
 .trend-chart-card__regime {
   display: inline-flex;
@@ -684,11 +696,18 @@
 
 .trend-chart-card__regime--weakening {
   border-color: rgba(158, 123, 59, 0.35);
-  background: rgba(158, 123, 59, 0.10);
+  background: rgba(158, 123, 59, 0.1);
   color: var(--warning);
 }
 
-.trend-chart-card__regime--neutral_bearish,
+/*
+  `neutral_mixed` is emitted by:
+  getTrendRegime() -> regime.key.toLowerCase()
+
+  This selector must exist because the previous CSS only included
+  neutral_bearish, which your JavaScript does not generate.
+*/
+.trend-chart-card__regime--neutral_mixed,
 .trend-chart-card__regime--insufficient_data {
   border-color: var(--border-subtle);
   background: var(--bg-elevated);
@@ -696,13 +715,14 @@
 }
 
 .trend-chart-card__regime--error {
-  border-color: rgba(139, 46, 46, 0.30);
+  border-color: rgba(139, 46, 46, 0.3);
   background: rgba(139, 46, 46, 0.08);
   color: #8b2e2e;
 }
 
-
-/* Live quote */
+/* ========================================
+   Live Quote
+   ======================================== */
 
 .trend-chart-card__quote {
   display: flex;
@@ -740,8 +760,9 @@
   color: var(--text-muted);
 }
 
-
-/* Moving-average legend and status */
+/* ========================================
+   Moving-Average Legend
+   ======================================== */
 
 .trend-chart-card__indicator {
   display: flex;
@@ -779,16 +800,19 @@
   flex: 0 0 auto;
 }
 
+/* Matches PALETTE.movingAverages.fast in trendmap.js */
 .trend-chart-card__indicator-dot--fast {
-  background: #9e7b3b;
+  background: #b8860b;
 }
 
+/* Matches PALETTE.movingAverages.slow in trendmap.js */
 .trend-chart-card__indicator-dot--slow {
-  background: #3a3a3a;
+  background: #2a4a38;
 }
 
-
-/* Lightweight Chart canvas */
+/* ========================================
+   Lightweight Charts Canvas
+   ======================================== */
 
 .trend-chart-card__canvas-wrap {
   position: relative;
@@ -823,16 +847,34 @@
   display: flex;
 }
 
+/* ========================================
+   Responsive Layout
+   ======================================== */
 
-/* Responsive */
-
-@media (max-width: 1180px) {
-  .trend-map-charts__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/*
+  At this width, SPY and NVDA remain side-by-side.
+  QQQ remains the full-width main chart.
+*/
+@media (max-width: 1100px) {
+  .trend-chart-card[data-symbol="QQQ"] {
+    grid-column: span 12;
   }
 
-  .trend-chart-card:last-child {
-    grid-column: span 2;
+  .trend-chart-card[data-symbol="SPY"],
+  .trend-chart-card[data-symbol="NVDA"] {
+    grid-column: span 6;
+  }
+}
+
+/*
+  At narrower tablet widths, chart readability is more important
+  than fitting two cards in one row.
+*/
+@media (max-width: 920px) {
+  .trend-chart-card[data-symbol="QQQ"],
+  .trend-chart-card[data-symbol="SPY"],
+  .trend-chart-card[data-symbol="NVDA"] {
+    grid-column: span 12;
   }
 }
 
@@ -844,14 +886,6 @@
 
   .trend-map-charts__legend {
     width: 100%;
-  }
-
-  .trend-map-charts__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .trend-chart-card:last-child {
-    grid-column: auto;
   }
 
   .trend-chart-card {
@@ -874,6 +908,23 @@
 
   .trend-chart-card__indicator-item:last-child {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .trend-chart-card__header {
+    flex-direction: column;
+  }
+
+  .trend-chart-card__quote {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .trend-chart-card__canvas-wrap,
+  .trend-chart-card__canvas {
+    min-height: 270px;
+    height: 270px;
   }
 }
 
