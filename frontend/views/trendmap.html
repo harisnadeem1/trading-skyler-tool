@@ -68,5 +68,192 @@
         <p id="trendMapWarningText" class="trend-warning__text ronin-warning"></p>
       </article>
     </div>
+    <!-- Live Trend Charts -->
+<section class="trend-map-charts" aria-labelledby="trendMapChartsTitle">
+  <div class="trend-map-charts__header">
+    <div>
+      <p class="trend-map-charts__eyebrow">Market Structure</p>
+      <h2 class="trend-map-charts__title" id="trendMapChartsTitle">
+        Live Trend Charts
+      </h2>
+      <p class="trend-map-charts__subtitle">
+        Daily structure using the ChillLax 10 / 20 moving-average trend model.
+      </p>
+    </div>
+
+    <div class="trend-map-charts__legend" aria-label="Trend state legend">
+      <span class="trend-map-charts__legend-item trend-map-charts__legend-item--strong">
+        Strong bullish
+      </span>
+      <span class="trend-map-charts__legend-item trend-map-charts__legend-item--early">
+        Early bullish
+      </span>
+      <span class="trend-map-charts__legend-item trend-map-charts__legend-item--weak">
+        Weakening
+      </span>
+    </div>
+  </div>
+
+  <div class="trend-map-charts__grid">
+    <article class="trend-chart-card ronin-card" data-symbol="QQQ">
+      <div class="trend-chart-card__header">
+        <div>
+          <div class="trend-chart-card__symbol-row">
+            <h3 class="trend-chart-card__symbol">QQQ</h3>
+            <span
+              class="trend-chart-card__regime trend-chart-card__regime--loading"
+              data-role="regime"
+            >
+              Loading
+            </span>
+          </div>
+
+          <p class="trend-chart-card__name">
+            Invesco QQQ Trust
+          </p>
+        </div>
+
+        <div class="trend-chart-card__quote">
+          <span class="trend-chart-card__price" data-role="price">—</span>
+          <span class="trend-chart-card__change" data-role="change">—</span>
+        </div>
+      </div>
+
+      <div class="trend-chart-card__indicator">
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--fast"></i>
+          10 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--slow"></i>
+          20 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item" data-role="trend-summary">
+          Calculating trend…
+        </span>
+      </div>
+
+      <div class="trend-chart-card__canvas-wrap">
+        <div class="trend-chart-card__loading" data-role="loading">
+          Loading QQQ chart…
+        </div>
+
+        <div
+          id="trendMapChartQQQ"
+          class="trend-chart-card__canvas"
+          aria-label="QQQ daily trend chart"
+        ></div>
+      </div>
+    </article>
+
+    <article class="trend-chart-card ronin-card" data-symbol="SPY">
+      <div class="trend-chart-card__header">
+        <div>
+          <div class="trend-chart-card__symbol-row">
+            <h3 class="trend-chart-card__symbol">SPY</h3>
+            <span
+              class="trend-chart-card__regime trend-chart-card__regime--loading"
+              data-role="regime"
+            >
+              Loading
+            </span>
+          </div>
+
+          <p class="trend-chart-card__name">
+            SPDR S&amp;P 500 ETF Trust
+          </p>
+        </div>
+
+        <div class="trend-chart-card__quote">
+          <span class="trend-chart-card__price" data-role="price">—</span>
+          <span class="trend-chart-card__change" data-role="change">—</span>
+        </div>
+      </div>
+
+      <div class="trend-chart-card__indicator">
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--fast"></i>
+          10 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--slow"></i>
+          20 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item" data-role="trend-summary">
+          Calculating trend…
+        </span>
+      </div>
+
+      <div class="trend-chart-card__canvas-wrap">
+        <div class="trend-chart-card__loading" data-role="loading">
+          Loading SPY chart…
+        </div>
+
+        <div
+          id="trendMapChartSPY"
+          class="trend-chart-card__canvas"
+          aria-label="SPY daily trend chart"
+        ></div>
+      </div>
+    </article>
+
+    <article class="trend-chart-card ronin-card" data-symbol="NVDA">
+      <div class="trend-chart-card__header">
+        <div>
+          <div class="trend-chart-card__symbol-row">
+            <h3 class="trend-chart-card__symbol">NVDA</h3>
+            <span
+              class="trend-chart-card__regime trend-chart-card__regime--loading"
+              data-role="regime"
+            >
+              Loading
+            </span>
+          </div>
+
+          <p class="trend-chart-card__name">
+            NVIDIA Corporation
+          </p>
+        </div>
+
+        <div class="trend-chart-card__quote">
+          <span class="trend-chart-card__price" data-role="price">—</span>
+          <span class="trend-chart-card__change" data-role="change">—</span>
+        </div>
+      </div>
+
+      <div class="trend-chart-card__indicator">
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--fast"></i>
+          10 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--slow"></i>
+          20 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item" data-role="trend-summary">
+          Calculating trend…
+        </span>
+      </div>
+
+      <div class="trend-chart-card__canvas-wrap">
+        <div class="trend-chart-card__loading" data-role="loading">
+          Loading NVDA chart…
+        </div>
+
+        <div
+          id="trendMapChartNVDA"
+          class="trend-chart-card__canvas"
+          aria-label="NVDA daily trend chart"
+        ></div>
+      </div>
+    </article>
+  </div>
+</section>
   </div>
 </section>

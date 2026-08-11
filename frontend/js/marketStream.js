@@ -123,6 +123,38 @@ function ensureStream() {
     });
   });
 
+  eventSource.addEventListener('price-update', (event) => {
+  const payload = parseEventData(event);
+  if (!payload) return;
+
+  const symbol = normalizeSymbol(payload.symbol);
+  const price = Number(payload.price);
+
+  if (!symbol || !(price > 0)) return;
+
+  const update = {
+    symbol,
+    price,
+    raw: payload,
+    updatedAt: payload.updatedAt || new Date().toISOString(),
+    receivedAt: Date.now(),
+  };
+
+  latestPriceBySymbol.set(symbol, update);
+
+  const listeners = listenersBySymbol.get(symbol);
+
+  if (!listeners || listeners.size === 0) return;
+
+  listeners.forEach((cb) => {
+    try {
+      cb(update);
+    } catch (error) {
+      console.error('[marketStream] price-update listener error', error);
+    }
+  });
+});
+
   eventSource.addEventListener('trade-alert', (event) => {
     const payload = parseEventData(event);
     if (!payload) return;

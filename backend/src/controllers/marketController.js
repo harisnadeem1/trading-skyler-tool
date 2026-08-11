@@ -3,6 +3,7 @@ const {
   getTrackedSymbols,
   reloadOpenTrades,
   getAllTrackedTrades,
+  getTrendMapSymbols,
   normalizeSymbol,
 } = require('../services/marketData/subscriptionManager');
 const { runSnapshotCycle } = require('../services/marketData/snapshotService');
@@ -144,6 +145,24 @@ function sendInitialTradeSnapshot(res, userId) {
   // );
 }
 
+function sendInitialTrendMapSnapshot(res) {
+  const symbols = getTrendMapSymbols();
+
+  for (const symbol of symbols) {
+    const cached = getPrice(symbol);
+    const price = Number(cached?.price);
+
+    if (!(price > 0)) continue;
+
+    sendToClient(res, 'price-update', {
+      symbol,
+      price,
+      updatedAt: cached.updatedAt || cached.timestamp || new Date().toISOString(),
+      snapshot: true,
+    });
+  }
+}
+
 async function streamMarket(req, res) {
   const userId = req.user?.id ?? req.user?.userId ?? null;
 
@@ -172,6 +191,7 @@ async function streamMarket(req, res) {
   });
 
   sendInitialTradeSnapshot(res, userId);
+sendInitialTrendMapSnapshot(res);
 
   const heartbeat = setInterval(() => {
     if (!res.writableEnded) {

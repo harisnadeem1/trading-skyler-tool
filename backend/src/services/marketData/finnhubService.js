@@ -2,7 +2,12 @@ const WebSocket = require('ws');
 const { setPrice, getPrice, hasFreshPrice } = require('./priceCache');
 const { emitTradeUpdatesForSymbol } = require('./liveTradeEmitter');
 const { processLivePriceUpdate } = require('./tradeMonitorService');
-const { getTradesForSymbol } = require('./subscriptionManager');
+const {
+  getTradesForSymbol,
+  isTrendMapSymbol,
+} = require('./subscriptionManager');
+
+const { broadcast } = require('./liveStream');
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const ENABLE_FINNHUB_WS = process.env.ENABLE_FINNHUB_WS === 'true';
@@ -30,6 +35,20 @@ let manuallyStopped = false;
 
 function normalizeSymbol(symbol) {
   return String(symbol || '').trim().toUpperCase();
+}
+
+function emitTrendMapPrice(symbol, price, timestamp) {
+  const normalized = normalizeSymbol(symbol);
+  const numericPrice = Number(price);
+
+  if (!isTrendMapSymbol(normalized)) return;
+  if (!(numericPrice > 0)) return;
+
+  broadcast('price-update', {
+    symbol: normalized,
+    price: numericPrice,
+    updatedAt: timestamp || new Date().toISOString(),
+  });
 }
 
 function clearSymbolFailureState(symbol) {
@@ -157,13 +176,17 @@ async function refreshSymbolFromQuote(symbol) {
     const previousPrice = Number(cached?.price);
     const priceChanged = !Number.isFinite(previousPrice) || previousPrice !== price;
 
-    setPrice(normalized, price, timestamp);
+setPrice(normalized, price, timestamp);
 
-    const trades = getTradesForSymbol(normalized);
+if (priceChanged) {
+  emitTrendMapPrice(normalized, price, timestamp);
+}
 
-    if (!priceChanged) {
-      return;
-    }
+const trades = getTradesForSymbol(normalized);
+
+if (!priceChanged) {
+  return;
+}
 
     console.log(`[finnhubService] REST quote refresh ${normalized} @ ${price} | matched trades: ${trades.length}`);
 
@@ -324,9 +347,11 @@ function connect(onPrice) {
         if (!symbol || typeof price !== 'number') continue;
 
         clearSymbolFailureState(symbol);
-        setPrice(symbol, price, timestamp);
+setPrice(symbol, price, timestamp);
 
-        const trades = getTradesForSymbol(symbol);
+emitTrendMapPrice(symbol, price, timestamp);
+
+const trades = getTradesForSymbol(symbol);
 
         emitTradeUpdatesForSymbol(symbol, price, trades);
 

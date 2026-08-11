@@ -2,6 +2,12 @@ const pool = require('../../config/db');
 
 const symbolTradeMap = new Map();
 let finnhubServiceRef = null;
+const TREND_MAP_SYMBOLS = new Set([
+  'QQQ',
+  'SPY',
+  'NVDA',
+]);
+let activeSubscriptionSymbols = new Set();
 
 function getFinnhubService() {
   if (!finnhubServiceRef) {
@@ -77,9 +83,14 @@ async function reloadOpenTrades() {
     });
   }
 
-  const previousSymbols = new Set(symbolTradeMap.keys());
-  const nextSymbols = new Set(nextMap.keys());
-  const finnhubService = getFinnhubService();
+ const previousSymbols = new Set(activeSubscriptionSymbols);
+
+const nextSymbols = new Set([
+  ...nextMap.keys(),
+  ...TREND_MAP_SYMBOLS,
+]);
+
+const finnhubService = getFinnhubService();
 
   for (const symbol of nextSymbols) {
     if (!previousSymbols.has(symbol)) {
@@ -98,6 +109,7 @@ async function reloadOpenTrades() {
   for (const [symbol, trades] of nextMap.entries()) {
     symbolTradeMap.set(symbol, trades);
   }
+  activeSubscriptionSymbols = nextSymbols;
 
   return rows;
 }
@@ -108,7 +120,7 @@ function getTradesForSymbol(symbol) {
 }
 
 function getTrackedSymbols() {
-  return Array.from(symbolTradeMap.keys());
+  return Array.from(activeSubscriptionSymbols);
 }
 
 function getTrackedSymbolCount() {
@@ -137,7 +149,13 @@ async function refreshSubscriptions() {
 
   return trades;
 }
+function getTrendMapSymbols() {
+  return Array.from(TREND_MAP_SYMBOLS);
+}
 
+function isTrendMapSymbol(symbol) {
+  return TREND_MAP_SYMBOLS.has(normalizeSymbol(symbol));
+}
 module.exports = {
   reloadOpenTrades,
   getTradesForSymbol,
@@ -150,4 +168,6 @@ module.exports = {
   normalizeSymbol,
   isLiveEligibleTrade,
   getTradeSymbol,
+  getTrendMapSymbols,
+isTrendMapSymbol,
 };
