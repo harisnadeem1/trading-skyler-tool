@@ -328,7 +328,6 @@ function connect(onPrice) {
     try {
       const payload = JSON.parse(buffer.toString());
 
-      console.log('[finnhub] raw WS payload:', payload);
       if (payload.type === 'ping') {
         return;
       }
