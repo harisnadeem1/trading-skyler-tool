@@ -225,6 +225,11 @@ function computeComponentPctAbove20MA(componentHistoryMap) {
 
 function deriveNHNLSignal(breadthSeries, lookback = 5) {
   if (!Array.isArray(breadthSeries) || breadthSeries.length < lookback + 1) {
+    console.warn('[TREND MAP][SIGNAL 6] Insufficient breadth series', {
+      breadthSeriesLength: breadthSeries?.length || 0,
+      requiredLength: lookback + 1,
+    });
+
     return 'NO';
   }
 
@@ -233,31 +238,57 @@ function deriveNHNLSignal(breadthSeries, lookback = 5) {
     .filter((value) => value !== null);
 
   if (values.length < lookback + 1) {
+    console.warn('[TREND MAP][SIGNAL 6] Insufficient valid NHNL values', {
+      validValues: values.length,
+      requiredValues: lookback + 1,
+    });
+
     return 'NO';
   }
 
   const latest = values[values.length - 1];
+  const previous = values[values.length - 2];
 
   const currentAverage = sma(values, lookback);
   const previousAverage = sma(values.slice(0, -1), lookback);
 
   if (currentAverage === null || previousAverage === null) {
+    console.warn('[TREND MAP][SIGNAL 6] NHNL moving averages unavailable', {
+      latest,
+      previous,
+      currentAverage,
+      previousAverage,
+    });
+
     return 'NO';
   }
 
   const averageRising = currentAverage > previousAverage;
   const aboveAverage = latest > currentAverage;
-  const improvingVsPriorDay = latest > values[values.length - 2];
+  const improvingVsPriorDay = latest > previous;
+
+  let signal = 'NO';
 
   if (aboveAverage && averageRising) {
-    return 'YES';
+    signal = 'YES';
+  } else if (averageRising || improvingVsPriorDay) {
+    signal = 'ATTEMPT';
   }
 
-  if (averageRising || improvingVsPriorDay) {
-    return 'ATTEMPT';
-  }
+  console.log('[TREND MAP][SIGNAL 6] NHNL evaluation', {
+    lookback,
+    recentNHNL: values.slice(-(lookback + 5)),
+    latest,
+    previous,
+    currentAverage,
+    previousAverage,
+    averageRising,
+    aboveAverage,
+    improvingVsPriorDay,
+    result: signal,
+  });
 
-  return 'NO';
+  return signal;
 }
 
 function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired = 80) {
@@ -427,6 +458,25 @@ if (
 }
 
 const signal6 = deriveNHNLSignal(breadthSeries, 5);
+
+console.log(
+  '[TREND MAP][SIGNAL 6] Latest NHNL breadth rows:',
+  breadthSeries.slice(-10).map((row) => ({
+    date: row.date,
+    new52WkHighs: row.new52WkHighs,
+    new52WkLows: row.new52WkLows,
+    nhnl: row.nhnl,
+  }))
+);
+
+console.log('[TREND MAP][SIGNAL 6] Final result', {
+  signal6,
+  latestDate: latest.date,
+  latestNew52WkHighs: latest.new52WkHighs,
+  latestNew52WkLows: latest.new52WkLows,
+  latestNHNL: latest.nhnl,
+  componentCount: symbols.length,
+});
 
   const signal7 = (
     latest.mcClellanOscillator !== null &&
