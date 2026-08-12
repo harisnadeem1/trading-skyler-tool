@@ -70,6 +70,7 @@ class TrendMapView {
       { symbol: 'QQQ', name: 'Invesco QQQ Trust' },
       { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust' },
       { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+      { symbol: 'IWM', name: 'iShares Russell 2000 ETF' },
     ];
 
     this.charts = new Map();

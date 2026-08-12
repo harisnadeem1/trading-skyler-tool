@@ -557,12 +557,11 @@
   min-width: 0;
 }
 
-.trend-chart-card[data-symbol="QQQ"] {
-  grid-column: span 12;
-}
-
+/* Each ticker occupies half the available row width */
+.trend-chart-card[data-symbol="QQQ"],
 .trend-chart-card[data-symbol="SPY"],
-.trend-chart-card[data-symbol="NVDA"] {
+.trend-chart-card[data-symbol="NVDA"],
+.trend-chart-card[data-symbol="IWM"] {
   grid-column: span 6;
 }
 
@@ -871,9 +870,10 @@
   than fitting two cards in one row.
 */
 @media (max-width: 920px) {
-  .trend-chart-card[data-symbol="QQQ"],
+ .trend-chart-card[data-symbol="QQQ"],
   .trend-chart-card[data-symbol="SPY"],
-  .trend-chart-card[data-symbol="NVDA"] {
+  .trend-chart-card[data-symbol="NVDA"],
+  .trend-chart-card[data-symbol="IWM"] {
     grid-column: span 12;
   }
 }

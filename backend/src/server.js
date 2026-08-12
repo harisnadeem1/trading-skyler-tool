@@ -47,12 +47,7 @@ async function startServer() {
 
 
     require('dotenv').config();
-console.log({
-  key: JSON.stringify(process.env.IBKR_CONSUMER_KEY),
-  keyLen: process.env.IBKR_CONSUMER_KEY?.length,
-  token: JSON.stringify(process.env.IBKR_ACCESS_TOKEN),
-  tokenLen: process.env.IBKR_ACCESS_TOKEN?.length,
-});
+
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

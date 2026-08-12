@@ -6,6 +6,7 @@ const TREND_MAP_SYMBOLS = new Set([
   'QQQ',
   'SPY',
   'NVDA',
+  'IWM',
 ]);
 let activeSubscriptionSymbols = new Set();
 

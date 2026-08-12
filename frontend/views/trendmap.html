@@ -55,9 +55,17 @@
       </article>
 
       <article class="trend-card trend-card--signals ronin-card">
-        <div class="trend-card__head ronin-card__head">
-          <h3 class="trend-card__title ronin-card__title">Seven Signals</h3>
-        </div>
+       <div class="trend-card__head ronin-card__head">
+  <div>
+    <h3 class="trend-card__title ronin-card__title">
+      Market Regime Scorecard
+    </h3>
+
+    <span class="trend-card__meta ronin-card__meta">
+      Seven independent market-health checks
+    </span>
+  </div>
+</div>
         <div id="trendMapSignalsGrid" class="trend-signals-grid ronin-signals-grid"></div>
       </article>
 
@@ -250,6 +258,59 @@
           id="trendMapChartNVDA"
           class="trend-chart-card__canvas"
           aria-label="NVDA daily trend chart"
+        ></div>
+      </div>
+    </article>
+
+     <article class="trend-chart-card ronin-card" data-symbol="IWM">
+      <div class="trend-chart-card__header">
+        <div>
+          <div class="trend-chart-card__symbol-row">
+            <h3 class="trend-chart-card__symbol">IWM</h3>
+            <span
+              class="trend-chart-card__regime trend-chart-card__regime--loading"
+              data-role="regime"
+            >
+              Loading
+            </span>
+          </div>
+
+          <p class="trend-chart-card__name">
+            iShares Russell 2000 ETF
+          </p>
+        </div>
+
+        <div class="trend-chart-card__quote">
+          <span class="trend-chart-card__price" data-role="price">—</span>
+          <span class="trend-chart-card__change" data-role="change">—</span>
+        </div>
+      </div>
+
+      <div class="trend-chart-card__indicator">
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--fast"></i>
+          10 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item">
+          <i class="trend-chart-card__indicator-dot trend-chart-card__indicator-dot--slow"></i>
+          20 SMA
+        </span>
+
+        <span class="trend-chart-card__indicator-item" data-role="trend-summary">
+          Calculating trend…
+        </span>
+      </div>
+
+      <div class="trend-chart-card__canvas-wrap">
+        <div class="trend-chart-card__loading" data-role="loading">
+          Loading IWM chart…
+        </div>
+
+        <div
+          id="trendMapChartIWM"
+          class="trend-chart-card__canvas"
+          aria-label="IWM daily trend chart"
         ></div>
       </div>
     </article>

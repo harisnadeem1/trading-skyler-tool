@@ -345,6 +345,7 @@ function connect(onPrice) {
           : new Date().toISOString();
 
         if (!symbol || typeof price !== 'number') continue;
+         console.log(`[FINNHUB LIVE] ${symbol} | ${price} | ${timestamp}`);
 
         clearSymbolFailureState(symbol);
 setPrice(symbol, price, timestamp);
@@ -524,14 +525,7 @@ async function fetchHistory(symbol, range = '1y', interval = '1d') {
     `&to=${end}` +
     `&token=${FINNHUB_API_KEY}`;
 
-  console.log('Finnhub history request:', {
-    symbol: normalized,
-    range,
-    interval,
-    resolution,
-    start,
-    end,
-  });
+ 
 
   const response = await fetch(url);
 
