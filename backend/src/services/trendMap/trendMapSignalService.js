@@ -457,7 +457,10 @@ if (
   signal1 = latest.mcClellanSummationIndex > 0 ? 'YES' : 'ATTEMPT';
 }
 
-const signal6 = deriveNHNLSignal(breadthSeries, 5);
+const signal6 = (
+  latest.nhnl !== null &&
+  latest.nhnl > 0
+) ? 'YES' : 'NO';
 
 console.log(
   '[TREND MAP][SIGNAL 6] Latest NHNL breadth rows:',
