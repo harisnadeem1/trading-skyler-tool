@@ -28,7 +28,7 @@ const RECENT_TRADES_LIMIT = 5;
 // all requests and only ever rebuilt on TTL expiry or a forced refresh.
 // -----------------------------------------------------------------------
 const MARKET_CACHE_KEY = 'trend-map:market';
-const MARKET_CACHE_TTL_MS = 5 * 60 * 1000;
+const MARKET_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const marketSnapshotCache = new Map();
 let marketSnapshotInFlight = null;
@@ -312,44 +312,80 @@ async function buildMarketSnapshot() {
 // - If a rebuild fails and there is no previous snapshot to fall back
 //   on, the error propagates -- callers must not fabricate zero values.
 // -----------------------------------------------------------------------
-async function getGlobalMarketSnapshot({ forceRefresh = false } = {}) {
-  const nowMs = Date.now();
 
-  if (!forceRefresh) {
-    const cached = marketSnapshotCache.get(MARKET_CACHE_KEY);
-    if (cached && nowMs < cached.expiresAtMs) {
-      return cached;
-    }
-  }
-
+function refreshMarketSnapshotInBackground() {
   if (marketSnapshotInFlight) {
     return marketSnapshotInFlight;
   }
 
+
   marketSnapshotInFlight = buildMarketSnapshot()
     .then((snapshot) => {
       marketSnapshotCache.set(MARKET_CACHE_KEY, snapshot);
+
+     
+
       return snapshot;
     })
     .catch((error) => {
-      const stale = marketSnapshotCache.get(MARKET_CACHE_KEY);
+      console.error(
+        '[TREND MAP] Background snapshot refresh failed:',
+        error.message
+      );
 
-      if (stale) {
-        console.warn('[TREND MAP] market snapshot refresh failed, serving stale snapshot:', error.message);
-        return {
-          ...stale,
-          stale: true,
-          staleError: error.message,
-        };
-      }
-
-      throw error;
+      return null;
     })
     .finally(() => {
       marketSnapshotInFlight = null;
     });
 
   return marketSnapshotInFlight;
+}
+
+
+async function getGlobalMarketSnapshot({ forceRefresh = false } = {}) {
+  const nowMs = Date.now();
+  const cached = marketSnapshotCache.get(MARKET_CACHE_KEY);
+
+  /*
+   * Cache is still fresh: respond immediately.
+   */
+  if (cached && !forceRefresh && nowMs < cached.expiresAtMs) {
+    return cached;
+  }
+
+  /*
+   * Cache exists but is expired, or an explicit refresh was requested.
+   *
+   * Return the existing snapshot immediately. Do not make the frontend
+   * wait for 101 Finnhub requests. Start a single background refresh.
+   */
+  if (cached) {
+    void refreshMarketSnapshotInBackground();
+
+    return {
+      ...cached,
+      stale: true,
+      staleError: forceRefresh
+        ? 'Trend Map refresh started in the background.'
+        : 'Market data refresh started in the background.',
+    };
+  }
+
+  /*
+   * No cache exists in RAM. This happens only after PM2/backend restart.
+   *
+   * If warmTrendMapCache() has already started the build, this joins its
+   * existing Promise. Otherwise, it starts one build and waits for it.
+   */
+  return refreshMarketSnapshotInBackground();
+}
+
+
+function warmTrendMapCache() {
+  console.log('[TREND MAP] Warming Trend Map cache after server startup');
+
+  void refreshMarketSnapshotInBackground();
 }
 
 // -----------------------------------------------------------------------
@@ -472,6 +508,7 @@ module.exports = {
   getTrendMapSnapshot,
   refreshTrendMapSnapshot,
   getGlobalMarketSnapshot,
+   warmTrendMapCache,
   getRecentClosedTrades,
   deriveSignal5FromTrades,
   resolveSignal5Value,

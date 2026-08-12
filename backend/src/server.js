@@ -3,6 +3,10 @@ require('dotenv').config();
 const app = require('./app');
 const pool = require('./config/db');
 
+const {
+  warmTrendMapCache,
+} = require('./services/trendMap/trendMapDataService');
+
 const finnhubService = require('./services/marketData/finnhubService');
 const { reloadOpenTrades } = require('./services/marketData/subscriptionManager');
 const { startTradeSnapshotJob } = require('./jobs/tradeSnapshotJob');
@@ -16,6 +20,8 @@ async function startServer() {
   try {
     await pool.query('SELECT NOW()');
     console.log('Database connection verified');
+    warmTrendMapCache();
+console.log('Trend Map market cache warm-up started in background');
 
     const openTrades = await reloadOpenTrades();
     console.log(`Loaded ${openTrades.length} open/trimmed trade(s) for live monitoring`);
