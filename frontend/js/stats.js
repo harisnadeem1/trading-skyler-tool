@@ -47,7 +47,6 @@ class Stats {
   refresh() {
     this.calculate();
     this.render();
-    this.renderEquityCurve();
   }
 
   calculate() {

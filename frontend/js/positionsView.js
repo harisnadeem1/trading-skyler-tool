@@ -56,8 +56,13 @@ class PositionsView {
       goToDashboard: document.getElementById('positionsGoToDashboard'),
 
       // Filter buttons
-      filterButtons: document.querySelectorAll('.positions-view .filter-btn'),
-      addTradeBtn: document.getElementById('positionsAddTradeBtn'),
+      filterToggle: document.getElementById('positionsFilterToggle'),
+filterMenu: document.getElementById('positionsFilterMenu'),
+filterBackdrop: document.getElementById('positionsFilterBackdrop'),
+filterClose: document.getElementById('positionsFilterClose'),
+filterButtons: document.querySelectorAll('.positions-view .filter-btn'),
+
+addTradeBtn: document.getElementById('positionsAddTradeBtn'),
       emptyAddTradeBtn: document.getElementById('positionsEmptyAddTradeBtn'),
       addModal: document.getElementById('positionsAddTradeModal'),
       addOverlay: document.getElementById('positionsAddTradeOverlay'),
@@ -95,11 +100,30 @@ class PositionsView {
       });
     }
 
-    this.elements.filterButtons.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        this.setFilter(e.currentTarget.dataset.filter);
-      });
-    });
+this.elements.filterButtons.forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    this.setFilter(e.currentTarget.dataset.filter);
+    this.closeFilterMenu();
+  });
+});
+
+if (this.elements.filterToggle) {
+  this.elements.filterToggle.addEventListener('click', () => {
+    this.openFilterMenu();
+  });
+}
+
+if (this.elements.filterClose) {
+  this.elements.filterClose.addEventListener('click', () => {
+    this.closeFilterMenu();
+  });
+}
+
+if (this.elements.filterBackdrop) {
+  this.elements.filterBackdrop.addEventListener('click', () => {
+    this.closeFilterMenu();
+  });
+}
 
     if (this.elements.addTradeBtn) {
       this.elements.addTradeBtn.addEventListener('click', () => {
@@ -191,16 +215,18 @@ class PositionsView {
     }
 
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape') return;
 
-      if (this.elements.addModal?.classList.contains('open')) {
-        this.closeAddTradeModal();
-      }
+  this.closeFilterMenu();
 
-      if (this.elements.chartModal?.classList.contains('open')) {
-        this.closeChartModal();
-      }
-    });
+  if (this.elements.addModal?.classList.contains('open')) {
+    this.closeAddTradeModal();
+  }
+
+  if (this.elements.chartModal?.classList.contains('open')) {
+    this.closeChartModal();
+  }
+});
   }
 
   setFilter(filter) {
@@ -213,6 +239,38 @@ class PositionsView {
 
     this.render();
   }
+
+openFilterMenu() {
+  const {
+    filterMenu,
+    filterBackdrop,
+    filterToggle
+  } = this.elements;
+
+  if (!filterMenu || !filterBackdrop || !filterToggle) return;
+
+  filterBackdrop.classList.add('is-open');
+  filterMenu.classList.add('is-open');
+
+  filterToggle.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+}
+
+closeFilterMenu() {
+  const {
+    filterMenu,
+    filterBackdrop,
+    filterToggle
+  } = this.elements;
+
+  if (!filterMenu || !filterBackdrop || !filterToggle) return;
+
+  filterBackdrop.classList.remove('is-open');
+  filterMenu.classList.remove('is-open');
+
+  filterToggle.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
 
  bindLiveTradeUpdates() {
   if (typeof this.tradeUpdatesUnsubscribe === 'function') {

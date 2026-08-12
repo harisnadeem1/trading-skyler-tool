@@ -752,7 +752,13 @@ class TrendMapView {
 
     this.applyTrendRegime(symbol, fastMA, slowMA);
 
-    const visibleBars = symbol === 'QQQ' ? 140 : 110;
+   const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+const visibleBars = isMobile
+  ? 40
+  : symbol === 'QQQ'
+    ? 70
+    : 70;
 
 chart.timeScale().setVisibleLogicalRange({
   from: Math.max(0, candles.length - visibleBars),

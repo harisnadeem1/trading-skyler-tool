@@ -1,5 +1,5 @@
 /**
- * Stats Chart - Canvas-based equity curve chart
+ * Stats Chart - TradingView Lightweight Charts equity curve
  */
 
 import { state } from './state.js';
@@ -7,51 +7,33 @@ import { stats } from './stats.js';
 
 class EquityChart {
   constructor() {
-    this.canvas = null;
-    this.ctx = null;
     this.container = null;
     this.emptyState = null;
     this.view = null;
-    this.dpr = window.devicePixelRatio || 1;
+
+    this.chart = null;
+    this.series = null;
+
     this.frameId = null;
-
-    this.colors = {
-      line: '#3A3A3A',
-      fill: 'rgba(158, 123, 59, 0.08)',
-      fillEnd: 'rgba(158, 123, 59, 0)',
-      profit: '#9E7B3B',
-      loss: '#6A4B3C',
-      grid: 'rgba(217, 207, 188, 0.35)',
-      text: '#5E574D',
-      axis: '#C5B79B'
-    };
-
-    this.lightColors = {
-      line: '#3A3A3A',
-      fill: 'rgba(158, 123, 59, 0.06)',
-      fillEnd: 'rgba(158, 123, 59, 0)',
-      profit: '#9E7B3B',
-      loss: '#6A4B3C',
-      grid: 'rgba(217, 207, 188, 0.25)',
-      text: '#5E574D',
-      axis: '#C5B79B'
-    };
+    this.resizeObserver = null;
   }
 
   init() {
-    this.canvas = document.getElementById('equityChartCanvas');
-    this.container = document.getElementById('equityChartContainer');
+    this.container = document.getElementById('equityChartCanvas');
     this.emptyState = document.getElementById('equityChartEmpty');
     this.view = document.getElementById('statsView');
 
-    if (!this.canvas || !this.container) {
-      console.warn('EquityChart: Required elements not found');
+    if (!this.container) {
+      console.warn('EquityChart: Chart container not found');
       return;
     }
 
-    this.ctx = this.canvas.getContext('2d');
-
-    window.addEventListener('resize', () => this.scheduleRender());
+    if (!window.LightweightCharts) {
+      console.error(
+        'EquityChart: Lightweight Charts is not loaded. Add the library script before your app scripts.'
+      );
+      return;
+    }
 
     state.on('viewChanged', (data) => {
       if (data.to === 'stats') {
@@ -65,6 +47,16 @@ class EquityChart {
     state.on('settingsChanged', () => this.scheduleRender());
     state.on('accountChanged', () => this.scheduleRender());
 
+    window.addEventListener('resize', () => this.scheduleRender(true));
+
+    if (window.ResizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.scheduleRender(true);
+      });
+
+      this.resizeObserver.observe(this.container);
+    }
+
     this.scheduleRender();
   }
 
@@ -73,6 +65,7 @@ class EquityChart {
     if (this.view.classList.contains('view--hidden')) return false;
 
     const rect = this.container.getBoundingClientRect();
+
     return rect.width > 0 && rect.height > 0;
   }
 
@@ -87,11 +80,7 @@ class EquityChart {
 
         if (!this.isVisible()) return;
 
-        if (forceResize) {
-          this.resize();
-        } else {
-          this.render();
-        }
+        this.render(forceResize);
       });
     });
   }
@@ -104,7 +93,7 @@ class EquityChart {
       attempts += 1;
 
       if (this.isVisible()) {
-        this.resize();
+        this.render(true);
         return;
       }
 
@@ -116,212 +105,271 @@ class EquityChart {
     requestAnimationFrame(tryRender);
   }
 
-  resize() {
-    if (!this.canvas || !this.container || !this.ctx) return;
-    if (!this.isVisible()) return;
-
-    const rect = this.container.getBoundingClientRect();
-    this.dpr = window.devicePixelRatio || 1;
-
-    const width = Math.max(1, Math.floor(rect.width));
-    const height = Math.max(1, Math.floor(rect.height));
-
-    this.canvas.width = width * this.dpr;
-    this.canvas.height = height * this.dpr;
-    this.canvas.style.width = `${width}px`;
-    this.canvas.style.height = `${height}px`;
-
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.scale(this.dpr, this.dpr);
-
-    this.render();
-  }
-
   getColors() {
-    const isLight = document.documentElement.dataset.theme === 'light';
-    return isLight ? this.lightColors : this.colors;
+    const rootStyles = getComputedStyle(document.documentElement);
+
+    return {
+      background:
+        rootStyles.getPropertyValue('--ronin-bg').trim() ||
+        rootStyles.getPropertyValue('--bg-surface').trim() ||
+        '#F6F1E7',
+
+      surface:
+        rootStyles.getPropertyValue('--bg-surface').trim() ||
+        '#F6F1E7',
+
+      text:
+        rootStyles.getPropertyValue('--ronin-text-secondary').trim() ||
+        rootStyles.getPropertyValue('--text-muted').trim() ||
+        '#5E574D',
+
+      line:
+        rootStyles.getPropertyValue('--ronin-chart-line').trim() ||
+        '#3A3A3A',
+
+      gold:
+        rootStyles.getPropertyValue('--ronin-gold').trim() ||
+        rootStyles.getPropertyValue('--primary').trim() ||
+        '#9E7B3B',
+
+      border:
+        rootStyles.getPropertyValue('--ronin-border').trim() ||
+        rootStyles.getPropertyValue('--border-subtle').trim() ||
+        '#D9CFBC',
+
+      grid: 'rgba(158, 123, 59, 0.14)'
+    };
   }
 
-  render() {
-    if (!this.ctx || !this.canvas || !this.container) return;
-    if (!this.isVisible()) return;
-
-    const rect = this.container.getBoundingClientRect();
-    const cssWidth = Math.max(1, Math.floor(rect.width));
-    const cssHeight = Math.max(1, Math.floor(rect.height));
-
-    if (
-      this.canvas.width !== cssWidth * this.dpr ||
-      this.canvas.height !== cssHeight * this.dpr
-    ) {
-      this.resize();
+  createChart() {
+    if (this.chart || !this.container || !window.LightweightCharts) {
       return;
     }
 
-    const data = stats.buildEquityCurve();
-    const width = this.canvas.width / this.dpr;
-    const height = this.canvas.height / this.dpr;
+    const { AreaSeries } = window.LightweightCharts;
     const colors = this.getColors();
 
-    this.ctx.clearRect(0, 0, width, height);
-    this.ctx.fillStyle = '#F6F1E7';
-    this.ctx.fillRect(0, 0, width, height);
+    this.container.innerHTML = '';
 
-    if (data.length < 2) {
+    this.chart = window.LightweightCharts.createChart(this.container, {
+      width: this.container.clientWidth || 600,
+      height: this.container.clientHeight || 300,
+      autoSize: true,
+
+      layout: {
+        background: { color: colors.background },
+        textColor: colors.text
+      },
+
+      grid: {
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid }
+      },
+
+      leftPriceScale: {
+        visible: false
+      },
+
+      rightPriceScale: {
+        visible: true,
+        borderColor: colors.border
+      },
+
+      timeScale: {
+        borderColor: colors.border,
+        timeVisible: false,
+        secondsVisible: false,
+        rightOffset: 4,
+        fixLeftEdge: true
+      },
+
+      crosshair: {
+        vertLine: {
+          color: 'rgba(158, 123, 59, 0.32)',
+          width: 1,
+          style: 2
+        },
+
+        horzLine: {
+          color: 'rgba(158, 123, 59, 0.32)',
+          width: 1,
+          style: 2
+        }
+      },
+
+      localization: {
+        priceFormatter: (price) => {
+          return `$${Number(price).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}`;
+        }
+      },
+
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false
+      },
+
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true
+      }
+    });
+
+    this.series = this.chart.addSeries(AreaSeries, {
+      lineColor: colors.line,
+      lineWidth: 2,
+
+      topColor: 'rgba(158, 123, 59, 0.30)',
+      bottomColor: 'rgba(158, 123, 59, 0.02)',
+
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+      crosshairMarkerBorderColor: colors.gold,
+      crosshairMarkerBackgroundColor: colors.surface,
+
+      lastValueVisible: true,
+      priceLineVisible: false,
+
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01
+      }
+    });
+  }
+
+  updateChartTheme() {
+    if (!this.chart || !this.series) return;
+
+    const colors = this.getColors();
+
+    this.chart.applyOptions({
+      layout: {
+        background: { color: colors.background },
+        textColor: colors.text
+      },
+
+      grid: {
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid }
+      },
+
+      rightPriceScale: {
+        borderColor: colors.border
+      },
+
+      timeScale: {
+        borderColor: colors.border
+      }
+    });
+
+    this.series.applyOptions({
+      lineColor: colors.line,
+      topColor: 'rgba(158, 123, 59, 0.30)',
+      bottomColor: 'rgba(158, 123, 59, 0.02)',
+      crosshairMarkerBorderColor: colors.gold,
+      crosshairMarkerBackgroundColor: colors.surface
+    });
+  }
+
+  resizeChart() {
+    if (!this.chart || !this.container) return;
+
+    const width = Math.max(1, Math.floor(this.container.clientWidth));
+    const height = Math.max(1, Math.floor(this.container.clientHeight));
+
+    this.chart.applyOptions({
+      width,
+      height
+    });
+  }
+
+  getChartData() {
+    const equityPoints = stats.buildEquityCurve();
+
+    const pointsByTime = new Map();
+
+    equityPoints.forEach((point) => {
+      const timestamp = Math.floor(
+        new Date(point.date).getTime() / 1000
+      );
+
+      const balance = Number(point.balance);
+
+      if (!Number.isFinite(timestamp) || !Number.isFinite(balance)) {
+        return;
+      }
+
+      /*
+       * Lightweight Charts requires times to be unique.
+       * If two trades share one timestamp, retain the latest balance.
+       */
+      pointsByTime.set(timestamp, {
+        time: timestamp,
+        value: balance
+      });
+    });
+
+    return [...pointsByTime.values()].sort((a, b) => a.time - b.time);
+  }
+
+  render(forceResize = false) {
+    if (!this.isVisible()) return;
+
+    this.createChart();
+
+    if (!this.chart || !this.series) return;
+
+    if (forceResize) {
+      this.resizeChart();
+    }
+
+    this.updateChartTheme();
+
+    const chartData = this.getChartData();
+
+    /*
+     * buildEquityCurve includes a starting account point.
+     * Less than two points means there is no realized trade curve yet.
+     */
+    if (chartData.length < 2) {
+      this.series.setData([]);
       this.showEmptyState(true);
       return;
     }
 
     this.showEmptyState(false);
 
-    const padding = {
-      top: 20,
-      right: 20,
-      bottom: 30,
-      left: 60
-    };
-
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-
-    if (chartWidth <= 0 || chartHeight <= 0) return;
-
-    const values = data.map((d) => d.balance);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const valueRange = maxValue - minValue || 1;
-
-    const paddedMin = minValue - valueRange * 0.1;
-    const paddedMax = maxValue + valueRange * 0.1;
-    const paddedRange = paddedMax - paddedMin || 1;
-
-    const dates = data.map((d) => d.date);
-    const minDate = Math.min(...dates);
-    const maxDate = Math.max(...dates);
-    const dateRange = maxDate - minDate || 1;
-
-    const scaleX = (date) =>
-      padding.left + ((date - minDate) / dateRange) * chartWidth;
-
-    const scaleY = (value) =>
-      padding.top + chartHeight - ((value - paddedMin) / paddedRange) * chartHeight;
-
-    this.drawGrid(padding, chartWidth, chartHeight, paddedMin, paddedMax, colors);
-    this.drawFill(data, scaleX, scaleY, padding, chartHeight, colors);
-    this.drawLine(data, scaleX, scaleY, colors);
-    this.drawPoints(data, scaleX, scaleY, colors);
-    this.drawYAxisLabels(padding, chartHeight, paddedMin, paddedMax, colors);
-  }
-
-  drawGrid(padding, chartWidth, chartHeight, minValue, maxValue, colors) {
-    this.ctx.strokeStyle = colors.grid;
-    this.ctx.lineWidth = 1;
-
-    for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (chartHeight / 4) * i;
-      this.ctx.beginPath();
-      this.ctx.moveTo(padding.left, y);
-      this.ctx.lineTo(padding.left + chartWidth, y);
-      this.ctx.stroke();
-    }
-  }
-
-  drawFill(data, scaleX, scaleY, padding, chartHeight, colors) {
-    if (data.length < 2) return;
-
-    const gradient = this.ctx.createLinearGradient(
-      0,
-      padding.top,
-      0,
-      padding.top + chartHeight
-    );
-    gradient.addColorStop(0, colors.fill);
-    gradient.addColorStop(1, colors.fillEnd);
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(scaleX(data[0].date), scaleY(data[0].balance));
-
-    for (let i = 1; i < data.length; i++) {
-      this.ctx.lineTo(scaleX(data[i].date), scaleY(data[i].balance));
-    }
-
-    this.ctx.lineTo(scaleX(data[data.length - 1].date), padding.top + chartHeight);
-    this.ctx.lineTo(scaleX(data[0].date), padding.top + chartHeight);
-    this.ctx.closePath();
-
-    this.ctx.fillStyle = gradient;
-    this.ctx.fill();
-  }
-
-  drawLine(data, scaleX, scaleY, colors) {
-    if (data.length < 2) return;
-
-    this.ctx.strokeStyle = colors.line;
-    this.ctx.lineWidth = 2;
-    this.ctx.lineJoin = 'round';
-    this.ctx.lineCap = 'round';
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(scaleX(data[0].date), scaleY(data[0].balance));
-
-    for (let i = 1; i < data.length; i++) {
-      this.ctx.lineTo(scaleX(data[i].date), scaleY(data[i].balance));
-    }
-
-    this.ctx.stroke();
-  }
-
-  drawPoints(data, scaleX, scaleY, colors) {
-    for (let i = 1; i < data.length; i++) {
-      const point = data[i];
-      const x = scaleX(point.date);
-      const y = scaleY(point.balance);
-
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, 4, 0, Math.PI * 2);
-      this.ctx.fillStyle = point.pnl >= 0 ? colors.profit : colors.loss;
-      this.ctx.fill();
-
-      this.ctx.strokeStyle = '#F6F1E7';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
-    }
-  }
-
-  drawYAxisLabels(padding, chartHeight, minValue, maxValue, colors) {
-    this.ctx.fillStyle = colors.text;
-    this.ctx.font = '11px Inter, sans-serif';
-    this.ctx.textAlign = 'right';
-    this.ctx.textBaseline = 'middle';
-
-    const valueRange = maxValue - minValue;
-    const step = valueRange / 4;
-
-    for (let i = 0; i <= 4; i++) {
-      const value = maxValue - step * i;
-      const y = padding.top + (chartHeight / 4) * i;
-      const label = this.formatCurrency(value);
-      this.ctx.fillText(label, padding.left - 8, y);
-    }
-  }
-
-  formatCurrency(value) {
-    const abs = Math.abs(value);
-
-    if (abs >= 1000000) {
-      return '$' + (value / 1000000).toFixed(1) + 'M';
-    } else if (abs >= 1000) {
-      return '$' + (value / 1000).toFixed(1) + 'k';
-    }
-    return '$' + value.toFixed(0);
+    this.series.setData(chartData);
+    this.chart.timeScale().fitContent();
   }
 
   showEmptyState(show) {
     if (this.emptyState) {
       this.emptyState.style.display = show ? 'flex' : 'none';
     }
-    if (this.canvas) {
-      this.canvas.style.display = show ? 'none' : 'block';
+  }
+
+  destroy() {
+    if (this.frameId) {
+      cancelAnimationFrame(this.frameId);
+      this.frameId = null;
+    }
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+
+    if (this.chart) {
+      this.chart.remove();
+      this.chart = null;
+      this.series = null;
     }
   }
 }

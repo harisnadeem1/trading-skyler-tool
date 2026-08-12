@@ -1,103 +1,146 @@
- <section class="journal-view view--hidden" id="journalView">
-        <div class="journal-header">
-          <div class="journal-header__left">
-            <div>
-              <span class="journal-header__subtitle" id="journalCount">0 trades</span>
-            </div>
-          </div>
-          <div class="journal-header__filters">
-            <button class="filter-btn filter-btn--active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="open">Open</button>
-            <button class="filter-btn" data-filter="trimmed">Trimmed</button>
-            <button class="filter-btn" data-filter="closed">Closed</button>
-            <button class="filter-btn" data-filter="winners">Winners</button>
-            <button class="filter-btn" data-filter="losers">Losers</button>
-          </div>
-        </div>
+<section class="journal-view view--hidden" id="journalView">
+  <div class="journal-header">
+    <div class="journal-header__left">
+      <div>
+        <span class="journal-header__subtitle" id="journalCount">0 trades</span>
+      </div>
+    </div>
+    <!-- Mobile filter trigger -->
+    <button class="journal-filter-toggle" id="journalFilterToggle" type="button" aria-label="Open journal filters"
+      aria-expanded="false" aria-controls="journalFilterMenu">
+      <i data-lucide="list-filter"></i>
+    </button>
 
-        <!-- Summary Bar -->
-        <div class="journal-summary-bar" id="journalSummaryBar">
-          <div class="journal-summary-bar__item journal-summary-bar__item--hero">
-            <span class="journal-summary-bar__label"><i data-lucide="wallet"></i> Total P&L</span>
-            <span class="journal-summary-bar__value journal-summary-bar__value--lg" id="journalTotalPnL">$0.00</span>
-          </div>
-          <div class="journal-summary-bar__item">
-            <span class="journal-summary-bar__label"><i data-lucide="trending-up"></i> Win Rate</span>
-            <span class="journal-summary-bar__value" id="journalWinRate">—</span>
-          </div>
-          <div class="journal-summary-bar__divider"></div>
-          <div class="journal-summary-bar__item">
-            <span class="journal-summary-bar__label"><i data-lucide="trophy"></i> Wins</span>
-            <span class="journal-summary-bar__value journal-summary-bar__value--positive" id="journalWins">0</span>
-          </div>
-          <div class="journal-summary-bar__divider"></div>
-          <div class="journal-summary-bar__item">
-            <span class="journal-summary-bar__label"><i data-lucide="circle-x"></i> Losses</span>
-            <span class="journal-summary-bar__value journal-summary-bar__value--negative" id="journalLosses">0</span>
-          </div>
-          <div class="journal-summary-bar__divider"></div>
-          <div class="journal-summary-bar__item">
-            <span class="journal-summary-bar__label"><i data-lucide="target"></i> Avg Win</span>
-            <span class="journal-summary-bar__value" id="journalAvgWin">—</span>
-          </div>
-          <div class="journal-summary-bar__divider"></div>
-          <div class="journal-summary-bar__item">
-            <span class="journal-summary-bar__label"><i data-lucide="trending-down"></i> Avg Loss</span>
-            <span class="journal-summary-bar__value" id="journalAvgLoss">—</span>
-          </div>
-        </div>
+    <!-- Desktop inline filters / Mobile bottom sheet -->
+    <div class="journal-header__filters journal-filter-sheet" id="journalFilterMenu" role="dialog" aria-modal="true"
+      aria-label="Filter journal trades">
+      <div class="journal-filter-sheet__handle"></div>
 
-        <!-- Journal Table Container -->
-        <div class="journal-table-container">
-          <table class="journal-table" id="journalTable">
-            <thead>
-              <tr>
-                <th data-sort="date" class="sortable">Date</th>
-                <th data-sort="ticker" class="sortable">Ticker</th>
-                <th>Dir</th>
-                <th data-sort="entry" class="sortable">Entry</th>
-                <th>Exit</th>
-                <th>Shares</th>
-                <th data-sort="pnl" class="sortable">P&L ($)</th>
-                <th>P&L %</th>
-                <th>R-Multiple</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="journalTableBody">
-              <!-- Journal rows will be rendered here -->
-            </tbody>
-          </table>
-        </div>
+      <div class="journal-filter-sheet__header">
+        <span>Filter trades</span>
 
-        <!-- Empty State -->
-       <div class="journal-empty" id="journalEmpty">
-  <span class="journal-empty__icon" aria-hidden="true">
-    <i data-lucide="book-open-text"></i>
-  </span>
-  <h2 class="journal-empty__title">No trades recorded.</h2>
-  <p class="journal-empty__text">Wait for your setup. Log trades from the Dashboard when the structure is right.</p>
-  <button class="btn btn--primary" id="journalGoToDashboard">Go to Dashboard</button>
-</div>
+        <button class="journal-filter-sheet__close" id="journalFilterClose" type="button" aria-label="Close filters">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
 
-        <!-- Export Actions -->
-        <div class="journal-actions">
-          <button class="btn btn--secondary" id="journalExportCSV">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Export CSV
-          </button>
-          <button class="btn btn--secondary" id="journalExportTSV">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Export TSV
-          </button>
-        </div>
-      </section>
+      <button class="filter-btn filter-btn--active" data-filter="all">
+        <span>All trades</span>
+        <i data-lucide="check"></i>
+      </button>
+
+      <button class="filter-btn" data-filter="open">
+        <span>Open trades</span>
+        <i data-lucide="check"></i>
+      </button>
+
+      <button class="filter-btn" data-filter="trimmed">
+        <span>Trimmed trades</span>
+        <i data-lucide="check"></i>
+      </button>
+
+      <button class="filter-btn" data-filter="closed">
+        <span>Closed trades</span>
+        <i data-lucide="check"></i>
+      </button>
+
+      <button class="filter-btn" data-filter="winners">
+        <span>Winners</span>
+        <i data-lucide="check"></i>
+      </button>
+
+      <button class="filter-btn" data-filter="losers">
+        <span>Losers</span>
+        <i data-lucide="check"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="journal-filter-backdrop" id="journalFilterBackdrop" aria-hidden="true"></div>
+
+  <!-- Summary Bar -->
+  <div class="journal-summary-bar" id="journalSummaryBar">
+    <div class="journal-summary-bar__item journal-summary-bar__item--hero">
+      <span class="journal-summary-bar__label"><i data-lucide="wallet"></i> Total P&L</span>
+      <span class="journal-summary-bar__value journal-summary-bar__value--lg" id="journalTotalPnL">$0.00</span>
+    </div>
+    <div class="journal-summary-bar__item">
+      <span class="journal-summary-bar__label"><i data-lucide="trending-up"></i> Win Rate</span>
+      <span class="journal-summary-bar__value" id="journalWinRate">—</span>
+    </div>
+    <div class="journal-summary-bar__divider"></div>
+    <div class="journal-summary-bar__item">
+      <span class="journal-summary-bar__label"><i data-lucide="trophy"></i> Wins</span>
+      <span class="journal-summary-bar__value journal-summary-bar__value--positive" id="journalWins">0</span>
+    </div>
+    <div class="journal-summary-bar__divider"></div>
+    <div class="journal-summary-bar__item">
+      <span class="journal-summary-bar__label"><i data-lucide="circle-x"></i> Losses</span>
+      <span class="journal-summary-bar__value journal-summary-bar__value--negative" id="journalLosses">0</span>
+    </div>
+    <div class="journal-summary-bar__divider"></div>
+    <div class="journal-summary-bar__item">
+      <span class="journal-summary-bar__label"><i data-lucide="target"></i> Avg Win</span>
+      <span class="journal-summary-bar__value" id="journalAvgWin">—</span>
+    </div>
+    <div class="journal-summary-bar__divider"></div>
+    <div class="journal-summary-bar__item">
+      <span class="journal-summary-bar__label"><i data-lucide="trending-down"></i> Avg Loss</span>
+      <span class="journal-summary-bar__value" id="journalAvgLoss">—</span>
+    </div>
+  </div>
+
+  <!-- Journal Table Container -->
+  <div class="journal-table-container">
+    <table class="journal-table" id="journalTable">
+      <thead>
+        <tr>
+          <th data-sort="date" class="sortable">Date</th>
+          <th data-sort="ticker" class="sortable">Ticker</th>
+          <th>Dir</th>
+          <th data-sort="entry" class="sortable">Entry</th>
+          <th>Exit</th>
+          <th>Shares</th>
+          <th data-sort="pnl" class="sortable">P&L ($)</th>
+          <th>P&L %</th>
+          <th>R-Multiple</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="journalTableBody">
+        <!-- Journal rows will be rendered here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="journal-empty" id="journalEmpty">
+    <span class="journal-empty__icon" aria-hidden="true">
+      <i data-lucide="book-open-text"></i>
+    </span>
+    <h2 class="journal-empty__title">No trades recorded.</h2>
+    <p class="journal-empty__text">Wait for your setup. Log trades from the Dashboard when the structure is right.</p>
+    <button class="btn btn--primary" id="journalGoToDashboard">Go to Dashboard</button>
+  </div>
+
+  <!-- Export Actions -->
+  <div class="journal-actions">
+    <button class="btn btn--secondary" id="journalExportCSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export CSV
+    </button>
+    <button class="btn btn--secondary" id="journalExportTSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export TSV
+    </button>
+  </div>
+</section>

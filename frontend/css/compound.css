@@ -470,7 +470,7 @@
 
 @media (max-width: 768px) {
   .view--compound {
-    padding: var(--space-4);
+    padding: var(--space-0);
   }
 
   .compound-sidebar {
@@ -514,5 +514,286 @@
   .compound-th[data-rate] {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+
+@media (max-width: 767px) {
+  .view--compound {
+    min-height: calc(100dvh - var(--header-height));
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .compound-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  /* Sidebar becomes normal mobile content */
+  .compound-sidebar {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .compound-sidebar .compound-card {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .compound-card {
+    border-radius: 14px;
+  }
+
+  .compound-card .card__header {
+    min-height: 48px;
+    padding: 12px var(--space-4);
+  }
+
+  .compound-card .card__title {
+    font-size: var(--text-lg);
+  }
+
+  .compound-card .card__body {
+    padding: var(--space-3);
+  }
+
+  /* Starting Capital input */
+  .compound-card .input-group {
+    margin-bottom: var(--space-3);
+  }
+
+  .compound-card .input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /*
+    Presets remain 3 columns:
+    $1K | $5K | $10K
+    $25K | $50K | $100K
+  */
+  .compound-card .preset-group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .compound-card .preset-btn {
+    min-height: 36px;
+    padding: 6px 4px;
+    font-size: 13px;
+  }
+
+  /* Deposit / Withdrawal / Both toggle */
+  .contribution-mode-toggle .preset-btn {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .contribution-fields-wrapper {
+    gap: var(--space-3);
+  }
+
+  .contribution-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 112px;
+    gap: 8px;
+  }
+
+  .contribution-input-row .input-wrapper {
+    min-width: 0;
+  }
+
+  .contribution-input-row .input--select {
+    width: 100%;
+    min-height: 44px;
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+
+  .compound-info {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .compound-info__text {
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  /* Main area */
+  .compound-main {
+    gap: var(--space-3);
+  }
+
+  /*
+    The table has many growth-rate columns.
+    Keep it horizontally scrollable rather than crushing values.
+  */
+  .compound-table-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .compound-table-container::after {
+    width: 34px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--bg-surface)
+    );
+  }
+
+  .compound-table {
+    min-width: max-content;
+    border: 0;
+    border-radius: 0;
+    font-size: 11px;
+  }
+
+  .compound-th,
+  .compound-cell {
+    min-width: 60px;
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  /* Fixed Year column remains smaller */
+  .compound-th--year,
+  .compound-cell--year {
+    min-width: 58px;
+    padding-inline: 10px;
+  }
+
+  .compound-th--year {
+    box-shadow: 6px 0 10px rgba(20, 20, 20, 0.04);
+  }
+
+  .compound-cell--year {
+    box-shadow: 6px 0 10px rgba(20, 20, 20, 0.035);
+  }
+
+  .compound-th[data-rate] {
+    min-height: 42px;
+  }
+
+  /* Summary cards: two columns and two rows */
+  .compound-summary.stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .compound-summary .stat-card {
+    min-width: 0;
+    min-height: 94px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .compound-summary .stat-card__label {
+    overflow: hidden;
+    margin-bottom: 6px;
+
+    font-size: 10px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .compound-summary .stat-card__value {
+    overflow: hidden;
+
+    font-size: clamp(17px, 5vw, 23px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .compound-summary .stat-card__sub {
+    overflow: hidden;
+
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Insight cards stack because they contain longer explanation text */
+  .compound-insights.stats-grid--insights {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 0;
+    margin-bottom: var(--space-4);
+  }
+
+  .insight-card {
+    padding: var(--space-3);
+    border-radius: 12px;
+  }
+
+  .insight-card__text {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
+
+/* Very narrow phones */
+@media (max-width: 380px) {
+  .compound-card .card__body {
+    padding: 12px;
+  }
+
+  .compound-card .preset-group {
+    gap: 6px;
+  }
+
+  .compound-card .preset-btn {
+    min-height: 34px;
+    font-size: 13px;
+  }
+
+  /* Prevent deposit input and select from becoming too narrow */
+  .contribution-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contribution-input-row .input--select {
+    width: 100%;
+  }
+
+  .compound-th,
+  .compound-cell {
+    min-width: 88px;
+    padding: 9px 10px;
+    font-size: 10px;
+  }
+
+  .compound-th--year,
+  .compound-cell--year {
+    min-width: 54px;
+  }
+
+  .compound-summary.stats-grid {
+    gap: 8px;
+  }
+
+  .compound-summary .stat-card {
+    min-height: 88px;
+    padding: 10px;
+  }
+
+  .compound-summary .stat-card__value {
+    font-size: 16px;
   }
 }

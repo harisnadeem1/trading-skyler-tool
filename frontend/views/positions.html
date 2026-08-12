@@ -1,25 +1,77 @@
 <section class="positions-view view--hidden" id="positionsView">
   <div class="positions-header">
-    <div class="positions-header__left">
+    <!-- <div class="positions-header__left">
       <div>
         <span class="positions-header__subtitle" id="positionsCount">0 active positions</span>
       </div>
-    </div>
+    </div> -->
     <div class="positions-header__right">
       <div class="positions-header__actions">
-        <div class="positions-header__filters">
-          <button class="filter-btn filter-btn--active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="open">Open</button>
-          <button class="filter-btn" data-filter="trimmed">Trimmed</button>
-        </div>
+
+        <!-- Mobile-only filter trigger -->
+        <button class="positions-filter-toggle" id="positionsFilterToggle" type="button"
+          aria-label="Open position filters" aria-expanded="false" aria-controls="positionsFilterMenu">
+          <i data-lucide="list-filter"></i>
+        </button>
+
+       <div
+  class="positions-header__filters positions-filter-sheet"
+  id="positionsFilterMenu"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Filter positions"
+>
+  <div class="positions-filter-sheet__handle"></div>
+
+  <div class="positions-filter-sheet__header">
+    <span>Filter positions</span>
+
+    <button
+      class="positions-filter-sheet__close"
+      id="positionsFilterClose"
+      type="button"
+      aria-label="Close filters"
+    >
+      <i data-lucide="x"></i>
+    </button>
+  </div>
+
+  <button class="filter-btn filter-btn--active" data-filter="all">
+    <span>All positions</span>
+    <i data-lucide="check"></i>
+  </button>
+
+  <button class="filter-btn" data-filter="open">
+    <span>Open positions</span>
+    <i data-lucide="check"></i>
+  </button>
+
+  <button class="filter-btn" data-filter="trimmed">
+    <span>Trimmed positions</span>
+    <i data-lucide="check"></i>
+  </button>
+</div>
 
         <button class="positions-add-btn btn btn--success" id="positionsAddTradeBtn" type="button">
           <span class="positions-add-btn__icon">+</span>
           <span class="positions-add-btn__text">Add Trade</span>
         </button>
+
+      </div>
+    </div>
+    <div class="positions-header__left">
+      <div>
+        <span class="positions-header__subtitle" id="positionsCount">0 active positions</span>
       </div>
     </div>
   </div>
+
+    <!-- Mobile filter bottom-sheet backdrop -->
+  <div
+    class="positions-filter-backdrop"
+    id="positionsFilterBackdrop"
+    aria-hidden="true"
+  ></div>
 
   <!-- Risk Overview Bar -->
   <div class="positions-risk-bar" id="positionsRiskBar">
@@ -53,37 +105,37 @@
         <button class="position-chart-modal__close" id="positionChartClose" aria-label="Close chart">×</button>
       </div>
 
-    <div class="position-chart-modal__body">
-  <div class="position-chart-legend" id="positionChartLegend"></div>
+      <div class="position-chart-modal__body">
+        <div class="position-chart-legend" id="positionChartLegend"></div>
 
-  <div class="position-chart-canvas-wrap">
-    <div class="chart-loading-overlay" id="positionChartLoading">
-      <div class="chart-loading-overlay__content">
-        <div class="chart-loading-spinner"></div>
-        <div>Loading chart...</div>
+        <div class="position-chart-canvas-wrap">
+          <div class="chart-loading-overlay" id="positionChartLoading">
+            <div class="chart-loading-overlay__content">
+              <div class="chart-loading-spinner"></div>
+              <div>Loading chart...</div>
+            </div>
+          </div>
+
+          <div class="position-chart-canvas" id="positionChartCanvas"></div>
+        </div>
       </div>
-    </div>
-
-    <div class="position-chart-canvas" id="positionChartCanvas"></div>
-  </div>
-</div>
     </div>
   </div>
 
   <!-- Empty State -->
- <div class="positions-empty" id="positionsEmpty">
-  <span class="positions-empty__icon" aria-hidden="true">
-    <i data-lucide="anchor"></i>
-  </span>
+  <div class="positions-empty" id="positionsEmpty">
+    <span class="positions-empty__icon" aria-hidden="true">
+      <i data-lucide="anchor"></i>
+    </span>
 
-  <h2 class="positions-empty__title">No Active Positions</h2>
+    <h2 class="positions-empty__title">No Active Positions</h2>
 
-  <p class="positions-empty__text">
-    Patience is also a position. Wait for the right structure.
-  </p>
+    <p class="positions-empty__text">
+      Patience is also a position. Wait for the right structure.
+    </p>
 
-  <button class="positions-empty__cta btn btn--success" id="positionsEmptyAddTradeBtn" type="button">
-    Add Trade
-  </button>
-</div>
+    <button class="positions-empty__cta btn btn--success" id="positionsEmptyAddTradeBtn" type="button">
+      Add Trade
+    </button>
+  </div>
 </section>

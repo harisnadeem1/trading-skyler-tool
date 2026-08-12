@@ -57,6 +57,13 @@ class Journal {
   journalEmpty: document.getElementById('journalEmpty'),
   journalTableContainer: document.querySelector('.journal-table-container'),
   journalActions: document.querySelector('.journal-actions'),
+  journalFilterToggle: document.getElementById('journalFilterToggle'),
+journalFilterMenu: document.getElementById('journalFilterMenu'),
+journalFilterBackdrop: document.getElementById('journalFilterBackdrop'),
+journalFilterClose: document.getElementById('journalFilterClose'),
+journalFilterButtons: document.querySelectorAll(
+  '.journal-view .filter-btn[data-filter]'
+),
 
       journalCount: document.getElementById('journalCount'),
       journalTotalPnL: document.getElementById('journalTotalPnL'),
@@ -95,15 +102,44 @@ class Journal {
       });
     }
 
-    document.querySelectorAll('.filter-btn[data-filter]').forEach((btn) => {
+   this.elements.journalFilterButtons.forEach((btn) => {
   btn.addEventListener('click', (e) => {
-    document
-      .querySelectorAll('.filter-btn[data-filter]')
-      .forEach((b) => b.classList.remove('filter-btn--active'));
+    const selectedFilter = e.currentTarget.dataset.filter;
 
-    e.currentTarget.classList.add('filter-btn--active');
-    this.renderTable(e.currentTarget.dataset.filter);
+    this.elements.journalFilterButtons.forEach((button) => {
+      button.classList.toggle(
+        'filter-btn--active',
+        button.dataset.filter === selectedFilter
+      );
+    });
+
+    this.renderTable(selectedFilter);
+    this.closeJournalFilterMenu();
   });
+});
+
+if (this.elements.journalFilterToggle) {
+  this.elements.journalFilterToggle.addEventListener('click', () => {
+    this.openJournalFilterMenu();
+  });
+}
+
+if (this.elements.journalFilterClose) {
+  this.elements.journalFilterClose.addEventListener('click', () => {
+    this.closeJournalFilterMenu();
+  });
+}
+
+if (this.elements.journalFilterBackdrop) {
+  this.elements.journalFilterBackdrop.addEventListener('click', () => {
+    this.closeJournalFilterMenu();
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    this.closeJournalFilterMenu();
+  }
 });
 
     if (this.elements.exportCSVBtn) {
@@ -128,11 +164,69 @@ class Journal {
       this.elements.journalCopyTSV.addEventListener('click', () => dataManager.copyTSV());
     }
 
+    const journalTradeModal = document.getElementById('journalTradeModal');
+
+if (journalTradeModal) {
+  journalTradeModal.addEventListener('click', (e) => {
+    const actionButton = e.target.closest(
+      '[data-action="close"], [data-action="delete"]'
+    );
+
+    if (!actionButton) return;
+
+    journalTradeModal.close();
+  });
+}
+
 
 
     window.closeTrade = (id) => this.closeTrade(id);
     window.deleteTrade = (id) => this.deleteTrade(id);
   }
+
+  openJournalFilterMenu() {
+  const {
+    journalFilterMenu,
+    journalFilterBackdrop,
+    journalFilterToggle
+  } = this.elements;
+
+  if (
+    !journalFilterMenu ||
+    !journalFilterBackdrop ||
+    !journalFilterToggle
+  ) {
+    return;
+  }
+
+  journalFilterBackdrop.classList.add('is-open');
+  journalFilterMenu.classList.add('is-open');
+
+  journalFilterToggle.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+}
+
+closeJournalFilterMenu() {
+  const {
+    journalFilterMenu,
+    journalFilterBackdrop,
+    journalFilterToggle
+  } = this.elements;
+
+  if (
+    !journalFilterMenu ||
+    !journalFilterBackdrop ||
+    !journalFilterToggle
+  ) {
+    return;
+  }
+
+  journalFilterBackdrop.classList.remove('is-open');
+  journalFilterMenu.classList.remove('is-open');
+
+  journalFilterToggle.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
 
   openDeleteConfirm(tradeId) {
   const trade = state.journal.entries.find((t) => String(t.id) === String(tradeId));
