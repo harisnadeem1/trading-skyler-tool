@@ -344,9 +344,9 @@ function connect(onPrice) {
           : new Date().toISOString();
 
         if (!symbol || typeof price !== 'number') continue;
-         if (symbol === 'QQQ') {
-  console.log(`[FINNHUB LIVE] ${symbol} | ${price} | ${timestamp}`);
-}
+//          if (symbol === 'QQQ') {
+//   console.log(`[FINNHUB LIVE] ${symbol} | ${price} | ${timestamp}`);
+// }
 
         clearSymbolFailureState(symbol);
 setPrice(symbol, price, timestamp);
