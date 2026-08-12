@@ -380,23 +380,19 @@ function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired =
 
   const latest = breadthSeries[breadthSeries.length - 1];
   const prev = breadthSeries[breadthSeries.length - 2];
-  const nhnl5 = breadthSeries.slice(-5).map((row) => toNumber(row.nhnl)).filter((v) => v !== null);
+let signal1 = 'NO';
+if (
+  latest.mcClellanSummationIndex !== null &&
+  prev.mcClellanSummationIndex !== null &&
+  latest.mcClellanSummationIndex > prev.mcClellanSummationIndex
+) {
+  signal1 = latest.mcClellanSummationIndex > 0 ? 'YES' : 'ATTEMPT';
+}
 
-  let signal1 = 'NO';
-  if (
-    latest.mcClellanSummationIndex !== null &&
-    prev.mcClellanSummationIndex !== null &&
-    latest.mcClellanSummationIndex > prev.mcClellanSummationIndex
-  ) {
-    signal1 = latest.mcClellanSummationIndex > 0 ? 'YES' : 'ATTEMPT';
-  }
-
-  const signal6 = (
-    latest.nhnl !== null &&
-    latest.nhnl > 0 &&
-    nhnl5.length > 0 &&
-    (nhnl5.reduce((a, b) => a + b, 0) / nhnl5.length) > 0
-  ) ? 'YES' : 'NO';
+const signal6 = (
+  latest.nhnl !== null &&
+  latest.nhnl > 0
+) ? 'YES' : 'NO';
 
   const signal7 = (
     latest.mcClellanOscillator !== null &&
@@ -494,11 +490,11 @@ function buildTrendMapSignalBlock({
 
   const signal5 = ['YES', 'NO', 'ATTEMPT'].includes(signal5Value) ? signal5Value : 'NO';
 
-  const signal6 = (
-    componentModel?.signal6 !== null && componentModel?.signal6 !== undefined
-  ) ? componentModel.signal6 : (
-    latestNHNL !== null && latestNHNL > 0 ? 'YES' : 'NO'
-  );
+ const signal6 = (
+  componentModel?.signal6 !== null && componentModel?.signal6 !== undefined
+) ? componentModel.signal6 : (
+  latestNHNL !== null && latestNHNL > 0 ? 'YES' : 'NO'
+);
 
   const signal7 = (
     componentModel?.signal7 !== null && componentModel?.signal7 !== undefined
