@@ -170,6 +170,8 @@ function loadHoldingsFromCsv() {
 }
 
 async function getBulkDailyCloseHistory(symbols, monthsBack = 18) {
+  const startedAt = Date.now();
+
   const to = new Date();
   const from = new Date();
   from.setMonth(from.getMonth() - monthsBack);
@@ -179,8 +181,18 @@ async function getBulkDailyCloseHistory(symbols, monthsBack = 18) {
     new Set((symbols || []).map(normalizeSymbol).filter(Boolean))
   ).slice(0, MAX_COMPONENTS);
 
-  for (const symbol of uniqueSymbols) {
+  console.log(
+    `[TREND MAP] Starting component fetch: ${uniqueSymbols.length} symbols`
+  );
+
+  for (const [index, symbol] of uniqueSymbols.entries()) {
+    const symbolStartedAt = Date.now();
+
     try {
+      console.log(
+        `[TREND MAP] ${index + 1}/${uniqueSymbols.length}: fetching ${symbol}`
+      );
+
       const candles = await getStockCandles(symbol, {
         resolution: 'D',
         from: toUnix(from),
@@ -191,16 +203,29 @@ async function getBulkDailyCloseHistory(symbols, monthsBack = 18) {
         result[symbol] = candles;
       }
 
+      console.log(
+        `[TREND MAP] ${index + 1}/${uniqueSymbols.length}: ${symbol} complete ` +
+        `(${candles.length} candles, ${Date.now() - symbolStartedAt}ms)`
+      );
+
       await sleep(350);
     } catch (error) {
+      console.error(
+        `[TREND MAP] ${index + 1}/${uniqueSymbols.length}: ${symbol} failed:`,
+        error.message
+      );
+
       if (error.message === 'FINNHUB_RATE_LIMIT') {
-        console.warn(`[TREND MAP] rate limit hit at ${symbol}, stopping component fetch early`);
+        console.warn('[TREND MAP] Stopping after Finnhub rate limit.');
         break;
       }
-
-      console.warn(`[TREND MAP] failed candles for ${symbol}:`, error.message);
     }
   }
+
+  console.log(
+    `[TREND MAP] Completed ${Object.keys(result).length}/${uniqueSymbols.length} ` +
+    `component requests in ${Date.now() - startedAt}ms`
+  );
 
   return result;
 }
@@ -212,45 +237,65 @@ async function getBulkDailyCloseHistory(symbols, monthsBack = 18) {
 // stale cached snapshot or surface an error.
 // -----------------------------------------------------------------------
 async function buildMarketSnapshot() {
-  const now = new Date();
-  const dailyFrom = new Date();
-  dailyFrom.setFullYear(dailyFrom.getFullYear() - 1);
+  const startedAt = Date.now();
 
-  const qqqeDailyBars = await getStockCandles(QQQE_TICKER, {
-    resolution: 'D',
-    from: toUnix(dailyFrom),
-    to: toUnix(now),
-  });
+  try {
+    console.log('[TREND MAP] Market snapshot started');
 
-  if (!qqqeDailyBars.length) {
-    throw new Error('QQQE daily candles unavailable from Finnhub');
+    const now = new Date();
+    const dailyFrom = new Date();
+    dailyFrom.setFullYear(dailyFrom.getFullYear() - 1);
+
+    console.time('[TREND MAP] QQQE request');
+
+    const qqqeDailyBars = await getStockCandles(QQQE_TICKER, {
+      resolution: 'D',
+      from: toUnix(dailyFrom),
+      to: toUnix(now),
+    });
+
+    console.timeEnd('[TREND MAP] QQQE request');
+
+    if (!qqqeDailyBars.length) {
+      throw new Error('QQQE daily candles unavailable from Finnhub');
+    }
+
+    const qqqeWeeklyBars = buildWeeklyBarsFromDaily(qqqeDailyBars);
+    const holdings = loadHoldingsFromCsv();
+
+    console.log(`[TREND MAP] Holdings in CSV: ${holdings.length}`);
+
+    console.time('[TREND MAP] All component requests');
+    const componentHistoryMap = await getBulkDailyCloseHistory(holdings, 18);
+    console.timeEnd('[TREND MAP] All component requests');
+
+    console.time('[TREND MAP] Breadth calculation');
+    const componentModel = computeComponentBreadthModel(
+      componentHistoryMap,
+      MIN_HOLDINGS_REQUIRED
+    );
+    console.timeEnd('[TREND MAP] Breadth calculation');
+
+    const createdAtDate = new Date();
+    const createdAtMs = createdAtDate.getTime();
+    const expiresAtMs = createdAtMs + MARKET_CACHE_TTL_MS;
+    const latestDailyBar = qqqeDailyBars[qqqeDailyBars.length - 1];
+
+    return {
+      qqqeDailyBars,
+      qqqeWeeklyBars,
+      componentModel,
+      createdAtMs,
+      expiresAtMs,
+      createdAt: createdAtDate.toISOString(),
+      expiresAt: new Date(expiresAtMs).toISOString(),
+      marketDataAsOf: latestDailyBar?.date || createdAtDate.toISOString(),
+    };
+  } finally {
+    console.log(
+      `[TREND MAP] Snapshot total time: ${Date.now() - startedAt}ms`
+    );
   }
-
-  const qqqeWeeklyBars = buildWeeklyBarsFromDaily(qqqeDailyBars);
-  const holdings = loadHoldingsFromCsv();
-  const componentHistoryMap = await getBulkDailyCloseHistory(holdings, 18);
-
-  // computeComponentBreadthModel already handles the "coverage too low"
-  // case internally and returns a well-formed INVALID model (all breadth
-  // fields null) rather than throwing, so the dashboard can still render
-  // QQQE-only signals with a visible warning instead of hard-failing.
-  const componentModel = computeComponentBreadthModel(componentHistoryMap, MIN_HOLDINGS_REQUIRED);
-
-  const createdAtDate = new Date();
-  const createdAtMs = createdAtDate.getTime();
-  const expiresAtMs = createdAtMs + MARKET_CACHE_TTL_MS;
-  const latestDailyBar = qqqeDailyBars[qqqeDailyBars.length - 1];
-
-  return {
-    qqqeDailyBars,
-    qqqeWeeklyBars,
-    componentModel,
-    createdAtMs,
-    expiresAtMs,
-    createdAt: createdAtDate.toISOString(),
-    expiresAt: new Date(expiresAtMs).toISOString(),
-    marketDataAsOf: latestDailyBar?.date || createdAtDate.toISOString(),
-  };
 }
 
 // -----------------------------------------------------------------------
