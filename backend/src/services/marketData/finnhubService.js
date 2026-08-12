@@ -11,6 +11,9 @@ const { broadcast } = require('./liveStream');
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const ENABLE_FINNHUB_WS = process.env.ENABLE_FINNHUB_WS === 'true';
+function isFinnhubEnabled() {
+  return ENABLE_FINNHUB_WS;
+}
 const FINNHUB_WS_URL = `wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`;
 const FINNHUB_QUOTE_URL = 'https://finnhub.io/api/v1/quote';
 
@@ -96,6 +99,9 @@ function isInvalidFinnhubQuote(quote) {
 }
 
 async function fetchQuote(symbol) {
+    if (!isFinnhubEnabled()) {
+    return null;
+  }
   const normalized = normalizeSymbol(symbol);
   const url = `${FINNHUB_QUOTE_URL}?symbol=${encodeURIComponent(normalized)}&token=${FINNHUB_API_KEY}`;
   const response = await fetch(url);
@@ -124,6 +130,9 @@ function canTrackMoreSymbols() {
 }
 
 async function refreshSymbolFromQuote(symbol) {
+   if (!isFinnhubEnabled()) {
+    return;
+  }
   const normalized = normalizeSymbol(symbol);
   if (!normalized) return;
 
@@ -225,6 +234,9 @@ if (!priceChanged) {
 }
 
 function startStalePriceMonitor() {
+  if (!isFinnhubEnabled()) {
+    return;
+  }
   if (staleCheckInterval) return;
 
   staleCheckInterval = setInterval(() => {
@@ -402,6 +414,10 @@ const trades = getTradesForSymbol(symbol);
 }
 
 function subscribe(symbol) {
+  if (!isFinnhubEnabled()) {
+    console.log('[finnhubService] Finnhub is disabled by environment');
+    return false;
+  }
   const normalized = normalizeSymbol(symbol);
   if (!normalized) return false;
 
@@ -489,6 +505,10 @@ function isConnected() {
 }
 
 async function fetchHistory(symbol, range = '1y', interval = '1d') {
+   if (!isFinnhubEnabled()) {
+    console.log('[finnhubService] Finnhub history disabled by environment');
+    return [];
+  }
   const normalized = normalizeSymbol(symbol);
 
   const end = Math.floor(Date.now() / 1000);

@@ -9,6 +9,7 @@ const {
 const db = require('../../config/db');
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+const ENABLE_FINNHUB = process.env.ENABLE_FINNHUB_WS === 'true';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
 const QQQE_TICKER = 'QQQE';
@@ -34,6 +35,10 @@ const marketSnapshotCache = new Map();
 let marketSnapshotInFlight = null;
 
 function assertApiKey() {
+  if (!ENABLE_FINNHUB) {
+    throw new Error('FINNHUB_DISABLED');
+  }
+
   if (!FINNHUB_API_KEY) {
     throw new Error('FINNHUB_API_KEY is missing');
   }
@@ -383,6 +388,12 @@ async function getGlobalMarketSnapshot({ forceRefresh = false } = {}) {
 
 
 function warmTrendMapCache() {
+   if (!ENABLE_FINNHUB) {
+    console.log(
+      '[TREND MAP] Cache warming skipped: Finnhub disabled by environment'
+    );
+    return;
+  }
   console.log('[TREND MAP] Warming Trend Map cache after server startup');
 
   void refreshMarketSnapshotInBackground();
@@ -492,6 +503,9 @@ async function getTrendMapSnapshot({
   signal5Override,
   forceRefresh = false,
 } = {}) {
+    if (!ENABLE_FINNHUB) {
+    throw new Error('FINNHUB_DISABLED');
+  }
   const marketSnapshot = await getGlobalMarketSnapshot({ forceRefresh });
   return composeTrendMapResponse({ userId, signal5Override, marketSnapshot });
 }
@@ -500,6 +514,9 @@ async function getTrendMapSnapshot({
 // Always forces a rebuild of the global market snapshot (benefits every
 // user), then composes the response for the requesting user's Signal 5.
 async function refreshTrendMapSnapshot({ userId, signal5Override } = {}) {
+   if (!ENABLE_FINNHUB) {
+    throw new Error('FINNHUB_DISABLED');
+  }
   const marketSnapshot = await getGlobalMarketSnapshot({ forceRefresh: true });
   return composeTrendMapResponse({ userId, signal5Override, marketSnapshot });
 }
