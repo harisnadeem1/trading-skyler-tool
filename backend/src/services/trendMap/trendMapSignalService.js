@@ -223,6 +223,43 @@ function computeComponentPctAbove20MA(componentHistoryMap) {
   };
 }
 
+function deriveNHNLSignal(breadthSeries, lookback = 5) {
+  if (!Array.isArray(breadthSeries) || breadthSeries.length < lookback + 1) {
+    return 'NO';
+  }
+
+  const values = breadthSeries
+    .map((row) => toNumber(row.nhnl))
+    .filter((value) => value !== null);
+
+  if (values.length < lookback + 1) {
+    return 'NO';
+  }
+
+  const latest = values[values.length - 1];
+
+  const currentAverage = sma(values, lookback);
+  const previousAverage = sma(values.slice(0, -1), lookback);
+
+  if (currentAverage === null || previousAverage === null) {
+    return 'NO';
+  }
+
+  const averageRising = currentAverage > previousAverage;
+  const aboveAverage = latest > currentAverage;
+  const improvingVsPriorDay = latest > values[values.length - 2];
+
+  if (aboveAverage && averageRising) {
+    return 'YES';
+  }
+
+  if (averageRising || improvingVsPriorDay) {
+    return 'ATTEMPT';
+  }
+
+  return 'NO';
+}
+
 function computeComponentBreadthModel(componentHistoryMap, minHoldingsRequired = 80) {
   const symbols = Object.keys(componentHistoryMap || {});
 
@@ -389,10 +426,7 @@ if (
   signal1 = latest.mcClellanSummationIndex > 0 ? 'YES' : 'ATTEMPT';
 }
 
-const signal6 = (
-  latest.nhnl !== null &&
-  latest.nhnl > 0
-) ? 'YES' : 'NO';
+const signal6 = deriveNHNLSignal(breadthSeries, 5);
 
   const signal7 = (
     latest.mcClellanOscillator !== null &&
