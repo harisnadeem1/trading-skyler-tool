@@ -800,7 +800,14 @@ series.createPriceLine({
   title: '5R',
 });
 
-const visibleBars = 80;
+const getVisibleBars = () =>
+  window.matchMedia('(max-width: 620px)').matches ? 40 : 80;
+
+let visibleBars = getVisibleBars();
+
+window.addEventListener('resize', () => {
+  visibleBars = getVisibleBars();
+});
 
 chart.timeScale().setVisibleLogicalRange({
   from: Math.max(0, candles.length - visibleBars),

@@ -290,7 +290,7 @@ a { color: inherit; }
 .workflow-callout > div > p {
   margin: 0 0 7px;
   color: var(--gold-dark);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: .17em;
   text-transform: uppercase;
@@ -446,7 +446,7 @@ a { color: inherit; }
 .discord-benefit-grid article { position: relative; min-height: 240px; padding: 28px; border: 1px solid var(--border); background: rgba(247,239,224,.65); }
 .discord-benefit-grid article > span { color: rgba(99,81,120,.35); font-family: var(--serif); font-size: 46px; font-weight: 700; }
 .discord-benefit-grid h2 { margin: 6px 0 8px; font-family: var(--serif); font-size: 29px; }
-.discord-benefit-grid p { margin: 0; color: var(--ink-soft); font-size: 12px; }
+.discord-benefit-grid p { margin: 0; color: var(--ink-soft); font-size: 16px; }
 .discord-rules-panel { display: grid; grid-template-columns: .8fr 1.2fr; gap: 48px; margin-top: 18px; padding: 34px; background: var(--charcoal); color: var(--paper-light); }
 .discord-rules-panel h2 { margin: 0 0 8px; font-family: var(--serif); color: #eeddb9; font-size: 42px; line-height: .95; }
 .discord-rules-panel p { color: #b9aa8d; }
@@ -773,4 +773,90 @@ button:disabled { cursor: not-allowed; }
   .module-objectives ul { grid-template-columns: 1fr; }
   .lesson-status-card { grid-template-columns: 1fr; }
   .lesson-practice { padding: 20px; }
+
+  .discord-benefit-grid article, .discord-steps li  {
+    padding: 0px 28px;
+    padding-bottom: 28px;
 }
+.discord-rules-panel {
+    gap: 0px;
+}
+.discord-steps li::before {
+    margin-bottom: 0px;
+}
+.discord-steps span {
+    font-size: 16px;
+}
+.academy-button {
+    width: 100%;
+}
+.indicator-card p {
+    font-size: 15px;
+}
+.resource-section-heading > span {
+    font-size: 16px;
+}
+.workflow-callout {
+    gap: 9px;
+}
+.color-row span {
+    font-size: 14px;
+}
+.color-row code {
+    font-size: 14px;
+}
+.copy-status {
+    font-size: 16px;
+}
+.palette-preview figcaption {
+    font-size: 16px;
+}
+.mastery-level-card > div:nth-child(2) > span {
+    font-size: 16px;
+}
+.mastery-level-footer {
+    font-size: 14px;
+}
+.mastery-actions > span {
+    font-size: 14px;
+}
+.lesson-level-pill, .lesson-type-pill {
+    font-size: 12px;
+}
+.lesson-status-card span {
+    font-size: 13px;
+}
+.module-objectives ul {
+    font-size: 15px;
+}
+.lesson-section-title span {
+    font-size: 13px;
+}
+.quiz-requirement {
+    font-size: 16px;
+}
+.lesson-level-card > span {
+    font-size: 12px;
+}
+.lesson-level-card p {
+    font-size: 13px;
+}
+.lesson-level-card small {
+    font-size: 12px;
+}
+.lesson-notes-card > div span {
+    font-size: 13px;
+}
+.notes-status {
+    font-size: 13px;
+}
+.lesson-principles-card ul {
+    font-size: 16px;
+}
+.lesson-disclaimer-card p {
+    font-size: 12px;
+}
+}
+
+
+

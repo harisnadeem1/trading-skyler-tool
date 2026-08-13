@@ -900,7 +900,7 @@
 @media (max-width: 840px) {
   .ronin-system-page .system-hero-art {
     background-image: linear-gradient(180deg, rgba(235,221,196,.97), rgba(235,221,196,.84) 62%, rgba(235,221,196,.35)), url("../assets/ronin-hero.png");
-    background-position: 68% center;
+    background-position: 75% center;
   }
 
   .ronin-system-page .system-hero-grid {

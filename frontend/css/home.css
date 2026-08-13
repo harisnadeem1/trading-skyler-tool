@@ -1295,7 +1295,7 @@ body.home-nav-open {
     background-image:
       linear-gradient(180deg, rgba(235,221,196,.97) 0%, rgba(235,221,196,.88) 52%, rgba(235,221,196,.25) 100%),
       url("/assets/ronin-hero.png");
-    background-position: 66% center;
+    background-position: 72% center;
   }
 
   .home-hero__layout {
