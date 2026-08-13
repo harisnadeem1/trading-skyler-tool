@@ -259,7 +259,7 @@
 .ronin-system-page .system-price-line {
   margin: 18px 0 0;
   color: var(--ink-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .ronin-system-page .system-price-line strong {
@@ -908,7 +908,7 @@
   }
 
   .ronin-system-page .system-hero-copy {
-    padding-top: 120px;
+    padding-top: 0px;
     max-width: 650px;
   }
 
@@ -984,6 +984,9 @@
   .ronin-system-page .curriculum-grid,
   .ronin-system-page .audience-grid {
     grid-template-columns: 1fr;
+  }
+  .ronin-system-page .journey-grid{
+    grid-template-columns: 1fr 1fr;
   }
 
   .ronin-system-page .journey-grid article::after {
@@ -1068,9 +1071,7 @@
 }
 
 @media (max-width: 620px) {
-  .sticky-course-cta {
-    bottom: 8px;
-  }
+  
 
   .sticky-course-cta strong {
     font-size: 17px;
@@ -1127,3 +1128,217 @@
 .psychology-callout p:last-child { margin: 0; color: var(--ink-soft); }
 @media (max-width: 1050px) { .learning-path-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .learning-path-grid article:nth-child(2)::after { display: none; } }
 @media (max-width: 620px) { .learning-path-grid { grid-template-columns: 1fr; } .learning-path-grid article::after { display: none; } .psychology-callout { grid-template-columns: 1fr; } }
+@media (max-width: 620px) {
+  .system-price-line {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+    padding: 8px 12px;
+    border: 1px solid rgba(167, 123, 44, 0.18);
+    border-radius: 7px;
+    background: rgba(255, 248, 236, 0.7);
+    box-shadow: 0 6px 16px rgba(45, 34, 21, 0.05);
+    backdrop-filter: blur(4px);
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 620px) {
+  .ronin-system-page .system-subnav {
+    top: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  .ronin-system-page .system-subnav .container {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0 14px;
+
+    display: flex;
+    justify-content: flex-start;
+    gap: 22px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ronin-system-page .system-subnav .container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ronin-system-page .system-subnav a {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 13px 0 12px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 620px) {
+  .ronin-system-page .system-subnav {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  .ronin-system-page .system-subnav .container {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0 14px 10px;
+
+    display: flex;
+    justify-content: flex-start;
+    gap: 22px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: none;
+  }
+
+  .ronin-system-page .system-subnav .container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ronin-system-page .system-subnav a {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 13px 0 8px;
+    font-size: 13px;
+  }
+
+  /* Always-visible custom swipe indicator */
+  .ronin-system-page .system-subnav__scroll-indicator {
+    width: calc(100% - 0px);
+    height: 3px;
+    margin: 0 auto 0px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(128, 95, 45, 0.18);
+  }
+
+ .ronin-system-page .system-subnav__scroll-indicator span {
+  display: block;
+  width: 30%;
+  height: 100%;
+  border-radius: inherit;
+  will-change: transform, width;
+  transition: width 0.12s ease;
+
+  background: linear-gradient(
+    90deg,
+    rgba(158, 123, 59, 0.65),
+    var(--ronin-gold),
+    rgba(158, 123, 59, 0.65)
+  );
+}
+
+.ronin-system-page .journey-grid p {
+  font-size: 13px;
+}
+
+.learning-path-grid p { color: var(--ink-soft); font-size: 14px; }
+.learning-path-grid ul {
+    margin: 18px 0 0;
+    padding-left: 18px;
+    color: var(--ink-soft);
+    font-size: 13px;
+}
+
+.ronin-system-page .curriculum-card {
+  
+  min-height: auto;
+}
+
+.ronin-system-page .curriculum-card p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 16px;
+}
+
+.ronin-system-page .curriculum-note {
+    
+    font-size: 14px;
+}
+
+
+.premium-benefit-grid article {
+    
+    padding: 0px 31px;
+    padding-bottom: 22px;
+}
+.premium-benefit-grid p {
+    font-size: 16px;
+}
+.premium-benefit-grid li {
+   
+    font-size: 15px;
+}
+.premium-benefit-grid li::before {
+   
+    font-size: 15px;
+}
+.premium-community-note p {
+    font-size: 16px;
+}
+.ronin-system-page .pattern-showcase img {
+    aspect-ratio: auto;
+}
+.ronin-system-page .pattern-copy ul {
+    font-size: 15px;
+}
+.ronin-system-page .audience-grid p {
+    font-size: 16px;
+}
+
+.ronin-system-page .join-list {
+    
+    padding-top: 21px;
+}
+.ronin-system-page .join-small {
+    font-size: 12px;
+}
+}
+
+
+@media (max-width: 620px) {
+
+  
+  .sticky-course-cta {
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, calc(100% + 120px));
+
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0s linear 0.25s;
+  }
+
+  .sticky-course-cta.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0s linear 0s;
+  }
+}

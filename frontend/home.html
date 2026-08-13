@@ -8,7 +8,7 @@
     <meta name="description"
         content="Ronin Charts is a disciplined trading workspace with a free position-size calculator, trading journal, and market trend map." />
     <title>Ronin Charts — Strength First. Structure Second. Risk Always.</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,19 +25,21 @@
 
     <header class="home-header" data-header>
         <div class="home-container home-header__inner">
-          <a class="brand" href="#top" aria-label="Ronin Charts home">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 64 64" role="img">
-            <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="112 38" transform="rotate(-24 32 32)" />
-            <path d="M37 13 25 48M23 31h20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" />
-          </svg>
-        </span>
-        <span class="brand-copy">
-          <strong>RONIN</strong>
-          <span>CHARTS</span>
-        </span>
-        <span class="brand-seal" aria-hidden="true">浪</span>
-      </a>
+            <a class="brand" href="#top" aria-label="Ronin Charts home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="img">
+                        <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="3.5"
+                            stroke-linecap="round" stroke-dasharray="112 38" transform="rotate(-24 32 32)" />
+                        <path d="M37 13 25 48M23 31h20" fill="none" stroke="currentColor" stroke-width="3.2"
+                            stroke-linecap="round" />
+                    </svg>
+                </span>
+                <span class="brand-copy">
+                    <strong>RONIN</strong>
+                    <span>CHARTS</span>
+                </span>
+                <span class="brand-seal" aria-hidden="true">浪</span>
+            </a>
 
             <button class="home-menu-button" type="button" aria-expanded="false" aria-controls="home-primary-navigation"
                 data-menu-button>
@@ -55,6 +57,8 @@
             </nav>
         </div>
     </header>
+
+    <div class="home-nav-backdrop" data-nav-backdrop aria-hidden="true"></div>
 
     <main id="main" class="home-main">
         <section class="home-hero" id="top" aria-labelledby="home-hero-title">
@@ -295,33 +299,26 @@
                 </div>
                 <div class="home-system-grid">
 
-                <article class="home-system-card">
-                    <div class="home-system-card__copy">
-                        <h3>Flat Base Breakout</h3>
-                        <p>Buy strength as price clears a tight base with trend alignment and clear confirmation.</p>
-                        <a href="/system#flat-base">Learn more <span aria-hidden="true">→</span></a>
-                    </div>
-                   <img
-  src="./assets/bb-flat-base.png"
-  alt="Flat Base Breakout chart pattern illustration"
-  class="home-pattern-image"
-  loading="lazy"
-/>
-                </article>
+                    <article class="home-system-card">
+                        <div class="home-system-card__copy">
+                            <h3>Flat Base Breakout</h3>
+                            <p>Buy strength as price clears a tight base with trend alignment and clear confirmation.
+                            </p>
+                            <a href="/system#flat-base">Learn more <span aria-hidden="true">→</span></a>
+                        </div>
+                        <img src="./assets/bb-flat-base.png" alt="Flat Base Breakout chart pattern illustration"
+                            class="home-pattern-image" loading="lazy" />
+                    </article>
 
-                <article class="home-system-card">
-                    <div class="home-system-card__copy">
-                        <h3>Controlled Pullback</h3>
-                        <p>Buy constructive pullbacks toward key support inside a strong, established trend.</p>
-                        <a href="/system#controlled-pullback">Learn more <span aria-hidden="true">→</span></a>
-                    </div>
-                    <img
-  src="./assets/dell-pullbacks.png"
-  alt="Flat Base Breakout chart pattern illustration"
-  class="home-pattern-image"
-  loading="lazy"
-/>
-                </article>
+                    <article class="home-system-card">
+                        <div class="home-system-card__copy">
+                            <h3>Controlled Pullback</h3>
+                            <p>Buy constructive pullbacks toward key support inside a strong, established trend.</p>
+                            <a href="/system#controlled-pullback">Learn more <span aria-hidden="true">→</span></a>
+                        </div>
+                        <img src="./assets/dell-pullbacks.png" alt="Flat Base Breakout chart pattern illustration"
+                            class="home-pattern-image" loading="lazy" />
+                    </article>
                 </div>
             </div>
             </div>
@@ -410,12 +407,17 @@
     <footer class="home-footer">
         <div class="home-container home-footer__grid">
             <div class="home-footer__brand">
-              <a class="brand brand-inverse" href="#top">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="112 38" transform="rotate(-24 32 32)" /><path d="M37 13 25 48M23 31h20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" /></svg>
-          </span>
-          <span class="brand-copy"><strong>RONIN</strong><span>CHARTS</span></span>
-        </a>
+                <a class="brand brand-inverse" href="#top">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 64 64">
+                            <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="3.5"
+                                stroke-linecap="round" stroke-dasharray="112 38" transform="rotate(-24 32 32)" />
+                            <path d="M37 13 25 48M23 31h20" fill="none" stroke="currentColor" stroke-width="3.2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </span>
+                    <span class="brand-copy"><strong>RONIN</strong><span>CHARTS</span></span>
+                </a>
                 <p>A disciplined trading workspace for swing traders who value strength, structure, and risk.</p>
                 <div class="home-social-row" aria-label="Social links">
                     <a href="#" aria-label="X">𝕏</a>

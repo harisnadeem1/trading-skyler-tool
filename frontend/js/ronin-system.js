@@ -35,6 +35,7 @@ class RoninSystemView {
     this.bindCheckoutButtons();
     this.setCheckoutButtonState();
     this.bindSubnavLinks();
+    this.setupSubnavScrollIndicator();
     this.setupStickyCTA();
 
     this.initialized = true;
@@ -102,6 +103,39 @@ bindCheckoutButtons() {
     });
   }
 
+  setupSubnavScrollIndicator() {
+  const scroller = this.root.querySelector('.system-subnav .container');
+  const indicator = this.root.querySelector('.system-subnav__scroll-indicator');
+  const thumb = indicator?.querySelector('span');
+
+  if (!scroller || !indicator || !thumb) return;
+
+  const updateIndicator = () => {
+    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+    const trackWidth = indicator.clientWidth;
+
+    if (maxScroll <= 0 || trackWidth <= 0) {
+      indicator.style.opacity = '0';
+      return;
+    }
+
+    indicator.style.opacity = '1';
+
+    const visibleRatio = scroller.clientWidth / scroller.scrollWidth;
+    const thumbWidth = Math.max(42, trackWidth * visibleRatio);
+    const maxThumbTravel = trackWidth - thumbWidth;
+    const progress = scroller.scrollLeft / maxScroll;
+    const thumbPosition = maxThumbTravel * progress;
+
+    thumb.style.width = `${thumbWidth}px`;
+    thumb.style.transform = `translateX(${thumbPosition}px)`;
+  };
+
+  scroller.addEventListener('scroll', updateIndicator, { passive: true });
+  window.addEventListener('resize', updateIndicator);
+
+  requestAnimationFrame(updateIndicator);
+}
   setupStickyCTA() {
     if (!this.hero || !this.stickyCta) return;
 

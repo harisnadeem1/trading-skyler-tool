@@ -848,7 +848,7 @@
 
   .app-content {
     padding: var(--space-3);
-    padding-bottom: calc(var(--space-6) + 92px);
+    padding-bottom: calc(var(--space-6) + 20px);
   }
 
   .main {
@@ -879,7 +879,7 @@
 
   .results-grid,
   .results-grid--3 {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .results-grid--3 .result-card:last-child {
@@ -902,8 +902,8 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 24px;
   }
 
   .footer__logo {
@@ -942,6 +942,10 @@
     align-items: center;
     justify-content: center;
   }
+   .footer__icon svg{
+    width: 22px;
+    height: auto;
+  }
 
   /* Row 3: Trading statement */
   .footer__nav {
@@ -966,6 +970,47 @@
   .footer__copyright {
     text-align: center;
   }
+  .footer__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "brand brand"
+    "social meta";
+  align-items: center;
+  gap: 14px 12px;
+}
+
+.footer__brand {
+  grid-area: brand;
+}
+
+.footer__social {
+  grid-area: social;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  order: unset;
+}
+
+.footer__meta {
+  grid-area: meta;
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 0;
+  border-top: 0;
+  order: unset;
+}
+
+.footer__copyright {
+  white-space: nowrap;
+  text-align: right;
+  font-size: 13px;
+}
 }
 
 /* === Utility Fixes === */
